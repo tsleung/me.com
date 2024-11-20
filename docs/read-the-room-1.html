@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.12.0">
+<title>Read the Room: Navigating the Dynamics of the 2/3rds of the Average Game | me.com</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air.c3bd821c.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air.c3bd821c.css">
+<link rel="modulepreload" href="./_observablehq/client.1c4bc654.js">
+<link rel="modulepreload" href="./_observablehq/runtime.3b5fbfd2.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.fbe34e68.js">
+<link rel="icon" href="./_file/observable.1af93621.png" type="image/png" sizes="32x32">
+<script type="module">
+
+import "./_observablehq/client.1c4bc654.js";
+
+</script>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">me.com</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="./inequality">Priced Out of Paradise</a></li>
+    <li class="observablehq-link"><a href="./price">Decode Your Decisions</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./read-the-room-1">Read the Room: Navigating the Dynamics of the 2/3rds of the Average Game</a></li>
+  </ol>
+</nav>
+<script>{Object.assign(document.createElement("a"),{href:""}).password&&location.replace(location.href);const e=document.querySelector("#observablehq-sidebar"),t=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?t.checked=r==="true":t.indeterminate=!0;for(const o of document.querySelectorAll("#observablehq-sidebar summary")){const s=o.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${o.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#the-players">The Players</a></li>
+<li class="observablehq-secondary-link"><a href="#game-dynamics">Game Dynamics</a></li>
+<li class="observablehq-secondary-link"><a href="#conclusion">Conclusion</a></li>
+<li class="observablehq-secondary-link"><a href="#interactive-simulation-observable-plot">Interactive Simulation (Observable Plot)</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="read-the-room-navigating-the-dynamics-of-the-2-3rds-of-the-average-game" tabindex="-1"><a class="observablehq-header-anchor" href="#read-the-room-navigating-the-dynamics-of-the-2-3rds-of-the-average-game">Read the Room: Navigating the Dynamics of the 2/3rds of the Average Game</a></h1>
+<p>The "2/3rds of the Average" game, seemingly simple, reveals profound insights into human behavior, strategy, and group dynamics.  Players guess a number between 1 and 100, aiming for 2/3rds of the average.  But beneath the surface lies a complex interplay of motivations and interactions.</p>
+<h2 id="the-players" tabindex="-1"><a class="observablehq-header-anchor" href="#the-players">The Players</a></h2>
+<h3 id="the-uninitiated" tabindex="-1"><a class="observablehq-header-anchor" href="#the-uninitiated">The Uninitiated:</a></h3>
+<p>New to the game? Your initial guess might be random or a naive 33 (2/3rds of 50).  But experience reveals the need for deeper understanding.</p>
+<h3 id="the-strategists" tabindex="-1"><a class="observablehq-header-anchor" href="#the-strategists">The Strategists:</a></h3>
+<p>Familiar with game theory? You likely recognize the Nash Equilibrium – guessing 1.  Iterative elimination of dominated strategies points towards this optimal choice.</p>
+<h3 id="the-disruptors" tabindex="-1"><a class="observablehq-header-anchor" href="#the-disruptors">The Disruptors:</a></h3>
+<p>Not everyone plays rationally. Some intentionally guess high – above 66 – disrupting the game, seeking to outsmart the majority.  This adds unpredictability.</p>
+<h3 id="the-distracted" tabindex="-1"><a class="observablehq-header-anchor" href="#the-distracted">The Distracted:</a></h3>
+<p>Some players guess randomly, unengaged or influenced by irrelevant factors. Their participation adds another layer of complexity, making accurate prediction challenging.</p>
+<h2 id="game-dynamics" tabindex="-1"><a class="observablehq-header-anchor" href="#game-dynamics">Game Dynamics</a></h2>
+<h3 id="the-impact-of-reward-systems" tabindex="-1"><a class="observablehq-header-anchor" href="#the-impact-of-reward-systems">The Impact of Reward Systems:</a></h3>
+<p>Reward structure shapes behavior. "Winner-takes-all" incentivizes strategic convergence towards the Nash Equilibrium. Shared rewards might encourage cooperation and higher average guesses.</p>
+<h3 id="sub-games-and-knowledge-sharing" tabindex="-1"><a class="observablehq-header-anchor" href="#sub-games-and-knowledge-sharing">Sub-Games and Knowledge Sharing:</a></h3>
+<p>Sharing or withholding information creates sub-games. Experience becomes an advantage, especially when knowledge is shared strategically or alliances are formed.</p>
+<h3 id="the-learning-curve" tabindex="-1"><a class="observablehq-header-anchor" href="#the-learning-curve">The Learning Curve:</a></h3>
+<p>Repeated rounds often reveal a downward trend in the average guess.  Learning from past outcomes, players adjust strategies, converging towards lower numbers.</p>
+<h3 id="voting-blocs-and-manipulation" tabindex="-1"><a class="observablehq-header-anchor" href="#voting-blocs-and-manipulation">Voting Blocs and Manipulation:</a></h3>
+<p>Collusion and voting blocs can manipulate the average for personal gain. This raises ethical questions about fairness and strategic manipulation in group decisions.</p>
+<h2 id="conclusion" tabindex="-1"><a class="observablehq-header-anchor" href="#conclusion">Conclusion</a></h2>
+<p>The "2/3rds of the Average" game, despite its simplicity, offers a rich tapestry of insights into human behavior and strategic thinking.  By understanding the players and the dynamics, we gain a deeper appreciation for the complexities of social interaction, the influence of incentives, and the challenges of collective decision-making.</p>
+<h2 id="interactive-simulation-observable-plot" tabindex="-1"><a class="observablehq-header-anchor" href="#interactive-simulation-observable-plot">Interactive Simulation (Observable Plot)</a></h2>
+<pre data-language="observablehq"><code class="language-observablehq">{
+ // Import necessary libraries (e.g., Plot)
+ // ...
+
+ // Create interactive elements:
+ // 1. Number input for user guesses
+ // 2. Button to calculate 2/3rds of the average
+ // 3. Display of results (average, winning guess, etc.)
+ // 4. Visualization of guess distribution (histogram or scatter plot)
+ // 5. Slider to simulate multiple rounds and visualize the learning curve
+ // ...
+
+ // Add interactivity and logic to update visualizations based on user input and game parameters.
+}
+</code></pre>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="./price"><span>Decode Your Decisions</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-11-20T12:08:05">Nov 20, 2024</a>.</div>
+</footer>
+</div>
