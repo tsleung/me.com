@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>outguess / terranleung.com</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header>
+  <div class="title">
+    <a href="/" class="home">←</a>
+    <h1>outguess</h1>
+    <span class="subtitle">shannon&rsquo;s mind-reading machine, 1953</span>
+  </div>
+  <nav class="modes" role="tablist" aria-label="mode">
+    <button class="mode-tab active" data-mode="classic" role="tab" aria-selected="true">classic</button>
+    <button class="mode-tab" data-mode="hood" role="tab" aria-selected="false">lift the hood</button>
+  </nav>
+</header>
+
+<main>
+  <section class="stage">
+    <div class="scoreboard">
+      <div class="score">
+        <span class="score-label">machine</span>
+        <span class="score-value" id="score-m">0</span>
+      </div>
+      <div class="score-sep">&ndash;</div>
+      <div class="score">
+        <span class="score-label">you</span>
+        <span class="score-value" id="score-y">0</span>
+      </div>
+    </div>
+
+    <div class="round-info">
+      <span class="round-label">round</span>
+      <span class="round-value" id="round-num">1</span>
+    </div>
+
+    <div class="prediction" id="prediction" aria-live="polite">
+      <div class="prediction-label">machine guesses</div>
+      <div class="prediction-value" id="pred-value">?</div>
+      <div class="prediction-hint" id="pred-hint">play a bit to begin</div>
+    </div>
+
+    <div class="play-row">
+      <button class="play-btn" data-move="0" aria-label="play 0">
+        <span class="play-glyph">0</span>
+      </button>
+      <button class="play-btn" data-move="1" aria-label="play 1">
+        <span class="play-glyph">1</span>
+      </button>
+    </div>
+
+    <div class="history-wrap">
+      <div class="history-legend">
+        <span><span class="chip chip-you"></span>you</span>
+        <span><span class="chip chip-machine"></span>machine</span>
+        <span><span class="chip chip-hit"></span>hit</span>
+      </div>
+      <svg id="history-strip" class="history-strip" aria-label="recent rounds"></svg>
+    </div>
+
+    <div class="controls-row">
+      <button id="reset" class="ctrl-btn">reset</button>
+      <button id="how-to" class="ctrl-btn">how to play</button>
+      <span class="muted small" id="rate">&mdash;</span>
+    </div>
+
+    <details id="instructions" class="instructions" open>
+      <summary>how to play</summary>
+      <ol>
+        <li>Pick a bit each round: <kbd>0</kbd> or <kbd>1</kbd> (keys work too).</li>
+        <li>The machine guesses your bit before you click. If it matches, the machine scores; if not, you do.</li>
+        <li>Try to stay unpredictable. The only way to beat it long-term is to play like a fair coin.</li>
+        <li>Flip to <em>lift the hood</em> to watch the 8-cell memory update round by round.</li>
+      </ol>
+      <p class="muted small">
+        The original machine was built by Claude Shannon at Bell Labs in 1953
+        as a riff on Dave Hagelbarger&rsquo;s SEER. It plays
+        <a href="https://en.wikipedia.org/wiki/Matching_pennies" target="_blank" rel="noopener">matching pennies</a>
+        against a human and wins far more than half the time because humans
+        aren&rsquo;t random.
+      </p>
+    </details>
+  </section>
+
+  <aside class="hood" id="hood" hidden>
+    <div class="hood-section">
+      <div class="hood-title">state bits</div>
+      <div class="bits" id="bits">
+        <div class="bit" data-bit="a">
+          <div class="bit-name">a</div>
+          <div class="bit-value" id="bit-a">&mdash;</div>
+          <div class="bit-desc">machine won last?</div>
+        </div>
+        <div class="bit" data-bit="b">
+          <div class="bit-name">b</div>
+          <div class="bit-value" id="bit-b">&mdash;</div>
+          <div class="bit-desc">you switched last?</div>
+        </div>
+        <div class="bit" data-bit="c">
+          <div class="bit-name">c</div>
+          <div class="bit-value" id="bit-c">&mdash;</div>
+          <div class="bit-desc">machine won before?</div>
+        </div>
+      </div>
+      <div class="state-idx">
+        current cell <span id="state-idx">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="hood-section">
+      <div class="hood-title">memory <span class="muted small">(8 cells)</span></div>
+      <svg id="cells-svg" class="cells-svg" aria-label="memory cells"></svg>
+      <div class="cell-legend">
+        <div><span class="dot dot-on"></span> confident</div>
+        <div><span class="dot dot-off"></span> tentative</div>
+        <div><span class="arrow">=</span> stay</div>
+        <div><span class="arrow">~</span> switch</div>
+      </div>
+    </div>
+
+    <div class="hood-section">
+      <div class="hood-title">accuracy <span class="muted small">(rolling, 20 rounds)</span></div>
+      <svg id="accuracy-chart" class="accuracy-chart" aria-label="accuracy over time"></svg>
+    </div>
+
+    <div class="hood-section">
+      <div class="hood-title">how it works</div>
+      <p class="hood-text">
+        Each round the machine forms a 3-bit key from recent outcomes and
+        reads that memory cell. The cell stores a tendency &mdash; do you stay on
+        the same bit or switch &mdash; plus a confidence flag that only flips
+        after two disagreements. With enough rounds, any rhythm in your
+        choices leaks through the bits.
+      </p>
+    </div>
+  </aside>
+</main>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

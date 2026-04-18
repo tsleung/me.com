@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="translate">
+<title>translate</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="back" href="/" aria-label="home">=)</a>
+  <span class="title-group">
+    <span class="title">translate</span>
+    <button id="room-chip" class="room-chip" title="room code — click to copy and share with your partner" hidden>
+      <span class="room-chip-label">room</span>
+      <span id="room-chip-code"></span>
+    </button>
+    <span id="psk-chip" class="psk-chip" title="shared key is active — messages are end-to-end encrypted with your passphrase" hidden>e2e</span>
+  </span>
+  <span class="status">
+    <span id="presence" class="dot" data-state="off" title="disconnected"></span>
+    <button id="copy-btn" class="icon-btn" aria-label="copy conversation" title="copy conversation">copy</button>
+    <button id="clear-btn" class="icon-btn" aria-label="clear conversation" title="clear conversation">clear</button>
+    <button id="settings-btn" class="icon-btn" aria-label="settings">⚙</button>
+  </span>
+</header>
+
+<main class="chat" id="chat" aria-live="polite" aria-label="messages"></main>
+
+<footer class="composer">
+  <div id="preview-box" class="preview" hidden>
+    <div class="preview-row"><span class="preview-label">will send</span><span id="preview-forward"></span></div>
+    <div class="preview-row"><span class="preview-label">reads back</span><span id="preview-back"></span></div>
+  </div>
+  <div class="composer-row">
+    <textarea id="input" rows="2" placeholder="write in your native language"></textarea>
+    <div class="composer-buttons">
+      <button id="preview-btn" class="btn">preview</button>
+      <button id="send-btn" class="btn btn-primary">send</button>
+    </div>
+  </div>
+</footer>
+
+<dialog id="settings" class="settings">
+  <form method="dialog" class="settings-form">
+    <h2>settings</h2>
+
+    <fieldset>
+      <legend>languages</legend>
+      <label>your native language
+        <input id="cfg-mylang" type="text" value="english" placeholder="e.g. en, english" required>
+      </label>
+      <label>partner's native language
+        <input id="cfg-partnerlang" type="text" value="mandarin" placeholder="e.g. zh, mandarin" required>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>room</legend>
+      <label>room code <small>(10+ chars, share out-of-band)</small>
+        <div class="row">
+          <input id="cfg-room" type="text" minlength="8" required>
+          <button id="cfg-room-gen" type="button" class="btn-small">generate</button>
+        </div>
+      </label>
+      <label>your display name <small>(optional, defaults to "Me")</small>
+        <input id="cfg-name" type="text" placeholder="e.g. Lorem">
+      </label>
+      <label>partner's display name <small>(optional, defaults to "Partner")</small>
+        <input id="cfg-partnername" type="text" placeholder="e.g. Ipsum">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>signaling</legend>
+      <label>mode
+        <select id="cfg-sigmode">
+          <option value="worker">our cloudflare worker (recommended)</option>
+          <option value="peerjs">peerjs fallback (public broker)</option>
+        </select>
+      </label>
+      <label>worker url
+        <input id="cfg-sigurl" type="text" placeholder="wss://translate-signaling.example.workers.dev">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>shared key <small>(optional, defense-in-depth)</small></legend>
+      <label>passphrase
+        <input id="cfg-psk" type="text" autocomplete="off" placeholder="e.g. a private word only you two know">
+      </label>
+      <small class="hint">
+        if set, messages are AES-GCM encrypted in the browser with a key derived from this passphrase before being sent.
+        your partner must enter the same passphrase to read them.
+        share it over a different channel (not through this app).
+      </small>
+    </fieldset>
+
+    <fieldset>
+      <legend>gemini</legend>
+      <label>api key <small>(stored only on this device)</small>
+        <input id="cfg-apikey" type="password" autocomplete="off" required>
+      </label>
+      <small class="hint">
+        get one at
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/app/apikey</a>
+      </small>
+    </fieldset>
+
+    <fieldset>
+      <legend>history <small>(optional, encrypted at rest)</small></legend>
+      <label class="inline">
+        <input id="cfg-history" type="checkbox">
+        save messages on this device
+      </label>
+      <label>passphrase <small>(required if history is on)</small>
+        <input id="cfg-passphrase" type="password" autocomplete="new-password">
+      </label>
+      <button id="cfg-clear-history" type="button" class="btn-small btn-danger">clear history</button>
+    </fieldset>
+
+    <div class="settings-actions">
+      <button value="cancel" class="btn">cancel</button>
+      <button id="cfg-save" value="save" class="btn btn-primary">save</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="vault.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

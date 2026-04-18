@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>transit / terranleung.com</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header>
+  <div class="title">
+    <a href="/" class="home">←</a>
+    <h1>transit</h1>
+    <span class="subtitle">pick a station. see what&rsquo;s within reach.</span>
+  </div>
+  <nav class="cities">
+    <button data-city="taipei" class="city-tab">Taipei</button>
+    <button data-city="sf" class="city-tab">SF Bay</button>
+    <button data-city="nyc" class="city-tab">NYC</button>
+    <button data-city="tokyo" class="city-tab">Tokyo</button>
+  </nav>
+</header>
+
+<main>
+  <section class="canvas-wrap">
+    <svg id="map" aria-label="transit map"></svg>
+    <div id="tooltip" class="tooltip" hidden></div>
+    <div id="hover-lines" class="hover-lines" hidden></div>
+    <div class="legend">
+      <div class="legend-title">minutes to destination</div>
+      <div class="legend-row"><span class="sw band-15"></span>&le;15</div>
+      <div class="legend-row"><span class="sw band-30"></span>&le;30</div>
+      <div class="legend-row"><span class="sw band-45"></span>&le;45</div>
+      <div class="legend-row"><span class="sw band-60"></span>&le;60</div>
+      <div class="legend-row"><span class="sw band-out"></span>beyond</div>
+    </div>
+    <div class="scale-bar" id="scale-bar" aria-hidden="true">
+      <div class="scale-track"></div>
+      <div class="scale-label" id="scale-label">&mdash;</div>
+    </div>
+  </section>
+
+  <aside class="controls">
+    <div class="destination">
+      <label>
+        destination
+        <button id="clear-dest" class="clear-btn" type="button" title="clear selection (or double-click map)" hidden>clear</button>
+      </label>
+      <div id="dest-label" class="dest-label muted">click a station</div>
+      <input id="search" type="search" placeholder="search stations..." autocomplete="off">
+      <ul id="search-results" class="search-results"></ul>
+    </div>
+
+    <div class="history" id="history" hidden>
+      <label>
+        recent
+        <button id="history-toggle" class="clear-btn" type="button" hidden>more</button>
+      </label>
+      <ul id="history-list" class="history-list"></ul>
+    </div>
+
+    <div class="control-row">
+      <label for="threshold">threshold <span id="threshold-value">30</span> min</label>
+      <input id="threshold" type="range" min="5" max="90" step="5" value="30">
+    </div>
+
+    <div class="control-row">
+      <label for="transfers">max transfers</label>
+      <select id="transfers">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="99">any</option>
+      </select>
+    </div>
+
+    <div class="stats" id="stats"></div>
+  </aside>
+</main>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

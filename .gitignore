@@ -1,0 +1,13 @@
+# This repo is a public deploy target. Only content that is served to
+# visitors of terranleung.com belongs here. Everything else is ignored.
+#
+# Source of truth and all non-website content lives in the private repo
+# tsleung/terranleung.com.
+
+# Ignore everything at the root by default.
+/*
+
+# Allow only these paths.
+!/docs/
+!/README.md
+!/.gitignore
