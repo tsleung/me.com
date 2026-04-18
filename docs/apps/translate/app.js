@@ -180,10 +180,26 @@ function clearConversation() {
   chatEl.innerHTML = "";
 }
 
+let lastPresenceState = null;
+function refreshSendButton() {
+  $("send-btn").disabled = sendInFlight || lastPresenceState !== "on";
+}
 function setPresence(state) {
   $("presence").dataset.state = state;
   $("presence").title =
     state === "on" ? "connected" : state === "wait" ? "waiting for peer" : "disconnected";
+  // Visibility on transitions — silent yellow dots are easy to miss.
+  // Only announce disconnects if we were actually connected; the initial
+  // off→wait as we spin up shouldn't pretend a partner just left.
+  if (lastPresenceState !== null && lastPresenceState !== state) {
+    if (state === "on") renderSystem("connected to partner");
+    else if (lastPresenceState === "on") {
+      if (state === "wait") renderSystem("partner disconnected \u2014 waiting to reconnect");
+      else renderSystem("signaling disconnected \u2014 attempting to reconnect");
+    }
+  }
+  lastPresenceState = state;
+  refreshSendButton();
 }
 
 function renderRoomChip() {
@@ -221,19 +237,32 @@ class WorkerTransport {
     this.dc = null;
     this.onMessage = () => {};
     this.onStateChange = () => {};
+    this._closed = false;
+    this._reconnectDelay = 0;
+    this._reconnectTimer = null;
   }
 
   async connect() {
+    if (this._closed) return;
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = null;
     const url = new URL(this.cfg.sigUrl);
     url.searchParams.set("room", this.cfg.roomCode);
     this.ws = new WebSocket(url.toString());
     this.ws.addEventListener("open", () => this._onWsOpen());
     this.ws.addEventListener("message", (e) => this._onWsMessage(e));
-    this.ws.addEventListener("close", () => this._teardown("signaling closed"));
-    this.ws.addEventListener("error", () => this._teardown("signaling error"));
+    this.ws.addEventListener("close", () => this._onWsDown());
+    this.ws.addEventListener("error", () => this._onWsDown());
   }
 
   _onWsOpen() {
+    this._reconnectDelay = 0;
+    this._setupPc();
+    this._wsSend({ type: "hello", name: this.cfg.displayName });
+    this.onStateChange("wait");
+  }
+
+  _setupPc() {
     this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     this.pc.onicecandidate = (e) => {
       if (e.candidate) this._wsSend({ type: "ice", candidate: e.candidate.toJSON() });
@@ -242,10 +271,8 @@ class WorkerTransport {
     this.pc.onconnectionstatechange = () => {
       const s = this.pc.connectionState;
       if (s === "connected") this.onStateChange("on");
-      else if (s === "disconnected" || s === "failed" || s === "closed") this.onStateChange("off");
+      else if (s === "disconnected" || s === "failed") this._resetPeer();
     };
-    this._wsSend({ type: "hello", name: this.cfg.displayName });
-    this.onStateChange("wait");
   }
 
   async _onWsMessage(e) {
@@ -253,7 +280,7 @@ class WorkerTransport {
     try { msg = JSON.parse(e.data); } catch { return; }
     switch (msg.type) {
       case "hello":
-        if (!this.dc) {
+        if (!this.dc && this.pc) {
           // We go first (initiator).
           this.dc = this.pc.createDataChannel("chat");
           this._wireDataChannel(this.dc);
@@ -263,6 +290,7 @@ class WorkerTransport {
         }
         break;
       case "offer": {
+        if (!this.pc) this._setupPc();
         await this.pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
         const ans = await this.pc.createAnswer();
         await this.pc.setLocalDescription(ans);
@@ -273,10 +301,12 @@ class WorkerTransport {
         await this.pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
         break;
       case "ice":
-        try { await this.pc.addIceCandidate(msg.candidate); } catch {}
+        try { await this.pc?.addIceCandidate(msg.candidate); } catch {}
         break;
       case "peer-gone":
-        this.onStateChange("wait");
+        // Partner left. Tear down the peer connection so a fresh handshake
+        // happens when they come back. WS stays open.
+        this._resetPeer();
         break;
     }
   }
@@ -284,10 +314,40 @@ class WorkerTransport {
   _wireDataChannel(dc) {
     this.dc = dc;
     dc.onopen = () => this.onStateChange("on");
-    dc.onclose = () => this.onStateChange("wait");
+    dc.onclose = () => {
+      // Don't leave a closed DC pinned — a new hello needs !this.dc to
+      // trigger offer creation. Rebuild the peer connection so reconnect
+      // works without a page reload.
+      this._resetPeer();
+    };
     dc.onmessage = (e) => {
       try { this.onMessage(JSON.parse(e.data)); } catch {}
     };
+  }
+
+  _resetPeer() {
+    try { this.dc?.close(); } catch {}
+    try { this.pc?.close(); } catch {}
+    this.dc = null;
+    this.pc = null;
+    this.onStateChange("wait");
+    if (!this._closed && this.ws?.readyState === WebSocket.OPEN) {
+      this._setupPc();
+      this._wsSend({ type: "hello", name: this.cfg.displayName });
+    }
+  }
+
+  _onWsDown() {
+    this.onStateChange("off");
+    try { this.dc?.close(); } catch {}
+    try { this.pc?.close(); } catch {}
+    this.dc = null;
+    this.pc = null;
+    if (this._closed) return;
+    // Backoff: 1s, 2s, 4s, 8s, 16s, capped at 30s.
+    const delay = Math.min(30000, Math.max(1000, this._reconnectDelay * 2 || 1000));
+    this._reconnectDelay = delay;
+    this._reconnectTimer = setTimeout(() => this.connect(), delay);
   }
 
   _wsSend(obj) {
@@ -304,14 +364,19 @@ class WorkerTransport {
     return false;
   }
 
-  _teardown(reason) {
+  isOpen() {
+    return this.dc?.readyState === "open";
+  }
+
+  close() {
+    this._closed = true;
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = null;
     this.onStateChange("off");
     try { this.dc?.close(); } catch {}
     try { this.pc?.close(); } catch {}
     try { this.ws?.close(); } catch {}
   }
-
-  close() { this._teardown("closed"); }
 }
 
 // ---- Transport: PeerJS fallback ------------------------------------------
@@ -350,6 +415,10 @@ class PeerJsTransport {
     conn.on("data", (d) => {
       try { this.onMessage(typeof d === "string" ? JSON.parse(d) : d); } catch {}
     });
+  }
+
+  isOpen() {
+    return !!(this.conn && this.conn.open);
   }
 
   send(msg) {
@@ -588,11 +657,19 @@ async function doSend() {
   const text = $("input").value.trim();
   if (!text) return;
 
+  // Pre-flight: bail out *before* clearing the input or burning Gemini
+  // calls if we're not connected. Preserves the text so the user can
+  // re-send once the dot goes green.
+  if (!transport || !transport.isOpen()) {
+    renderSystem("not connected \u2014 wait for the green dot, then try again");
+    return;
+  }
+
   // Lock the composer and capture the text up-front so a second Cmd+Enter
   // can't race this one. Render a pending bubble immediately so the user
   // sees their message in-flight even before Gemini returns.
   sendInFlight = true;
-  $("send-btn").disabled = true;
+  refreshSendButton();
   $("preview-btn").disabled = true;
   $("input").value = "";
   $("preview-box").hidden = true;
@@ -638,7 +715,7 @@ async function doSend() {
     renderSystem(`translate failed (${e.message}): ${text}`);
   } finally {
     sendInFlight = false;
-    $("send-btn").disabled = false;
+    refreshSendButton();
     $("preview-btn").disabled = false;
   }
 }
