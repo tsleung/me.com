@@ -29,6 +29,10 @@ const hoverLines = document.getElementById('hover-lines');
 const historyBox = document.getElementById('history');
 const historyList = document.getElementById('history-list');
 const historyToggle = document.getElementById('history-toggle');
+const assumptionsBody = document.getElementById('assumptions-body');
+const assumptionsInputs = document.getElementById('assumptions-inputs');
+const assumptionsToggle = document.getElementById('assumptions-toggle');
+const assumptionsReset = document.getElementById('assumptions-reset');
 
 const HISTORY_KEY = 'transit-history-v1';
 const HISTORY_MAX = 10;
@@ -42,6 +46,7 @@ let adjacency = new Map();
 let destId = null;
 let destMeta = null; // { clickLatLng, walkSecs } — null if dest is an exact station
 let distances = null;
+let parents = null; // Map<stationId, Array<{from, edge, prevLine}|null>> (indexed by tsf)
 let layout = null;
 let hoveredId = null;
 let stationPositions = null; // Map<id, [x, y]> in pre-zoom SVG coords
@@ -49,6 +54,15 @@ let delaunay = null;
 let stationIndex = null; // array, index aligned with Delaunay
 let anchors = [];         // [{ stationId, name, lines, rank }]
 let lineAnchors = [];     // [{ lineId, line, stationId }] — one per line, for on-select labels
+
+// -------- Live timing params (per-city, user-tunable) --------
+// Initialized from graph.timing on each city load. Users can override from
+// the "Assumptions" panel; applyParams() rewrites each edge's .seconds and
+// re-runs the router.
+let params = null;        // { speedsKmh: {...}, transferSeconds: number, walkSpeedKmh: number }
+let defaultParams = null; // snapshot of the city's baked-in values, for reset
+const DEFAULT_WALK_KMH = (WALK_SPEED_MPS * 3.6);
+const MIN_EDGE_SECONDS = 30;
 
 // -------- Load & render --------
 init();
@@ -144,6 +158,103 @@ function setupControls() {
     historyList.classList.toggle('expanded');
     historyToggle.textContent = historyList.classList.contains('expanded') ? 'less' : 'more';
   });
+  assumptionsToggle?.addEventListener('click', () => {
+    const open = assumptionsBody.hidden;
+    assumptionsBody.hidden = !open;
+    assumptionsToggle.textContent = open ? 'hide' : 'show';
+  });
+  assumptionsReset?.addEventListener('click', resetParams);
+}
+
+// Modes used in the current city — drives which speed inputs we render.
+function usedModes() {
+  if (!graph) return [];
+  const set = new Set();
+  for (const l of graph.lines) if (l.mode) set.add(l.mode);
+  return [...set];
+}
+
+// The "Assumptions" panel body is rebuilt on each city load so the defaults
+// and the visible mode list match the city.
+function renderAssumptions() {
+  if (!assumptionsInputs || !params || !defaultParams) return;
+  const modes = usedModes().sort();
+  const rows = [];
+  // Transfer penalty, shown in minutes.
+  rows.push(paramRow({
+    key: 'transferSeconds',
+    label: 'transfer penalty',
+    unit: 'min',
+    step: 0.5,
+    min: 0,
+    value: params.transferSeconds / 60,
+    def: defaultParams.transferSeconds / 60,
+    fmt: 1,
+  }));
+  // Walking (from pin to station).
+  rows.push(paramRow({
+    key: 'walkSpeedKmh',
+    label: 'walk speed',
+    unit: 'km/h',
+    step: 0.5,
+    min: 1,
+    value: params.walkSpeedKmh,
+    def: defaultParams.walkSpeedKmh,
+    fmt: 1,
+  }));
+  // Running speed per mode the city actually uses.
+  for (const m of modes) {
+    const def = defaultParams.speedsKmh[m];
+    if (def == null) continue; // mode present on a line but with no default — skip
+    rows.push(paramRow({
+      key: 'speedsKmh.' + m,
+      label: m.replace('_', ' ') + ' speed',
+      unit: 'km/h',
+      step: 1,
+      min: 5,
+      value: params.speedsKmh[m],
+      def,
+      fmt: 0,
+    }));
+  }
+  assumptionsInputs.innerHTML = rows.join('');
+  // Wire change handlers (debounced).
+  assumptionsInputs.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', onParamInput);
+  });
+}
+
+function paramRow({ key, label, unit, step, min, value, def, fmt }) {
+  const shown = Number(value).toFixed(fmt);
+  const defShown = Number(def).toFixed(fmt);
+  return (
+    `<div class="assumption-row">` +
+    `<label>${label}</label>` +
+    `<div class="assumption-input">` +
+    `<input type="number" step="${step}" min="${min}" value="${shown}" data-key="${key}">` +
+    `<span class="assumption-unit">${unit}</span>` +
+    `</div>` +
+    `<div class="assumption-default">default ${defShown}</div>` +
+    `</div>`
+  );
+}
+
+let paramInputTimer = 0;
+function onParamInput(e) {
+  const inp = e.currentTarget;
+  const key = inp.dataset.key;
+  const raw = parseFloat(inp.value);
+  if (!isFinite(raw)) return;
+  if (key === 'transferSeconds') {
+    params.transferSeconds = Math.max(0, raw * 60);
+  } else if (key === 'walkSpeedKmh') {
+    params.walkSpeedKmh = Math.max(0.5, raw);
+  } else if (key.startsWith('speedsKmh.')) {
+    const mode = key.slice('speedsKmh.'.length);
+    params.speedsKmh[mode] = Math.max(1, raw);
+  }
+  clearTimeout(paramInputTimer);
+  paramInputTimer = setTimeout(applyParams, 150);
 }
 
 function clearDest() {
@@ -172,9 +283,12 @@ async function loadCity(city) {
     return;
   }
   stationById = new Map(graph.stations.map(s => [s.id, s]));
+  enrichEdges(graph);
+  initParams(graph);
   adjacency = buildAdjacency(graph);
   computeLayout();
   renderGraph();
+  renderAssumptions();
   distances = null;
   destId = null;
   destMeta = null;
@@ -189,10 +303,87 @@ function buildAdjacency(g) {
   const adj = new Map();
   for (const s of g.stations) adj.set(s.id, []);
   for (const e of g.edges) {
-    adj.get(e.from).push({ to: e.to, seconds: e.seconds, lineId: e.lineId, kind: e.kind });
-    adj.get(e.to).push({ to: e.from, seconds: e.seconds, lineId: e.lineId, kind: e.kind });
+    adj.get(e.from).push({ to: e.to, edge: e });
+    adj.get(e.to).push({ to: e.from, edge: e });
   }
   return adj;
+}
+
+// Add meters, mode, and defaultSeconds to every edge so we can recompute
+// .seconds live from params without touching the pipeline.
+function enrichEdges(g) {
+  const modeByLine = new Map(g.lines.map(l => [l.id, l.mode]));
+  for (const e of g.edges) {
+    e.defaultSeconds = e.seconds;
+    if (e.kind === 'travel') {
+      const a = stationById.get(e.from);
+      const b = stationById.get(e.to);
+      e.meters = (a && b) ? haversineM(a, b) : 0;
+      e.mode = modeByLine.get(e.lineId) || null;
+    }
+  }
+}
+
+function initParams(g) {
+  const t = g.timing || {};
+  defaultParams = {
+    speedsKmh: { ...(t.speedsKmh || {}) },
+    transferSeconds: t.transferSeconds ?? 180,
+    walkSpeedKmh: DEFAULT_WALK_KMH,
+  };
+  params = {
+    speedsKmh: { ...defaultParams.speedsKmh },
+    transferSeconds: defaultParams.transferSeconds,
+    walkSpeedKmh: defaultParams.walkSpeedKmh,
+  };
+}
+
+// Rewrite every edge's .seconds from current params. Called on param change
+// and when a destination re-run is needed. Per dimension, if the param equals
+// its default we restore the baked-in seconds (exact, includes dwell); if it
+// differs we recompute from meters/speed for travel edges or from the flat
+// penalty for transfer edges (drops the dwell term — see
+// notes/transit/timing-model.md).
+function applyParams() {
+  if (!graph || !params || !defaultParams) return;
+  const transferChanged = params.transferSeconds !== defaultParams.transferSeconds;
+  const modeChanged = {};
+  for (const m of Object.keys(defaultParams.speedsKmh)) {
+    modeChanged[m] = params.speedsKmh[m] !== defaultParams.speedsKmh[m];
+  }
+  for (const e of graph.edges) {
+    if (e.kind === 'transfer') {
+      e.seconds = transferChanged
+        ? Math.max(1, Math.round(params.transferSeconds))
+        : e.defaultSeconds;
+    } else {
+      const changed = e.mode && modeChanged[e.mode];
+      if (!changed) {
+        e.seconds = e.defaultSeconds;
+      } else {
+        const kmh = params.speedsKmh[e.mode];
+        const mps = kmh * 1000 / 3600;
+        const secs = mps > 0 ? e.meters / mps : e.defaultSeconds;
+        e.seconds = Math.max(MIN_EDGE_SECONDS, Math.round(secs));
+      }
+    }
+  }
+  if (destId != null) {
+    runDijkstra(destId);
+    repaint();
+    writeStats();
+  }
+}
+
+function resetParams() {
+  if (!defaultParams) return;
+  params = {
+    speedsKmh: { ...defaultParams.speedsKmh },
+    transferSeconds: defaultParams.transferSeconds,
+    walkSpeedKmh: defaultParams.walkSpeedKmh,
+  };
+  renderAssumptions();
+  applyParams();
 }
 
 // -------- Layout (Web Mercator) --------
@@ -431,7 +622,8 @@ function renderGraph() {
     .filter((ev) => {
       // Let clicks (mousedown + mouseup without movement) pass through to our click handler.
       // d3.zoom defaults: blocks everything that's a pointer event it wants. Allow wheel + drag only.
-      if (ev.type === 'mousedown' || ev.type === 'touchstart' || ev.type === 'pointerdown') return !ev.ctrlKey && ev.button === 0;
+      // Touch events have no `button` property — accept them so pinch-zoom + pan work on mobile.
+      if (ev.type === 'mousedown' || ev.type === 'pointerdown') return !ev.ctrlKey && ev.button === 0;
       return true;
     })
     .on('zoom', (ev) => {
@@ -539,8 +731,10 @@ function runDijkstra(sourceId) {
   const heap = new BinaryHeap((a, b) => a.t - b.t);
   // best[stationId][transferCount] = min time
   distances = new Map();
+  parents = new Map();
   for (const s of graph.stations) {
     distances.set(s.id, new Array(MAX_TRANSFERS_TRACKED + 1).fill(Infinity));
+    parents.set(s.id, new Array(MAX_TRANSFERS_TRACKED + 1).fill(null));
   }
   distances.get(sourceId).fill(0);
   // State key includes transfer count so faster high-transfer paths don't
@@ -553,7 +747,8 @@ function runDijkstra(sourceId) {
   while (heap.size) {
     const cur = heap.pop();
     if (cur.t > (seen.get(stateKey(cur.sid, cur.line, cur.tsf)) ?? Infinity)) continue;
-    for (const e of adjacency.get(cur.sid) || []) {
+    for (const a of adjacency.get(cur.sid) || []) {
+      const e = a.edge;
       let newLine, added;
       if (e.kind === 'transfer') {
         newLine = null;
@@ -565,15 +760,94 @@ function runDijkstra(sourceId) {
       const newT = cur.t + e.seconds;
       const newTsf = cur.tsf + added;
       if (newTsf > MAX_TRANSFERS_TRACKED) continue;
-      const nextKey = stateKey(e.to, newLine, newTsf);
+      const nextKey = stateKey(a.to, newLine, newTsf);
       const prev = seen.get(nextKey);
       if (prev != null && prev <= newT) continue;
       seen.set(nextKey, newT);
-      const arr = distances.get(e.to);
-      if (newT < arr[newTsf]) arr[newTsf] = newT;
-      heap.push({ t: newT, sid: e.to, line: newLine, tsf: newTsf });
+      const arr = distances.get(a.to);
+      if (newT < arr[newTsf]) {
+        arr[newTsf] = newT;
+        parents.get(a.to)[newTsf] = {
+          from: cur.sid,
+          fromLine: cur.line,
+          fromTsf: cur.tsf,
+          edge: e,
+          reversed: a.to === e.from, // adjacency is undirected; know which way to read the edge
+        };
+      }
+      heap.push({ t: newT, sid: a.to, line: newLine, tsf: newTsf });
     }
   }
+}
+
+// Walk parents back from destSid to source; return ordered list of edges
+// (each with a direction) and the total seconds. Null if dest unreachable
+// under the current transfer cap.
+function reconstructPath(destSid) {
+  if (!parents || !distances) return null;
+  const arr = distances.get(destSid);
+  if (!arr) return null;
+  const cap = +transfersSel.value;
+  let bestK = -1, bestT = Infinity;
+  for (let k = 0; k <= Math.min(cap, MAX_TRANSFERS_TRACKED); k++) {
+    if (arr[k] < bestT) { bestT = arr[k]; bestK = k; }
+  }
+  if (bestK < 0 || !isFinite(bestT)) return null;
+  const steps = [];
+  let sid = destSid, k = bestK;
+  // Walk back until we hit the source (parent == null).
+  // Guard with a hop cap so a bug can't loop forever.
+  for (let guard = 0; guard < 10000; guard++) {
+    const p = parents.get(sid)?.[k];
+    if (!p) break;
+    steps.push({ from: p.from, to: sid, edge: p.edge });
+    sid = p.from;
+    k = p.fromTsf;
+  }
+  steps.reverse();
+  return { steps, totalSeconds: bestT, transfers: bestK };
+}
+
+// Group reconstructed path into legs: a run of same-lineId travel edges =
+// one leg; each transfer edge = one step. Returns rows ready to render.
+function legsFromPath(path) {
+  if (!path) return [];
+  const rows = [];
+  let cur = null;
+  for (const s of path.steps) {
+    const e = s.edge;
+    if (e.kind === 'transfer') {
+      if (cur) { rows.push(cur); cur = null; }
+      rows.push({
+        kind: 'transfer',
+        seconds: e.seconds,
+        atName: stationById.get(s.to)?.name || '',
+      });
+      continue;
+    }
+    if (cur && cur.lineId === e.lineId) {
+      cur.seconds += e.seconds;
+      cur.hops += 1;
+      cur.toId = s.to;
+    } else {
+      if (cur) rows.push(cur);
+      const line = graph.lines.find(l => l.id === e.lineId);
+      cur = {
+        kind: 'travel',
+        lineId: e.lineId,
+        lineRef: line?.ref || line?.name || '',
+        lineName: line?.name || '',
+        lineColor: line?.color || '#888',
+        mode: line?.mode || e.mode || '',
+        seconds: e.seconds,
+        hops: 1,
+        fromId: s.from,
+        toId: s.to,
+      };
+    }
+  }
+  if (cur) rows.push(cur);
+  return rows;
 }
 
 class BinaryHeap {
@@ -854,16 +1128,27 @@ function showTooltip(event, s) {
   const nativeStr = s.nameNative ? `<span class="tt-native">${escapeHtml(s.nameNative)}</span>` : '';
   let html = `<div class="tt-name">${escapeHtml(s.name)} ${nativeStr}</div>`;
   if (destId && destId === s.id) {
+    // At the destination itself: show the inbound walk offset (if any) and
+    // the line-up of lines that serve it. No trip breakdown because the
+    // "trip" is zero.
     if (destMeta?.walkSecs > 20) {
-      const walkMins = (destMeta.walkSecs / 60).toFixed(1);
-      html += `<div class="tt-time">destination · +${walkMins} min walk from pin</div>`;
+      const walkMins = computedWalkMinsFromMeta();
+      html += `<div class="tt-time">destination · +${walkMins.toFixed(1)} min walk from pin</div>`;
     } else {
       html += `<div class="tt-time">destination</div>`;
     }
   } else if (destId && isFinite(t)) {
-    const mins = (t / 60).toFixed(1);
-    const tsf = bestTransfersAt(s.id);
-    html += `<div class="tt-time">${mins} min trip · ${tsf} transfer${tsf === 1 ? '' : 's'}</div>`;
+    const path = reconstructPath(s.id);
+    const rows = legsFromPath(path);
+    const tripMins = t / 60;
+    const walkMins = (destMeta?.walkSecs > 20) ? computedWalkMinsFromMeta() : 0;
+    const totalMins = tripMins + walkMins;
+    // Transfer count from Dijkstra (includes same-platform line changes);
+    // renderBreakdown rows cover physical transfer edges only, so we rely on
+    // the router's bookkeeping for the top-line number.
+    const tsf = path?.transfers ?? 0;
+    html += `<div class="tt-time">${totalMins.toFixed(1)} min · ${tsf} transfer${tsf === 1 ? '' : 's'}</div>`;
+    html += renderBreakdown(rows, walkMins, totalMins);
   } else if (!destId) {
     html += `<div class="tt-hint">click to set destination</div>`;
   }
@@ -872,6 +1157,52 @@ function showTooltip(event, s) {
   tooltip.html(html);
   tooltip.node().hidden = false;
   moveTooltip(event);
+}
+
+// destMeta.walkSecs is computed from WALK_SPEED_MPS at click time. If the
+// user has since tweaked walkSpeedKmh, rescale so the tooltip and the total
+// reflect the current knob.
+function computedWalkMinsFromMeta() {
+  if (!destMeta?.walkSecs) return 0;
+  const ratio = DEFAULT_WALK_KMH / (params?.walkSpeedKmh || DEFAULT_WALK_KMH);
+  return (destMeta.walkSecs / 60) * ratio;
+}
+
+function renderBreakdown(rows, walkMins, totalMins) {
+  const parts = [`<div class="tt-breakdown">`];
+  if (walkMins > 0) {
+    parts.push(
+      `<div class="tt-leg"><span class="tt-leg-head">walk from pin</span>` +
+      `<span class="tt-leg-time">${walkMins.toFixed(1)} min</span></div>`
+    );
+  }
+  for (const r of rows) {
+    if (r.kind === 'transfer') {
+      parts.push(
+        `<div class="tt-leg tt-xfer"><span class="tt-leg-head">transfer` +
+        `<span class="tt-leg-at">at ${escapeHtml(r.atName)}</span></span>` +
+        `<span class="tt-leg-time">${(r.seconds / 60).toFixed(1)} min</span></div>`
+      );
+    } else {
+      const sw = `<span class="tt-swatch" style="background:${r.lineColor}"></span>`;
+      const label = escapeHtml(r.lineRef || r.lineName || r.mode || 'line');
+      const hops = `${r.hops} stop${r.hops === 1 ? '' : 's'}`;
+      const fromName = stationById.get(r.fromId)?.name || '';
+      const toName = stationById.get(r.toId)?.name || '';
+      parts.push(
+        `<div class="tt-leg tt-travel">` +
+        `<span class="tt-leg-head">${sw}${label}` +
+        `<span class="tt-leg-at">${hops} · ${escapeHtml(fromName)} → ${escapeHtml(toName)}</span></span>` +
+        `<span class="tt-leg-time">${(r.seconds / 60).toFixed(1)} min</span></div>`
+      );
+    }
+  }
+  parts.push(
+    `<div class="tt-leg tt-total"><span class="tt-leg-head">total</span>` +
+    `<span class="tt-leg-time">${totalMins.toFixed(1)} min</span></div>`
+  );
+  parts.push(`</div>`);
+  return parts.join('');
 }
 function moveTooltip(event) {
   const rect = svg.node().getBoundingClientRect();
@@ -890,7 +1221,7 @@ function bestTransfersAt(sid) {
 }
 function linesAt(sid) {
   const lines = new Set();
-  for (const e of adjacency.get(sid) || []) if (e.lineId) lines.add(e.lineId);
+  for (const a of adjacency.get(sid) || []) if (a.edge.lineId) lines.add(a.edge.lineId);
   return [...lines].map(id => graph.lines.find(l => l.id === id)).filter(Boolean);
 }
 function escapeHtml(s) {
