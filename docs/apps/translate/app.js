@@ -94,13 +94,40 @@ function renderMessage(msg, direction) {
   const secondary = document.createElement("div");
   secondary.className = "secondary";
   secondary.textContent = direction === "out" ? msg.translation : msg.original;
+  b.append(primary, secondary);
+  // Back-translation is only useful to the sender — it's a round-trip into
+  // their own language. Receivers already see the verbatim original.
+  if (direction === "out" && msg.back_translation) {
+    const back = document.createElement("div");
+    back.className = "back";
+    back.textContent = `reads back: ${msg.back_translation}`;
+    b.appendChild(back);
+  }
   const meta = document.createElement("div");
   meta.className = "meta";
   meta.textContent = `${msg.from_lang} \u2192 ${msg.to_lang}`;
-  b.append(primary, secondary, meta);
+  b.appendChild(meta);
   chatEl.appendChild(b);
   scrollBottom();
   transcript.push({ msg, direction });
+}
+
+function renderPendingBubble(text, fromLang, toLang) {
+  const b = document.createElement("div");
+  b.className = "bubble out pending";
+  const primary = document.createElement("div");
+  primary.className = "primary";
+  primary.textContent = text;
+  const secondary = document.createElement("div");
+  secondary.className = "secondary";
+  secondary.textContent = "translating\u2026";
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = `${fromLang} \u2192 ${toLang}`;
+  b.append(primary, secondary, meta);
+  chatEl.appendChild(b);
+  scrollBottom();
+  return b;
 }
 
 function formatTranscript() {
@@ -114,6 +141,9 @@ function formatTranscript() {
     lines.push(`[${when}] ${who} (${msg.from_lang} \u2192 ${msg.to_lang})`);
     lines.push(`  ${msg.original}`);
     lines.push(`  \u2192 ${msg.translation}`);
+    if (direction === "out" && msg.back_translation) {
+      lines.push(`  reads back: ${msg.back_translation}`);
+    }
     lines.push("");
   }
   return lines.join("\n").trim();
@@ -352,7 +382,8 @@ function ensurePeerJsLoaded() {
 
 let cfg = loadCfg();
 let transport = null;
-let lastPreview = null; // { text, forward }
+let lastPreview = null; // { text, forward, back }
+let sendInFlight = false;
 let pskKey = null;      // AES-GCM key derived from cfg.psk (null if no PSK set)
 const transcript = []; // in-memory, session only, for copy-out
 
@@ -541,7 +572,7 @@ async function doPreview() {
     $("preview-forward").textContent = forward;
     const back = await translate(forward, cfg.partnerLang, cfg.myLang, cfg.apiKey);
     $("preview-back").textContent = back;
-    lastPreview = { text, forward };
+    lastPreview = { text, forward, back };
   } catch (e) {
     $("preview-forward").textContent = "";
     $("preview-back").textContent = `error: ${e.message}`;
@@ -553,41 +584,63 @@ async function doPreview() {
 
 async function doSend() {
   if (!cfg) return openSettings(true);
+  if (sendInFlight) return;
   const text = $("input").value.trim();
   if (!text) return;
-  let forward;
-  if (lastPreview && lastPreview.text === text) {
-    forward = lastPreview.forward;
-  } else {
-    try {
-      forward = await translate(text, cfg.myLang, cfg.partnerLang, cfg.apiKey);
-    } catch (e) {
-      renderSystem(`translate failed: ${e.message}`);
-      return;
-    }
-  }
-  const msg = {
-    kind: "chat",
-    id: crypto.randomUUID(),
-    ts: Date.now(),
-    original: text,
-    translation: forward,
-    from_lang: cfg.myLang,
-    to_lang: cfg.partnerLang,
-  };
-  const wire = await encryptForWire(msg);
-  const ok = transport && transport.send(wire);
-  if (!ok) {
-    renderSystem("not connected — message not sent");
-    return;
-  }
-  renderMessage(msg, "out");
-  if (cfg.historyOn && vault.isUnlocked()) {
-    try { await vault.append(msg, "out", cfg.roomCode); } catch {}
-  }
+
+  // Lock the composer and capture the text up-front so a second Cmd+Enter
+  // can't race this one. Render a pending bubble immediately so the user
+  // sees their message in-flight even before Gemini returns.
+  sendInFlight = true;
+  $("send-btn").disabled = true;
+  $("preview-btn").disabled = true;
   $("input").value = "";
   $("preview-box").hidden = true;
+  const preview = lastPreview;
   lastPreview = null;
+  const pending = renderPendingBubble(text, cfg.myLang, cfg.partnerLang);
+
+  try {
+    let forward, back;
+    if (preview && preview.text === text) {
+      forward = preview.forward;
+      back = preview.back;
+    }
+    if (!forward) {
+      forward = await translate(text, cfg.myLang, cfg.partnerLang, cfg.apiKey);
+    }
+    if (!back) {
+      back = await translate(forward, cfg.partnerLang, cfg.myLang, cfg.apiKey);
+    }
+    const msg = {
+      kind: "chat",
+      id: crypto.randomUUID(),
+      ts: Date.now(),
+      original: text,
+      translation: forward,
+      back_translation: back,
+      from_lang: cfg.myLang,
+      to_lang: cfg.partnerLang,
+    };
+    const wire = await encryptForWire(msg);
+    const ok = transport && transport.send(wire);
+    pending.remove();
+    if (!ok) {
+      renderSystem(`not connected — message not sent: ${text}`);
+      return;
+    }
+    renderMessage(msg, "out");
+    if (cfg.historyOn && vault.isUnlocked()) {
+      try { await vault.append(msg, "out", cfg.roomCode); } catch {}
+    }
+  } catch (e) {
+    pending.remove();
+    renderSystem(`translate failed (${e.message}): ${text}`);
+  } finally {
+    sendInFlight = false;
+    $("send-btn").disabled = false;
+    $("preview-btn").disabled = false;
+  }
 }
 
 // ---- Event wiring --------------------------------------------------------
