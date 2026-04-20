@@ -145,6 +145,13 @@ body {
 }
 .bubble.pending { opacity: 0.55; }
 .bubble.pending .secondary { font-style: italic; }
+.bubble-img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: var(--radius);
+  object-fit: contain;
+}
 
 .request-key-banner {
   margin: 14px;

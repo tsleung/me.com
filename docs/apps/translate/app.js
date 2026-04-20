@@ -98,10 +98,17 @@ function clearUrlHash() {
 // ---- Gemini --------------------------------------------------------------
 
 async function translate(text, from, to, apiKey) {
+  // The "to" field is free-form so the user can request multi-script
+  // output naturally — e.g. "mandarin traditional + pinyin" makes Gemini
+  // return both 繁體中文 and the pinyin on separate lines. CSS
+  // `white-space: pre-wrap` on .bubble renders those lines as-is.
   const prompt =
     `Translate from ${from} to ${to}. ` +
     `Preserve tone (casual, affectionate, playful are ok). ` +
-    `Output only the translation, no commentary or quotes.\n\n${text}`;
+    `If the target specifies multiple scripts or annotations (e.g. ` +
+    `"+ pinyin", "+ hiragana", "+ romaji"), output each on its own ` +
+    `line in the order specified. Output only the translation, no ` +
+    `commentary or quotes.\n\n${text}`;
   const r = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -163,6 +170,26 @@ function renderMessage(msg, direction) {
   transcript.push({ msg, direction });
 }
 
+function renderImageMessage(msg, direction) {
+  const b = document.createElement("div");
+  b.className = `bubble ${direction === "out" ? "out" : "in"}`;
+  const img = document.createElement("img");
+  img.className = "bubble-img";
+  img.loading = "lazy";
+  img.src = `data:${msg.mime || "image/jpeg"};base64,${msg.data}`;
+  img.alt = msg.name || t("bubble.imageAlt");
+  if (msg.name) img.title = msg.name;
+  b.appendChild(img);
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const when = msg.ts ? new Date(msg.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+  meta.textContent = when || "";
+  b.appendChild(meta);
+  chatEl.appendChild(b);
+  scrollBottom();
+  transcript.push({ msg, direction });
+}
+
 function renderPendingBubble(text, fromLang, toLang) {
   const b = document.createElement("div");
   b.className = "bubble out pending";
@@ -190,10 +217,14 @@ function formatTranscript() {
     const who = direction === "out" ? me : partner;
     const when = new Date(msg.ts).toLocaleString();
     lines.push(`[${when}] ${who} (${msg.from_lang} \u2192 ${msg.to_lang})`);
-    lines.push(`  ${msg.original}`);
-    lines.push(`  \u2192 ${msg.translation}`);
-    if (direction === "out" && msg.back_translation) {
-      lines.push(`  reads back: ${msg.back_translation}`);
+    if (msg.kind === "image") {
+      lines.push(`  [image: ${msg.name || "image"}]`);
+    } else {
+      lines.push(`  ${msg.original}`);
+      lines.push(`  \u2192 ${msg.translation}`);
+      if (direction === "out" && msg.back_translation) {
+        lines.push(`  reads back: ${msg.back_translation}`);
+      }
     }
     lines.push("");
   }
@@ -773,6 +804,11 @@ async function restartTransport() {
       if (cfg.historyOn && vault.isUnlocked()) {
         try { await vault.append(msg, "in", cfg.roomCode); } catch {}
       }
+    } else if (msg?.kind === "image") {
+      renderImageMessage(msg, "in");
+      if (cfg.historyOn && vault.isUnlocked()) {
+        try { await vault.append(msg, "in", cfg.roomCode); } catch {}
+      }
     } else if (msg?.kind === "request-key") {
       handleIncomingKeyRequest(msg);
     } else if (msg?.kind === "offer-key") {
@@ -887,7 +923,9 @@ async function maybeRequestHistory() {
 
 async function handleIncomingHistoryRequest() {
   // Only the chat-kind messages; nothing else in transcript qualifies.
-  const messages = transcript.map((e) => e.msg).filter((m) => m?.kind === "chat");
+  const messages = transcript
+    .map((e) => e.msg)
+    .filter((m) => m?.kind === "chat" || m?.kind === "image");
   if (messages.length === 0) return;  // nothing to share
   const wire = await encryptForWire({ kind: "history-offer", messages });
   if (transport?.send(wire)) {
@@ -904,12 +942,18 @@ function handleIncomingHistoryOffer(msg) {
   const sorted = [...incoming].sort((a, b) => (a.ts || 0) - (b.ts || 0));
   let rendered = 0;
   for (const chatMsg of sorted) {
-    if (!chatMsg || chatMsg.kind !== "chat" || !chatMsg.id) continue;
+    if (!chatMsg?.id) continue;
     if (have.has(chatMsg.id)) continue;
     // We're the requester. A message we originally authored has
     // from_lang === cfg.myLang; otherwise the partner authored it.
     const direction = chatMsg.from_lang === cfg.myLang ? "out" : "in";
-    renderMessage(chatMsg, direction);
+    if (chatMsg.kind === "chat") {
+      renderMessage(chatMsg, direction);
+    } else if (chatMsg.kind === "image") {
+      renderImageMessage(chatMsg, direction);
+    } else {
+      continue;
+    }
     rendered++;
   }
   if (rendered > 0) {
@@ -937,6 +981,105 @@ async function doPreview() {
     lastPreview = null;
   } finally {
     $("preview-btn").disabled = false;
+  }
+}
+
+// ---- Images --------------------------------------------------------------
+//
+// File picker → client-side size cap → canvas re-encode to JPEG (handles
+// HEIC from iOS, also normalizes wild pixel dimensions) → base64 → DC msg.
+// Base64 inflates wire size ~33% but keeps the encrypt/decrypt path
+// unchanged and images fit comfortably under the DC's practical limit for
+// the 2 MB cap we enforce.
+
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;   // pre-encode cap on the raw file
+const MAX_IMAGE_DIM = 1600;                 // resize longest side to this
+const IMAGE_JPEG_QUALITY = 0.82;
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function encodeImageToJpeg(file) {
+  // Round-trip through an HTMLImageElement so the browser's native decoder
+  // handles HEIC/HEIF (Safari, modern Chrome) and any format <img> accepts.
+  // If the decoder chokes, createImageBitmap is the fallback.
+  const dataUrl = await fileToDataUrl(file);
+  const bitmap = await (async () => {
+    try {
+      const img = new Image();
+      img.decoding = "sync";
+      img.src = dataUrl;
+      await img.decode();
+      return img;
+    } catch {
+      // createImageBitmap works on some files where <img> fails.
+      return await createImageBitmap(file);
+    }
+  })();
+  const srcW = bitmap.naturalWidth || bitmap.width;
+  const srcH = bitmap.naturalHeight || bitmap.height;
+  if (!srcW || !srcH) throw new Error("couldn't decode image");
+  const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(srcW, srcH));
+  const w = Math.max(1, Math.round(srcW * scale));
+  const h = Math.max(1, Math.round(srcH * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+  const jpegDataUrl = canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY);
+  const comma = jpegDataUrl.indexOf(",");
+  return comma < 0 ? "" : jpegDataUrl.slice(comma + 1);
+}
+
+async function doSendImage(file) {
+  if (!cfg) return openSettings(true);
+  if (!file) return;
+  if (!transport?.isOpen()) {
+    renderSystem(t("system.notConnectedWait"));
+    return;
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    renderSystem(t("system.imageTooLarge"));
+    return;
+  }
+  let base64;
+  try {
+    base64 = await encodeImageToJpeg(file);
+  } catch {
+    renderSystem(t("system.imageFailed"));
+    return;
+  }
+  if (!base64) {
+    renderSystem(t("system.imageFailed"));
+    return;
+  }
+  const msg = {
+    kind: "image",
+    id: crypto.randomUUID(),
+    ts: Date.now(),
+    mime: "image/jpeg",
+    name: file.name || "image",
+    data: base64,
+    // Carry the language pair so history-sync direction inference
+    // (from_lang === cfg.myLang) works the same as chat messages.
+    from_lang: cfg.myLang,
+    to_lang: cfg.partnerLang,
+  };
+  const wire = await encryptForWire(msg);
+  const ok = transport.send(wire);
+  if (!ok) {
+    renderSystem(`${t("system.notSent")}: ${msg.name}`);
+    return;
+  }
+  renderImageMessage(msg, "out");
+  if (cfg.historyOn && vault.isUnlocked()) {
+    try { await vault.append(msg, "out", cfg.roomCode); } catch {}
   }
 }
 
@@ -1067,6 +1210,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   $("preview-btn").addEventListener("click", doPreview);
   $("send-btn").addEventListener("click", doSend);
+  $("image-btn").addEventListener("click", () => $("image-input").click());
+  $("image-input").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (file) await doSendImage(file);
+    // Reset so picking the same file twice still fires the change event.
+    e.target.value = "";
+  });
   $("input").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); doSend(); }
   });
