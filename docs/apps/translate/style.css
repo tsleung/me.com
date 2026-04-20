@@ -145,6 +145,10 @@ body {
   gap: 12px;
   text-align: center;
 }
+/* display:flex on the banner overrides the [hidden] attribute's default
+   display:none, so it would stay visible even when JS set .hidden=true.
+   Restore the expected behavior explicitly. */
+.request-key-banner[hidden] { display: none; }
 .request-key-banner p { margin: 0; color: var(--muted); font-size: 13px; }
 .request-key-banner .btn-big {
   padding: 14px 28px;
