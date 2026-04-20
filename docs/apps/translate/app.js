@@ -339,11 +339,15 @@ class WorkerTransport {
     this._reconnectTimer = null;
     const url = new URL(this.cfg.sigUrl);
     url.searchParams.set("room", this.cfg.roomCode);
-    this.ws = new WebSocket(url.toString());
-    this.ws.addEventListener("open", () => this._onWsOpen());
-    this.ws.addEventListener("message", (e) => this._onWsMessage(e));
-    this.ws.addEventListener("close", () => this._onWsDown());
-    this.ws.addEventListener("error", () => this._onWsDown());
+    // Capture the specific WS instance in closures below. A late close/
+    // error event from a PRIOR socket must not tear down the one we're
+    // currently establishing — gate every handler on `this.ws === ws`.
+    const ws = new WebSocket(url.toString());
+    this.ws = ws;
+    ws.addEventListener("open",    () => { if (this.ws === ws) this._onWsOpen(); });
+    ws.addEventListener("message", (e) => { if (this.ws === ws) this._onWsMessage(e); });
+    ws.addEventListener("close",   () => { if (this.ws === ws) this._onWsDown(); });
+    ws.addEventListener("error",   () => { if (this.ws === ws) this._onWsDown(); });
   }
 
   _onWsOpen() {
@@ -354,13 +358,19 @@ class WorkerTransport {
   }
 
   _setupPc() {
-    this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    this.pc.onicecandidate = (e) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    this.pc = pc;
+    pc.onicecandidate = (e) => {
+      if (this.pc !== pc) return;
       if (e.candidate) this._wsSend({ type: "ice", candidate: e.candidate.toJSON() });
     };
-    this.pc.ondatachannel = (e) => this._wireDataChannel(e.channel);
-    this.pc.onconnectionstatechange = () => {
-      const s = this.pc.connectionState;
+    pc.ondatachannel = (e) => {
+      if (this.pc !== pc) return;
+      this._wireDataChannel(e.channel);
+    };
+    pc.onconnectionstatechange = () => {
+      if (this.pc !== pc) return;
+      const s = pc.connectionState;
       if (s === "connected") this.onStateChange("on");
       else if (s === "disconnected" || s === "failed") this._resetPeer();
     };
@@ -404,14 +414,16 @@ class WorkerTransport {
 
   _wireDataChannel(dc) {
     this.dc = dc;
-    dc.onopen = () => this.onStateChange("on");
+    dc.onopen = () => { if (this.dc === dc) this.onStateChange("on"); };
     dc.onclose = () => {
+      if (this.dc !== dc) return;
       // Don't leave a closed DC pinned — a new hello needs !this.dc to
       // trigger offer creation. Rebuild the peer connection so reconnect
       // works without a page reload.
       this._resetPeer();
     };
     dc.onmessage = (e) => {
+      if (this.dc !== dc) return;
       try { this.onMessage(JSON.parse(e.data)); } catch {}
     };
   }
@@ -429,6 +441,10 @@ class WorkerTransport {
   }
 
   _onWsDown() {
+    // close + error can both fire on the same disconnect. Second call
+    // would schedule a duplicate timer and unnecessarily double the
+    // backoff, so dedupe: if a timer is already pending, skip.
+    if (this._reconnectTimer) return;
     this.onStateChange("off");
     try { this.dc?.close(); } catch {}
     try { this.pc?.close(); } catch {}
@@ -464,6 +480,10 @@ class WorkerTransport {
     clearTimeout(this._reconnectTimer);
     this._reconnectTimer = null;
     this.onStateChange("off");
+    // Drop the callback so any late close/error events on the old WS
+    // can't flip the global UI after a replacement transport is live.
+    this.onStateChange = () => {};
+    this.onMessage = () => {};
     try { this.dc?.close(); } catch {}
     try { this.pc?.close(); } catch {}
     try { this.ws?.close(); } catch {}
