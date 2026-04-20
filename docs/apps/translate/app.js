@@ -46,6 +46,55 @@ function genRoomCode() {
   return `${ts}-${rand}`;
 }
 
+// ---- Share link ----------------------------------------------------------
+//
+// A "share link" bootstraps a partner's settings in one click. We put the
+// params in the URL hash (not the query string) so they never travel to
+// GitHub Pages / Cloudflare / any intermediary — the fragment stays
+// entirely client-side. The Gemini API key is NEVER in the link; the
+// recipient asks for it via the request-key DC flow after joining.
+//
+// Sender's (my/partner) language & name get *swapped* in the URL so the
+// recipient arrives with the right perspective (their "myLang" is the
+// sender's "partnerLang", and vice versa).
+
+function parseShareParams() {
+  if (!location.hash || location.hash.length < 2) return null;
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.get("room")) return null;
+  return {
+    roomCode:    p.get("room") || "",
+    myLang:      p.get("mlang") || "",
+    partnerLang: p.get("plang") || "",
+    displayName: p.get("name") || "",
+    partnerName: p.get("pname") || "",
+    uiLang:      p.get("ui") || "",
+    sigMode:     p.get("sig") || "",
+    sigUrl:      p.get("sigurl") || "",
+  };
+}
+
+function buildShareUrl() {
+  if (!cfg?.roomCode) return "";
+  const p = new URLSearchParams();
+  p.set("room", cfg.roomCode);
+  if (cfg.partnerLang) p.set("mlang", cfg.partnerLang);   // flipped
+  if (cfg.myLang)      p.set("plang", cfg.myLang);        // flipped
+  if (cfg.partnerName) p.set("name",  cfg.partnerName);   // flipped
+  if (cfg.displayName) p.set("pname", cfg.displayName);   // flipped
+  if (cfg.partnerLang) p.set("ui",    cfg.partnerLang);   // default UI to their native lang
+  if (cfg.sigMode)     p.set("sig",   cfg.sigMode);
+  if (cfg.sigUrl && cfg.sigUrl !== DEFAULT_SIGNALING_URL) p.set("sigurl", cfg.sigUrl);
+  const base = `${location.origin}${location.pathname}`;
+  return `${base}#${p.toString()}`;
+}
+
+function clearUrlHash() {
+  if (location.hash) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+}
+
 // ---- Gemini --------------------------------------------------------------
 
 async function translate(text, from, to, apiKey) {
@@ -182,8 +231,21 @@ function clearConversation() {
 }
 
 let lastPresenceState = null;
+let requestKeyInFlight = false;
+let approveKeyPending = false;  // Guard against duplicate request-key storms
 function refreshSendButton() {
-  $("send-btn").disabled = sendInFlight || lastPresenceState !== "on";
+  const connected = lastPresenceState === "on";
+  $("send-btn").disabled = sendInFlight || !connected || !cfg?.apiKey;
+  const reqBtn = $("request-key-btn");
+  if (reqBtn) reqBtn.disabled = !connected || requestKeyInFlight;
+}
+function refreshSetupUI() {
+  // The share button only makes sense once we have a room configured.
+  $("share-btn").hidden = !cfg?.roomCode;
+  // The request-key banner shows when cfg is set but the API key is empty
+  // (i.e. we joined from a share link and haven't obtained a key yet).
+  $("request-key-banner").hidden = !cfg || !!cfg.apiKey;
+  refreshSendButton();
 }
 function setPresence(state) {
   $("presence").dataset.state = state;
@@ -209,6 +271,28 @@ function renderRoomChip() {
   chip.hidden = false;
   $("room-chip-code").textContent = cfg.roomCode;
   $("psk-chip").hidden = !cfg.psk;
+}
+
+function openShareDialog() {
+  const url = buildShareUrl();
+  if (!url) return;
+  $("share-url").value = url;
+  $("share-dialog").showModal();
+  // Pre-select the URL so the user can immediately see/copy.
+  $("share-url").select();
+}
+
+async function copyShareUrl(btn) {
+  const url = $("share-url").value;
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    flashButton(btn, t("share.copied"));
+  } catch {
+    $("share-url").select();
+    try { document.execCommand("copy"); flashButton(btn, t("share.copied")); }
+    catch { flashButton(btn, t("system.copyFailed")); }
+  }
 }
 
 async function copyRoomCode(btn) {
@@ -451,6 +535,7 @@ function ensurePeerJsLoaded() {
 // ---- App wiring ----------------------------------------------------------
 
 let cfg = loadCfg();
+const shareParams = parseShareParams();
 let transport = null;
 let lastPreview = null; // { text, forward, back }
 let sendInFlight = false;
@@ -558,6 +643,16 @@ function openSettings(initial = false) {
     $("cfg-history").checked   = !!cfg.historyOn;
     $("cfg-psk").value         = cfg.psk || "";
     $("cfg-uilang").value      = cfg.uiLang || getUiLang();
+  } else if (shareParams) {
+    // Arrived from a share link. Pre-fill everything except the API key.
+    $("cfg-room").value        = shareParams.roomCode;
+    $("cfg-mylang").value      = shareParams.myLang      || "english";
+    $("cfg-partnerlang").value = shareParams.partnerLang || "mandarin";
+    $("cfg-name").value        = shareParams.displayName || "";
+    $("cfg-partnername").value = shareParams.partnerName || "";
+    $("cfg-sigmode").value     = shareParams.sigMode     || "worker";
+    $("cfg-sigurl").value      = shareParams.sigUrl      || DEFAULT_SIGNALING_URL;
+    $("cfg-uilang").value      = shareParams.uiLang      || getUiLang();
   } else {
     $("cfg-room").value    = genRoomCode();
     $("cfg-sigurl").value  = DEFAULT_SIGNALING_URL;
@@ -596,7 +691,9 @@ async function handleSettingsSave() {
   saveCfg(cfg);
   setUiLang(cfg.uiLang);
   applyI18n();
+  clearUrlHash();
   renderRoomChip();
+  refreshSetupUI();
   await refreshPskKey();
   await restartTransport();
   if (cfg.historyOn && vault.isUnlocked()) await restoreHistory();
@@ -625,13 +722,95 @@ async function restartTransport() {
     const result = await decryptFromWire(wire);
     if (!result.ok) { renderSystem(result.reason); return; }
     const msg = result.msg;
-    if (msg?.kind !== "chat") return;
-    renderMessage(msg, "in");
-    if (cfg.historyOn && vault.isUnlocked()) {
-      try { await vault.append(msg, "in", cfg.roomCode); } catch {}
+    if (msg?.kind === "chat") {
+      renderMessage(msg, "in");
+      if (cfg.historyOn && vault.isUnlocked()) {
+        try { await vault.append(msg, "in", cfg.roomCode); } catch {}
+      }
+    } else if (msg?.kind === "request-key") {
+      handleIncomingKeyRequest(msg);
+    } else if (msg?.kind === "offer-key") {
+      handleIncomingKeyOffer(msg);
+    } else if (msg?.kind === "deny-key") {
+      handleIncomingKeyDeny();
     }
   };
   await transport.connect();
+}
+
+// ---- Key transfer --------------------------------------------------------
+//
+// A recipient who joined via a share link can request the inviter's Gemini
+// API key over the DC. The inviter approves each request via a confirm()
+// so it's always a human-mediated transfer. The payload rides the same
+// encryptForWire path as chat messages — DTLS always, PSK additionally if
+// set. The key is intentionally never in the URL or on any server.
+
+async function sendKeyRequest() {
+  if (!transport?.isOpen() || requestKeyInFlight) return;
+  requestKeyInFlight = true;
+  $("request-key-status").textContent = t("requestKey.sending");
+  refreshSendButton();
+  const wire = await encryptForWire({
+    kind: "request-key",
+    from: cfg.displayName || "partner",
+  });
+  const ok = transport.send(wire);
+  if (!ok) {
+    requestKeyInFlight = false;
+    $("request-key-status").textContent = "";
+    refreshSendButton();
+    renderSystem(t("system.notSent"));
+    return;
+  }
+  renderSystem(t("system.keyRequestSent"));
+}
+
+async function handleIncomingKeyRequest(msg) {
+  if (approveKeyPending) return;  // One confirm at a time
+  const name = (msg.from || "partner").slice(0, 60);
+  if (!cfg?.apiKey) {
+    approveKeyPending = true;
+    alert(t("approveKey.noKey", { name }));
+    approveKeyPending = false;
+    const wire = await encryptForWire({ kind: "deny-key" });
+    transport?.send(wire);
+    return;
+  }
+  renderSystem(t("system.keyRequestReceived"));
+  approveKeyPending = true;
+  const approved = confirm(t("approveKey.prompt", { name }));
+  approveKeyPending = false;
+  if (approved) {
+    const wire = await encryptForWire({
+      kind: "offer-key",
+      apiKey: cfg.apiKey,
+    });
+    const ok = transport?.send(wire);
+    if (ok) renderSystem(t("system.keySent"));
+  } else {
+    const wire = await encryptForWire({ kind: "deny-key" });
+    transport?.send(wire);
+    renderSystem(t("system.keyDenied"));
+  }
+}
+
+function handleIncomingKeyOffer(msg) {
+  const key = typeof msg.apiKey === "string" ? msg.apiKey.trim() : "";
+  if (!key) { handleIncomingKeyDeny(); return; }
+  requestKeyInFlight = false;
+  cfg = { ...cfg, apiKey: key };
+  saveCfg(cfg);
+  $("request-key-status").textContent = "";
+  renderSystem(t("requestKey.approved"));
+  refreshSetupUI();
+}
+
+function handleIncomingKeyDeny() {
+  requestKeyInFlight = false;
+  $("request-key-status").textContent = t("requestKey.denied");
+  renderSystem(t("requestKey.denied"));
+  refreshSendButton();
 }
 
 async function doPreview() {
@@ -736,6 +915,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   $("settings-btn").addEventListener("click", () => openSettings(false));
   $("room-chip").addEventListener("click", (e) => copyRoomCode(e.currentTarget));
+  $("share-btn").addEventListener("click", () => openShareDialog());
+  $("share-copy-btn").addEventListener("click", (e) => copyShareUrl(e.currentTarget));
+  $("request-key-btn").addEventListener("click", () => sendKeyRequest());
   $("copy-btn").addEventListener("click", (e) => copyTranscript(e.currentTarget));
   $("clear-btn").addEventListener("click", () => {
     if (transcript.length === 0) return;
@@ -786,6 +968,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   renderRoomChip();
+  refreshSetupUI();
+  // If we arrived via a share link and already have cfg with a different
+  // room, the URL hash is carrying a new invitation. Reopen settings so
+  // the user can review before overwriting.
+  if (cfg && shareParams && cfg.roomCode !== shareParams.roomCode) {
+    openSettings(false);
+  }
   if (!cfg) {
     openSettings(true);
   } else {

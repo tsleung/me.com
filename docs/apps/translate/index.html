@@ -26,11 +26,18 @@
   </span>
   <span class="status">
     <span id="presence" class="dot" data-state="off" title="disconnected"></span>
+    <button id="share-btn" class="icon-btn" data-i18n="topbar.share" data-i18n-aria="topbar.shareAria" data-i18n-title="topbar.shareTitle" aria-label="share this room" title="share this room with your partner" hidden>share</button>
     <button id="copy-btn" class="icon-btn" data-i18n="topbar.copy" data-i18n-aria="topbar.copyAria" data-i18n-title="topbar.copyAria" aria-label="copy conversation" title="copy conversation">copy</button>
     <button id="clear-btn" class="icon-btn" data-i18n="topbar.clear" data-i18n-aria="topbar.clearAria" data-i18n-title="topbar.clearAria" aria-label="clear conversation" title="clear conversation">clear</button>
     <button id="settings-btn" class="icon-btn" data-i18n-aria="topbar.settingsAria" aria-label="settings">⚙</button>
   </span>
 </header>
+
+<div id="request-key-banner" class="request-key-banner" hidden>
+  <p data-i18n="requestKey.banner">you don't have a Gemini API key yet. if your partner invited you, you can request theirs:</p>
+  <button id="request-key-btn" class="btn btn-primary btn-big" data-i18n="requestKey.button">request API key from your friend</button>
+  <p id="request-key-status" class="request-key-status"></p>
+</div>
 
 <main class="chat" id="chat" aria-live="polite" aria-label="messages"></main>
 
@@ -117,7 +124,7 @@
     <fieldset>
       <legend data-i18n="settings.geminiLegend">gemini</legend>
       <label><span data-i18n="settings.geminiKey">api key</span> <small data-i18n="settings.geminiKeyHint">(stored only on this device)</small>
-        <input id="cfg-apikey" type="password" autocomplete="off" required>
+        <input id="cfg-apikey" type="password" autocomplete="off">
       </label>
       <small class="hint">
         <span data-i18n="settings.geminiGetKey">get one at</span>
@@ -140,6 +147,20 @@
     <div class="settings-actions">
       <button value="cancel" class="btn" data-i18n="settings.cancel">cancel</button>
       <button id="cfg-save" value="save" class="btn btn-primary" data-i18n="settings.save">save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="share-dialog" class="settings">
+  <form method="dialog" class="settings-form">
+    <h2 data-i18n="share.title">share this room</h2>
+    <p class="hint" data-i18n="share.desc">Your friend can open this link to arrive with the room code, language pair, and display names pre-filled. Your Gemini API key is NOT included — they'll be asked to request it from you once they're in the room. Share this link over a channel you trust.</p>
+    <div class="row">
+      <input id="share-url" type="text" readonly>
+      <button id="share-copy-btn" type="button" class="btn-small" data-i18n="share.copy">copy link</button>
+    </div>
+    <div class="settings-actions">
+      <button value="close" class="btn" data-i18n="share.close">close</button>
     </div>
   </form>
 </dialog>
