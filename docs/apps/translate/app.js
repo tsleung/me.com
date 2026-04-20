@@ -742,6 +742,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirm(t("system.confirmClearScreen"))) return;
     clearConversation();
   });
+  $("cfg-uilang").addEventListener("change", () => {
+    // Live preview — translate the UI the moment the user picks a
+    // language, before they commit the settings dialog. Purely visual;
+    // cfg.uiLang only persists after Save (handleSettingsSave).
+    setUiLang($("cfg-uilang").value);
+    applyI18n();
+  });
   $("cfg-swap-lang").addEventListener("click", () => {
     const my = $("cfg-mylang");
     const partner = $("cfg-partnerlang");
@@ -760,6 +767,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if ($("settings").returnValue === "save") {
       const ok = await handleSettingsSave();
       if (!ok) openSettings(false);
+    } else if (cfg?.uiLang && cfg.uiLang !== getUiLang()) {
+      // User cancelled after live-previewing a different UI language.
+      // Snap back to the saved one.
+      setUiLang(cfg.uiLang);
+      applyI18n();
     }
   });
   $("cfg-save").addEventListener("click", (e) => {
