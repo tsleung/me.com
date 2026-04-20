@@ -30,7 +30,8 @@ const DICT = {
     "settings.uiLangLegend": "interface language",
     "settings.uiLangLabel": "language",
     "settings.uiLang.en": "english",
-    "settings.uiLang.zh": "\u4e2d\u6587 (mandarin)",
+    "settings.uiLang.zh-Hans": "\u7b80\u4f53\u4e2d\u6587 (simplified)",
+    "settings.uiLang.zh-Hant": "\u7e41\u9ad4\u4e2d\u6587 (traditional)",
     "settings.langLegend": "languages",
     "settings.myLang": "your native language",
     "settings.myLangPlaceholder": "e.g. en, english",
@@ -112,7 +113,7 @@ const DICT = {
     "system.keySent": "shared your API key with your friend",
     "system.keyDenied": "declined your friend's request for the API key",
   },
-  zh: {
+  "zh-Hans": {
     "app.title": "\u7ffb\u8bd1",
     "topbar.roomLabel": "\u623f\u95f4",
     "topbar.roomChipTitle": "\u623f\u95f4\u4ee3\u7801 \u2014 \u70b9\u51fb\u590d\u5236\u5e76\u5206\u4eab\u7ed9\u4f34\u4fa3",
@@ -137,7 +138,8 @@ const DICT = {
     "settings.uiLangLegend": "\u754c\u9762\u8bed\u8a00",
     "settings.uiLangLabel": "\u8bed\u8a00",
     "settings.uiLang.en": "english",
-    "settings.uiLang.zh": "\u4e2d\u6587",
+    "settings.uiLang.zh-Hans": "\u7b80\u4f53\u4e2d\u6587",
+    "settings.uiLang.zh-Hant": "\u7e41\u9ad4\u4e2d\u6587",
     "settings.langLegend": "\u8bed\u8a00",
     "settings.myLang": "\u60a8\u7684\u6bcd\u8bed",
     "settings.myLangPlaceholder": "\u4f8b\u5982\uff1aen, english",
@@ -219,16 +221,127 @@ const DICT = {
     "system.keySent": "\u5df2\u5411\u4f34\u4fa3\u5206\u4eab API \u5bc6\u94a5",
     "system.keyDenied": "\u5df2\u62d2\u7edd\u4f34\u4fa3\u7684 API \u5bc6\u94a5\u7533\u8bf7",
   },
+  "zh-Hant": {
+    "app.title": "\u7ffb\u8b6f",
+    "topbar.roomLabel": "\u623f\u9593",
+    "topbar.roomChipTitle": "\u623f\u9593\u4ee3\u78bc \u2014 \u9ede\u64ca\u8907\u88fd\u4e26\u5206\u4eab\u7d66\u5925\u4f34",
+    "topbar.pskChipTitle": "\u5171\u7528\u91d1\u9470\u5df2\u555f\u7528 \u2014 \u8a0a\u606f\u4f7f\u7528\u60a8\u7684\u901a\u95dc\u5bc6\u8a9e\u9032\u884c\u7aef\u5c0d\u7aef\u52a0\u5bc6",
+    "topbar.copy": "\u8907\u88fd",
+    "topbar.copyAria": "\u8907\u88fd\u5c0d\u8a71",
+    "topbar.clear": "\u6e05\u9664",
+    "topbar.clearAria": "\u6e05\u9664\u5c0d\u8a71",
+    "topbar.settingsAria": "\u8a2d\u5b9a",
+    "topbar.backAria": "\u9996\u9801",
+    "presence.on": "\u5df2\u9023\u7dda",
+    "presence.wait": "\u7b49\u5f85\u5925\u4f34",
+    "presence.off": "\u5df2\u65b7\u7dda",
+    "composer.placeholder": "\u8acb\u7528\u60a8\u7684\u6bcd\u8a9e\u66f8\u5beb",
+    "composer.preview": "\u9810\u89bd",
+    "composer.send": "\u50b3\u9001",
+    "preview.willSend": "\u5c07\u50b3\u9001",
+    "preview.readsBack": "\u56de\u8b6f\u70ba",
+    "bubble.translating": "\u7ffb\u8b6f\u4e2d\u2026",
+    "bubble.readsBackPrefix": "\u56de\u8b6f\uff1a",
+    "settings.title": "\u8a2d\u5b9a",
+    "settings.uiLangLegend": "\u4ecb\u9762\u8a9e\u8a00",
+    "settings.uiLangLabel": "\u8a9e\u8a00",
+    "settings.uiLang.en": "english",
+    "settings.uiLang.zh-Hans": "\u7c21\u9ad4\u4e2d\u6587",
+    "settings.uiLang.zh-Hant": "\u7e41\u9ad4\u4e2d\u6587",
+    "settings.langLegend": "\u8a9e\u8a00",
+    "settings.myLang": "\u60a8\u7684\u6bcd\u8a9e",
+    "settings.myLangPlaceholder": "\u4f8b\u5982\uff1aen, english",
+    "settings.partnerLang": "\u5925\u4f34\u7684\u6bcd\u8a9e",
+    "settings.partnerLangPlaceholder": "\u4f8b\u5982\uff1azh, mandarin",
+    "settings.swapLang": "\u21c5 \u4e92\u63db",
+    "settings.swapLangTitle": "\u4e92\u63db\u60a8\u548c\u5925\u4f34\u7684\u8a9e\u8a00",
+    "settings.roomLegend": "\u623f\u9593",
+    "settings.roomCode": "\u623f\u9593\u4ee3\u78bc",
+    "settings.roomCodeHint": "\uff08\u81f3\u5c11 8 \u500b\u5b57\u5143\uff0c\u900f\u904e\u5176\u4ed6\u7ba1\u9053\u5206\u4eab\uff09",
+    "settings.generate": "\u7522\u751f",
+    "settings.myName": "\u60a8\u7684\u986f\u793a\u540d\u7a31",
+    "settings.myNameHint": "\uff08\u53ef\u9078\uff0c\u9810\u8a2d\u70ba\u201cMe\u201d\uff09",
+    "settings.myNamePlaceholder": "\u4f8b\u5982\uff1aLorem",
+    "settings.partnerName": "\u5925\u4f34\u7684\u986f\u793a\u540d\u7a31",
+    "settings.partnerNameHint": "\uff08\u53ef\u9078\uff0c\u9810\u8a2d\u70ba\u201cPartner\u201d\uff09",
+    "settings.partnerNamePlaceholder": "\u4f8b\u5982\uff1aIpsum",
+    "settings.signalingLegend": "\u4fe1\u865f",
+    "settings.signalingMode": "\u6a21\u5f0f",
+    "settings.signalingWorker": "\u6211\u5011\u7684 Cloudflare Worker\uff08\u5efa\u8b70\uff09",
+    "settings.signalingPeerjs": "PeerJS \u5099\u7528\uff08\u516c\u958b\u4e2d\u7e7c\uff09",
+    "settings.signalingUrl": "Worker \u7db2\u5740",
+    "settings.workerUrlPlaceholder": "wss://translate-signaling.example.workers.dev",
+    "settings.pskLegend": "\u5171\u7528\u91d1\u9470",
+    "settings.pskHint": "\uff08\u53ef\u9078\uff0c\u7e31\u6df1\u9632\u79a6\uff09",
+    "settings.passphrase": "\u901a\u95dc\u5bc6\u8a9e",
+    "settings.pskPlaceholder": "\u4f8b\u5982\uff1a\u53ea\u6709\u4f60\u5011\u5169\u500b\u77e5\u9053\u7684\u8a5e",
+    "settings.pskDesc": "\u8a2d\u5b9a\u5f8c\uff0c\u8a0a\u606f\u5728\u50b3\u9001\u524d\u6703\u5728\u700f\u89bd\u5668\u4e2d\u7528\u8a72\u901a\u95dc\u5bc6\u8a9e\u884d\u751f\u7684\u91d1\u9470\u9032\u884c AES-GCM \u52a0\u5bc6\u3002\u5925\u4f34\u9700\u8f38\u5165\u76f8\u540c\u7684\u901a\u95dc\u5bc6\u8a9e\u624d\u80fd\u8b80\u53d6\u3002\u8acb\u900f\u904e\u53e6\u4e00\u500b\u6e20\u9053\u5206\u4eab\uff08\u4e0d\u8981\u900f\u904e\u672c\u61c9\u7528\uff09\u3002",
+    "settings.geminiLegend": "Gemini",
+    "settings.geminiKey": "API \u91d1\u9470",
+    "settings.geminiKeyHint": "\uff08\u50c5\u5132\u5b58\u65bc\u672c\u88dd\u7f6e\uff09",
+    "settings.geminiGetKey": "\u53d6\u5f97\u7db2\u5740\uff1a",
+    "settings.historyLegend": "\u6b77\u53f2\u7d00\u9304",
+    "settings.historyLegendHint": "\uff08\u53ef\u9078\uff0c\u50b3\u8f38\u6642\u52a0\u5bc6\uff09",
+    "settings.historyEnable": "\u5c07\u8a0a\u606f\u5132\u5b58\u65bc\u672c\u88dd\u7f6e",
+    "settings.historyPassphrase": "\u901a\u95dc\u5bc6\u8a9e",
+    "settings.historyPassphraseHint": "\uff08\u555f\u7528\u6b77\u53f2\u7d00\u9304\u6642\u5fc5\u586b\uff09",
+    "settings.clearHistory": "\u6e05\u9664\u6b77\u53f2",
+    "settings.cancel": "\u53d6\u6d88",
+    "settings.save": "\u5132\u5b58",
+    "system.connected": "\u5df2\u8207\u5925\u4f34\u9023\u7dda",
+    "system.partnerGone": "\u5925\u4f34\u5df2\u65b7\u7dda \u2014 \u7b49\u5f85\u91cd\u65b0\u9023\u7dda",
+    "system.sigDown": "\u4fe1\u865f\u5df2\u65b7\u7dda \u2014 \u6b63\u5728\u5617\u8a66\u91cd\u9023",
+    "system.historyOnHint": "\u6b77\u53f2\u7d00\u9304\u5df2\u555f\u7528 \u2014 \u8acb\u5728\u8a2d\u5b9a\u4e2d\u8f38\u5165\u901a\u95dc\u5bc6\u8a9e\u89e3\u9396",
+    "system.pskActive": "\u5171\u7528\u91d1\u9470\u5df2\u555f\u7528 \u2014 \u60a8\u50b3\u9001\u7684\u8a0a\u606f\u4e5f\u5c07\u7528\u60a8\u7684\u901a\u95dc\u5bc6\u8a9e\u52a0\u5bc6",
+    "system.translateFailed": "\u7ffb\u8b6f\u5931\u6557",
+    "system.notSent": "\u672a\u9023\u7dda \u2014 \u8a0a\u606f\u672a\u50b3\u9001",
+    "system.notConnectedWait": "\u672a\u9023\u7dda \u2014 \u8acb\u7b49\u5f85\u7da0\u8272\u6307\u793a\u9ede\u5f8c\u91cd\u8a66",
+    "system.historyCleared": "\u6b77\u53f2\u5df2\u6e05\u9664",
+    "system.noSaved": "\u623f\u9593\u6c92\u6709\u5132\u5b58\u7684\u8a0a\u606f\uff1a",
+    "system.restored": "\u5df2\u56de\u5fa9 {n} \u689d\u8a0a\u606f\uff0c\u623f\u9593\uff1a",
+    "system.confirmClearScreen": "\u6e05\u9664\u672c\u87a2\u5e55\u7684\u5c0d\u8a71\uff1f\u5df2\u9001\u9054\u5925\u4f34\u7684\u8a0a\u606f\u4ecd\u5728\u4ed6\u5011\u90a3\u908a\u3002",
+    "system.confirmClearHistory": "\u6e05\u9664\u672c\u88dd\u7f6e\u4e0a\u6240\u6709\u5132\u5b58\u7684\u8a0a\u606f\uff1f\u6b64\u64cd\u4f5c\u7121\u6cd5\u64a4\u92b7\u3002",
+    "system.copied": "\u5df2\u8907\u88fd \u2713",
+    "system.copyFailed": "\u8907\u88fd\u5931\u6557",
+    "system.nothingToCopy": "\u6c92\u6709\u53ef\u8907\u88fd\u7684\u5167\u5bb9",
+    "system.roomCodeAlert": "\u623f\u9593\u4ee3\u78bc\uff1a",
+    "system.roomCodeTooShort": "\u623f\u9593\u4ee3\u78bc\u81f3\u5c11\u9700\u8981 8 \u500b\u5b57\u5143",
+    "system.historyPassRequired": "\u555f\u7528\u6b77\u53f2\u7d00\u9304\u9700\u8981\u901a\u95dc\u5bc6\u8a9e",
+    "system.wrongPassphrase": "\u73fe\u6709\u5132\u5b58\u7684\u901a\u95dc\u5bc6\u8a9e\u932f\u8aa4",
+    "topbar.share": "\u5206\u4eab",
+    "topbar.shareAria": "\u5206\u4eab\u6b64\u623f\u9593",
+    "topbar.shareTitle": "\u5c07\u6b64\u623f\u9593\u5206\u4eab\u7d66\u5925\u4f34",
+    "share.title": "\u5206\u4eab\u6b64\u623f\u9593",
+    "share.desc": "\u5925\u4f34\u958b\u555f\u6b64\u9023\u7d50\u5f8c\uff0c\u623f\u9593\u4ee3\u78bc\u3001\u8a9e\u8a00\u8a2d\u5b9a\u548c\u986f\u793a\u540d\u7a31\u5c07\u81ea\u52d5\u586b\u5165\u3002\u60a8\u7684 Gemini API \u91d1\u9470\u4e0d\u5305\u542b\u5728\u9023\u7d50\u4e2d \u2014 \u4ed6\u5011\u9032\u5165\u623f\u9593\u5f8c\u53ef\u4ee5\u5411\u60a8\u7533\u8acb\u3002\u8acb\u900f\u904e\u53ef\u4fe1\u6e20\u9053\u5206\u4eab\u6b64\u9023\u7d50\uff08\u5982 iMessage\u3001Signal\u3001\u7dda\u4e0b\u4ea4\u4ed8\uff09\u3002",
+    "share.copy": "\u8907\u88fd\u9023\u7d50",
+    "share.copied": "\u5df2\u8907\u88fd \u2713",
+    "share.close": "\u95dc\u9589",
+    "requestKey.banner": "\u60a8\u5c1a\u672a\u8a2d\u5b9a Gemini API \u91d1\u9470\u3002\u5982\u679c\u5925\u4f34\u9080\u8acb\u4e86\u60a8\uff0c\u53ef\u5411\u4ed6\u5011\u7533\u8acb\uff1a",
+    "requestKey.button": "\u5411\u5925\u4f34\u7533\u8acb API \u91d1\u9470",
+    "requestKey.sending": "\u6b63\u5728\u8a62\u554f\u5925\u4f34\u2026",
+    "requestKey.approved": "\u5925\u4f34\u5df2\u5206\u4eab API \u91d1\u9470 \u2014 \u53ef\u4ee5\u958b\u59cb\u804a\u5929\u4e86",
+    "requestKey.denied": "\u5925\u4f34\u62d2\u7d55\u4e86 \u2014 \u8acb\u5728\u8a2d\u5b9a\u4e2d\u81ea\u884c\u8f38\u5165\u91d1\u9470",
+    "requestKey.retry": "\u91cd\u8a66",
+    "approveKey.prompt": "\u5925\u4f34\u201c{name}\u201d\u6b63\u5728\u7533\u8acb\u60a8\u7684 Gemini API \u91d1\u9470\u3002\u540c\u610f\u5f8c\u4ed6\u5011\u5c07\u4f7f\u7528\u60a8\u7684\u914d\u984d\u9032\u884c\u7ffb\u8b6f\u3002\u5206\u4eab\u55ce\uff1f",
+    "approveKey.noKey": "\u5925\u4f34\u201c{name}\u201d\u6b63\u5728\u7533\u8acb\u60a8\u7684 Gemini API \u91d1\u9470\uff0c\u4f46\u60a8\u5c1a\u672a\u8a2d\u5b9a\u3002\u8acb\u544a\u8a34\u4ed6\u5011\u81ea\u884c\u8f38\u5165\u3002",
+    "system.keyRequestSent": "\u5df2\u5411\u5925\u4f34\u7533\u8acb API \u91d1\u9470",
+    "system.keyRequestReceived": "\u5925\u4f34\u6b63\u5728\u7533\u8acb\u60a8\u7684 API \u91d1\u9470 \u2014 \u8acb\u67e5\u770b\u63d0\u793a",
+    "system.keySent": "\u5df2\u5411\u5925\u4f34\u5206\u4eab API \u91d1\u9470",
+    "system.keyDenied": "\u5df2\u62d2\u7d55\u5925\u4f34\u7684 API \u91d1\u9470\u7533\u8acb",
+  },
 };
 
-// v1.1 ships en + zh. Planned: ja, fr, es — to be filled in via an
-// LLM pass over the en dictionary. Once added, extend this array and
-// the <select> options in index.html; no call sites need to change.
-export const SUPPORTED_UI_LANGS = ["en", "zh"];
+// v1.1 ships en + zh-Hans + zh-Hant. Planned: ja, fr, es — to be
+// filled in via an LLM pass over the en dictionary. Once added,
+// extend this array and the <select> options in index.html; no call
+// sites need to change.
+export const SUPPORTED_UI_LANGS = ["en", "zh-Hans", "zh-Hant"];
 
 let currentLang = "en";
 
 export function setUiLang(lang) {
+  // Legacy: pre-Hans/Hant split, we stored "zh" meaning Simplified.
+  if (lang === "zh") lang = "zh-Hans";
   currentLang = DICT[lang] ? lang : "en";
 }
 
@@ -259,6 +372,13 @@ export function applyI18n(root = document) {
 }
 
 export function detectDefaultUiLang() {
-  const nav = (navigator.language || "en").slice(0, 2).toLowerCase();
-  return DICT[nav] ? nav : "en";
+  const full = (navigator.language || "en").toLowerCase();
+  // Chinese: distinguish by region/script. Taiwanese, HK, Macau, and any
+  // explicit Hant tag → Traditional. Everything else zh-* → Simplified.
+  if (full.startsWith("zh")) {
+    if (full.includes("hant") || /\b(tw|hk|mo)\b/.test(full)) return "zh-Hant";
+    return "zh-Hans";
+  }
+  const base = full.slice(0, 2);
+  return DICT[base] ? base : "en";
 }

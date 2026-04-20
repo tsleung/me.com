@@ -234,8 +234,14 @@ let lastPresenceState = null;
 let requestKeyInFlight = false;
 let approveKeyPending = false;  // Guard against duplicate request-key storms
 function refreshSendButton() {
+  const btn = $("send-btn");
   const connected = lastPresenceState === "on";
-  $("send-btn").disabled = sendInFlight || !connected || !cfg?.apiKey;
+  const disable = sendInFlight || !connected || !cfg?.apiKey;
+  // Some browsers (Safari notably) leave a disabled-then-re-enabled
+  // focused button in a state where subsequent clicks don't fire.
+  // Blur before disabling so the button is never disabled-while-focused.
+  if (disable && document.activeElement === btn) btn.blur();
+  btn.disabled = disable;
   const reqBtn = $("request-key-btn");
   if (reqBtn) reqBtn.disabled = !connected || requestKeyInFlight;
 }
