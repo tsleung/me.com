@@ -115,6 +115,9 @@ const DICT = {
     "system.keyRequestReceived": "your friend is asking for your API key \u2014 check the prompt",
     "system.keySent": "shared your API key with your friend",
     "system.keyDenied": "declined your friend's request for the API key",
+    "system.historyRequested": "asked your partner for the message history",
+    "system.historyReceived": "restored {n} messages from your partner",
+    "system.historyShared": "shared {n} messages with your partner",
   },
   "zh-Hans": {
     "app.title": "\u7ffb\u8bd1",
@@ -226,6 +229,9 @@ const DICT = {
     "system.keyRequestReceived": "\u4f34\u4fa3\u6b63\u5728\u7533\u8bf7\u60a8\u7684 API \u5bc6\u94a5 \u2014 \u8bf7\u67e5\u770b\u63d0\u793a",
     "system.keySent": "\u5df2\u5411\u4f34\u4fa3\u5206\u4eab API \u5bc6\u94a5",
     "system.keyDenied": "\u5df2\u62d2\u7edd\u4f34\u4fa3\u7684 API \u5bc6\u94a5\u7533\u8bf7",
+    "system.historyRequested": "\u5df2\u5411\u4f34\u4fa3\u7533\u8bf7\u6d88\u606f\u5386\u53f2",
+    "system.historyReceived": "\u5df2\u4ece\u4f34\u4fa3\u6062\u590d {n} \u6761\u6d88\u606f",
+    "system.historyShared": "\u5df2\u5411\u4f34\u4fa3\u5206\u4eab {n} \u6761\u6d88\u606f",
   },
   "zh-Hant": {
     "app.title": "\u7ffb\u8b6f",
@@ -337,6 +343,9 @@ const DICT = {
     "system.keyRequestReceived": "\u5925\u4f34\u6b63\u5728\u7533\u8acb\u60a8\u7684 API \u91d1\u9470 \u2014 \u8acb\u67e5\u770b\u63d0\u793a",
     "system.keySent": "\u5df2\u5411\u5925\u4f34\u5206\u4eab API \u91d1\u9470",
     "system.keyDenied": "\u5df2\u62d2\u7d55\u5925\u4f34\u7684 API \u91d1\u9470\u7533\u8acb",
+    "system.historyRequested": "\u5df2\u5411\u5925\u4f34\u7533\u8acb\u8a0a\u606f\u6b77\u53f2",
+    "system.historyReceived": "\u5df2\u81ea\u5925\u4f34\u56de\u5fa9 {n} \u689d\u8a0a\u606f",
+    "system.historyShared": "\u5df2\u5411\u5925\u4f34\u5206\u4eab {n} \u689d\u8a0a\u606f",
   },
   ja: {
     "app.title": "\u7ffb\u8a33",
@@ -448,6 +457,9 @@ const DICT = {
     "system.keyRequestReceived": "\u76f8\u624b\u304c\u3042\u306a\u305f\u306e API \u30ad\u30fc\u3092\u8981\u6c42\u3057\u3066\u3044\u307e\u3059 \u2014 \u30d7\u30ed\u30f3\u30d7\u30c8\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044",
     "system.keySent": "\u76f8\u624b\u306b API \u30ad\u30fc\u3092\u5171\u6709\u3057\u307e\u3057\u305f",
     "system.keyDenied": "\u76f8\u624b\u306e API \u30ad\u30fc\u8981\u6c42\u3092\u62d2\u5426\u3057\u307e\u3057\u305f",
+    "system.historyRequested": "\u76f8\u624b\u306b\u30e1\u30c3\u30bb\u30fc\u30b8\u5c65\u6b74\u3092\u8981\u6c42\u3057\u307e\u3057\u305f",
+    "system.historyReceived": "\u76f8\u624b\u304b\u3089 {n} \u4ef6\u306e\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u5fa9\u5143\u3057\u307e\u3057\u305f",
+    "system.historyShared": "\u76f8\u624b\u3068 {n} \u4ef6\u306e\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u5171\u6709\u3057\u307e\u3057\u305f",
   },
   fr: {
     "app.title": "traduire",
@@ -559,6 +571,9 @@ const DICT = {
     "system.keyRequestReceived": "votre partenaire demande votre cl\u00e9 API \u2014 v\u00e9rifiez l'invite",
     "system.keySent": "cl\u00e9 API partag\u00e9e avec votre partenaire",
     "system.keyDenied": "demande de cl\u00e9 API du partenaire refus\u00e9e",
+    "system.historyRequested": "historique des messages demand\u00e9 \u00e0 votre partenaire",
+    "system.historyReceived": "{n} message(s) restaur\u00e9(s) depuis votre partenaire",
+    "system.historyShared": "{n} message(s) partag\u00e9(s) avec votre partenaire",
   },
   es: {
     "app.title": "traducir",
@@ -670,6 +685,9 @@ const DICT = {
     "system.keyRequestReceived": "tu pareja pide tu clave API \u2014 revisa el aviso",
     "system.keySent": "clave API compartida con tu pareja",
     "system.keyDenied": "rechazada la petici\u00f3n de clave API de tu pareja",
+    "system.historyRequested": "historial de mensajes solicitado a tu pareja",
+    "system.historyReceived": "{n} mensaje(s) restaurado(s) desde tu pareja",
+    "system.historyShared": "{n} mensaje(s) compartido(s) con tu pareja",
   },
 };
 

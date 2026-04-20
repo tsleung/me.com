@@ -155,7 +155,8 @@ function renderMessage(msg, direction) {
   }
   const meta = document.createElement("div");
   meta.className = "meta";
-  meta.textContent = `${msg.from_lang} \u2192 ${msg.to_lang}`;
+  const when = msg.ts ? new Date(msg.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+  meta.textContent = `${when ? when + " \u00b7 " : ""}${msg.from_lang} \u2192 ${msg.to_lang}`;
   b.appendChild(meta);
   chatEl.appendChild(b);
   scrollBottom();
@@ -233,6 +234,7 @@ function clearConversation() {
 let lastPresenceState = null;
 let requestKeyInFlight = false;
 let approveKeyPending = false;  // Guard against duplicate request-key storms
+let historyRequested = false;   // Only ask the partner for history once per session
 function refreshSendButton() {
   const btn = $("send-btn");
   const connected = lastPresenceState === "on";
@@ -260,6 +262,7 @@ function setPresence(state) {
   // Visibility on transitions — silent yellow dots are easy to miss.
   // Only announce disconnects if we were actually connected; the initial
   // off→wait as we spin up shouldn't pretend a partner just left.
+  const justConnected = state === "on" && lastPresenceState !== "on";
   if (lastPresenceState !== null && lastPresenceState !== state) {
     if (state === "on") renderSystem(t("system.connected"));
     else if (lastPresenceState === "on") {
@@ -269,6 +272,9 @@ function setPresence(state) {
   }
   lastPresenceState = state;
   refreshSendButton();
+  // Just reconnected and we have no messages on screen — ask the partner
+  // for theirs. If they haven't refreshed they'll have the full history.
+  if (justConnected) maybeRequestHistory();
 }
 
 function renderRoomChip() {
@@ -773,6 +779,10 @@ async function restartTransport() {
       handleIncomingKeyOffer(msg);
     } else if (msg?.kind === "deny-key") {
       handleIncomingKeyDeny();
+    } else if (msg?.kind === "history-request") {
+      handleIncomingHistoryRequest();
+    } else if (msg?.kind === "history-offer") {
+      handleIncomingHistoryOffer(msg);
     }
   };
   await transport.connect();
@@ -851,6 +861,60 @@ function handleIncomingKeyDeny() {
   $("request-key-status").textContent = t("requestKey.denied");
   renderSystem(t("requestKey.denied"));
   refreshSendButton();
+}
+
+// ---- History sync --------------------------------------------------------
+//
+// On reconnect (or fresh refresh), the returning peer usually has nothing
+// on screen while the partner still has the full conversation. Reconciling
+// via the data channel: on connect, if our transcript is empty, ask the
+// partner for theirs. Messages carry `id` + `ts` so dedup + ordering fall
+// out for free. Direction is inferred from `from_lang` vs cfg.myLang so we
+// don't need to encode "who sent it" on the wire.
+
+async function maybeRequestHistory() {
+  if (historyRequested) return;
+  if (transcript.length > 0) return;
+  if (!transport?.isOpen()) return;
+  historyRequested = true;
+  const wire = await encryptForWire({ kind: "history-request" });
+  if (transport.send(wire)) {
+    renderSystem(t("system.historyRequested"));
+  } else {
+    historyRequested = false;  // allow retry on next state change
+  }
+}
+
+async function handleIncomingHistoryRequest() {
+  // Only the chat-kind messages; nothing else in transcript qualifies.
+  const messages = transcript.map((e) => e.msg).filter((m) => m?.kind === "chat");
+  if (messages.length === 0) return;  // nothing to share
+  const wire = await encryptForWire({ kind: "history-offer", messages });
+  if (transport?.send(wire)) {
+    renderSystem(t("system.historyShared", { n: messages.length }));
+  }
+}
+
+function handleIncomingHistoryOffer(msg) {
+  const incoming = Array.isArray(msg.messages) ? msg.messages : [];
+  if (incoming.length === 0) return;
+  // Dedup by id against anything we already have.
+  const have = new Set(transcript.map((e) => e.msg.id));
+  // Sort by ts so the restored log reads in chronological order.
+  const sorted = [...incoming].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  let rendered = 0;
+  for (const chatMsg of sorted) {
+    if (!chatMsg || chatMsg.kind !== "chat" || !chatMsg.id) continue;
+    if (have.has(chatMsg.id)) continue;
+    // We're the requester. A message we originally authored has
+    // from_lang === cfg.myLang; otherwise the partner authored it.
+    const direction = chatMsg.from_lang === cfg.myLang ? "out" : "in";
+    renderMessage(chatMsg, direction);
+    rendered++;
+  }
+  if (rendered > 0) {
+    renderSystem(t("system.historyReceived", { n: rendered }));
+  }
 }
 
 async function doPreview() {
