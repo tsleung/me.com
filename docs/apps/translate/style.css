@@ -20,6 +20,9 @@ html, body {
   font-size: 14px;
   height: 100%;
   overflow: hidden;
+  /* Prevent 200% text-inflation on iOS landscape */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -33,6 +36,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
   border-bottom: 1px solid var(--dim);
   gap: 10px;
 }
@@ -95,6 +101,12 @@ body {
   cursor: pointer;
 }
 .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* Touch devices: meet the 44px tap-target minimum. (hover: none) targets
+   pointer-less devices (phones, most tablets) without affecting desktops. */
+@media (hover: none) {
+  .icon-btn { min-height: 44px; padding: 8px 12px; }
+  .btn { min-height: 44px; }
+}
 
 .chat {
   overflow-y: auto;
@@ -174,6 +186,9 @@ body {
 .composer {
   border-top: 1px solid var(--dim);
   padding: 10px 14px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
   background: var(--bg);
 }
 .preview {
@@ -205,9 +220,15 @@ body {
   border: 1px solid var(--dim);
   border-radius: var(--radius);
   font: inherit;
+  /* iOS zooms in on focus if input font-size < 16px. Keep at 16px on
+     small screens, shrink back to 14px (body default) on desktop. */
+  font-size: 16px;
   padding: 8px 10px;
   resize: vertical;
   min-height: 44px;
+}
+@media (min-width: 640px) {
+  #input { font-size: inherit; }
 }
 #input:focus { outline: none; border-color: var(--accent); }
 
@@ -278,7 +299,13 @@ body {
   border-radius: var(--radius);
   padding: 6px 8px;
   font: inherit;
-  font-size: 13px;
+  /* iOS zooms in on focus if font-size < 16px. 16px on touch, 13px on desktop. */
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  .settings input[type=text],
+  .settings input[type=password],
+  .settings select { font-size: 13px; }
 }
 .settings input:focus, .settings select:focus { outline: none; border-color: var(--accent); }
 .settings .row { display: flex; gap: 6px; }
