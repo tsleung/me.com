@@ -9,6 +9,7 @@
 //   - Optionally append to encrypted vault
 
 import * as vault from "./vault.js";
+import { t, applyI18n, setUiLang, getUiLang, detectDefaultUiLang, SUPPORTED_UI_LANGS } from "./i18n.js";
 
 const GEMINI_MODEL = "gemini-3-flash-preview";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -22,7 +23,7 @@ const $ = (id) => document.getElementById(id);
 
 const CFG_KEYS = [
   "apiKey", "myLang", "partnerLang", "roomCode", "displayName",
-  "partnerName", "sigMode", "sigUrl", "historyOn",
+  "partnerName", "sigMode", "sigUrl", "historyOn", "uiLang",
 ];
 
 function loadCfg() {
@@ -100,7 +101,7 @@ function renderMessage(msg, direction) {
   if (direction === "out" && msg.back_translation) {
     const back = document.createElement("div");
     back.className = "back";
-    back.textContent = `reads back: ${msg.back_translation}`;
+    back.textContent = t("bubble.readsBackPrefix") + msg.back_translation;
     b.appendChild(back);
   }
   const meta = document.createElement("div");
@@ -120,7 +121,7 @@ function renderPendingBubble(text, fromLang, toLang) {
   primary.textContent = text;
   const secondary = document.createElement("div");
   secondary.className = "secondary";
-  secondary.textContent = "translating\u2026";
+  secondary.textContent = t("bubble.translating");
   const meta = document.createElement("div");
   meta.className = "meta";
   meta.textContent = `${fromLang} \u2192 ${toLang}`;
@@ -151,10 +152,10 @@ function formatTranscript() {
 
 async function copyTranscript(btn) {
   const text = formatTranscript();
-  if (!text) { flashButton(btn, "nothing to copy"); return; }
+  if (!text) { flashButton(btn, t("system.nothingToCopy")); return; }
   try {
     await navigator.clipboard.writeText(text);
-    flashButton(btn, "copied \u2713");
+    flashButton(btn, t("system.copied"));
   } catch {
     // Fallback: select a hidden textarea and execCommand
     const ta = document.createElement("textarea");
@@ -163,8 +164,8 @@ async function copyTranscript(btn) {
     ta.style.opacity = "0";
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand("copy"); flashButton(btn, "copied \u2713"); }
-    catch { flashButton(btn, "copy failed"); }
+    try { document.execCommand("copy"); flashButton(btn, t("system.copied")); }
+    catch { flashButton(btn, t("system.copyFailed")); }
     finally { ta.remove(); }
   }
 }
@@ -187,15 +188,15 @@ function refreshSendButton() {
 function setPresence(state) {
   $("presence").dataset.state = state;
   $("presence").title =
-    state === "on" ? "connected" : state === "wait" ? "waiting for peer" : "disconnected";
+    state === "on" ? t("presence.on") : state === "wait" ? t("presence.wait") : t("presence.off");
   // Visibility on transitions — silent yellow dots are easy to miss.
   // Only announce disconnects if we were actually connected; the initial
   // off→wait as we spin up shouldn't pretend a partner just left.
   if (lastPresenceState !== null && lastPresenceState !== state) {
-    if (state === "on") renderSystem("connected to partner");
+    if (state === "on") renderSystem(t("system.connected"));
     else if (lastPresenceState === "on") {
-      if (state === "wait") renderSystem("partner disconnected \u2014 waiting to reconnect");
-      else renderSystem("signaling disconnected \u2014 attempting to reconnect");
+      if (state === "wait") renderSystem(t("system.partnerGone"));
+      else renderSystem(t("system.sigDown"));
     }
   }
   lastPresenceState = state;
@@ -217,13 +218,13 @@ async function copyRoomCode(btn) {
     btn.classList.add("room-chip-copied");
     const label = btn.querySelector(".room-chip-label");
     const prev = label.textContent;
-    label.textContent = "copied";
+    label.textContent = t("system.copied").replace(/\s*\u2713\s*$/, "");
     setTimeout(() => {
       btn.classList.remove("room-chip-copied");
       label.textContent = prev;
     }, 1200);
   } catch {
-    alert(`room code: ${cfg.roomCode}`);
+    alert(`${t("system.roomCodeAlert")} ${cfg.roomCode}`);
   }
 }
 
@@ -556,9 +557,11 @@ function openSettings(initial = false) {
     $("cfg-sigurl").value      = cfg.sigUrl || DEFAULT_SIGNALING_URL;
     $("cfg-history").checked   = !!cfg.historyOn;
     $("cfg-psk").value         = cfg.psk || "";
+    $("cfg-uilang").value      = cfg.uiLang || getUiLang();
   } else {
     $("cfg-room").value    = genRoomCode();
     $("cfg-sigurl").value  = DEFAULT_SIGNALING_URL;
+    $("cfg-uilang").value  = getUiLang();
     $("cfg-sigmode").value = "worker";
   }
   dlg.showModal();
@@ -576,20 +579,23 @@ async function handleSettingsSave() {
     sigUrl:      $("cfg-sigurl").value.trim() || DEFAULT_SIGNALING_URL,
     historyOn:   $("cfg-history").checked,
     psk:         $("cfg-psk").value.trim(),
+    uiLang:      $("cfg-uilang").value,
   };
-  if (next.roomCode.length < 8) { alert("room code must be at least 8 chars"); return false; }
+  if (next.roomCode.length < 8) { alert(t("system.roomCodeTooShort")); return false; }
 
   if (next.historyOn) {
     const pass = $("cfg-passphrase").value;
-    if (!pass) { alert("passphrase required when history is on"); return false; }
+    if (!pass) { alert(t("system.historyPassRequired")); return false; }
     const ok = await vault.unlock(pass);
-    if (!ok) { alert("wrong passphrase for existing vault"); return false; }
+    if (!ok) { alert(t("system.wrongPassphrase")); return false; }
   } else {
     vault.lock();
   }
 
   cfg = next;
   saveCfg(cfg);
+  setUiLang(cfg.uiLang);
+  applyI18n();
   renderRoomChip();
   await refreshPskKey();
   await restartTransport();
@@ -604,8 +610,8 @@ async function restoreHistory() {
   for (const r of recs) renderMessage(r.msg, r.direction);
   renderSystem(
     recs.length === 0
-      ? `no saved messages for room ${cfg.roomCode}`
-      : `restored ${recs.length} messages for room ${cfg.roomCode}`
+      ? `${t("system.noSaved")} ${cfg.roomCode}`
+      : `${t("system.restored", { n: recs.length })} ${cfg.roomCode}`
   );
 }
 
@@ -661,7 +667,7 @@ async function doSend() {
   // calls if we're not connected. Preserves the text so the user can
   // re-send once the dot goes green.
   if (!transport || !transport.isOpen()) {
-    renderSystem("not connected \u2014 wait for the green dot, then try again");
+    renderSystem(t("system.notConnectedWait"));
     return;
   }
 
@@ -703,7 +709,7 @@ async function doSend() {
     const ok = transport && transport.send(wire);
     pending.remove();
     if (!ok) {
-      renderSystem(`not connected — message not sent: ${text}`);
+      renderSystem(`${t("system.notSent")}: ${text}`);
       return;
     }
     renderMessage(msg, "out");
@@ -712,7 +718,7 @@ async function doSend() {
     }
   } catch (e) {
     pending.remove();
-    renderSystem(`translate failed (${e.message}): ${text}`);
+    renderSystem(`${t("system.translateFailed")} (${e.message}): ${text}`);
   } finally {
     sendInFlight = false;
     refreshSendButton();
@@ -723,22 +729,32 @@ async function doSend() {
 // ---- Event wiring --------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Pick UI language before any visible rendering so first paint is
+  // already localized. Saved cfg wins; otherwise try navigator.language.
+  setUiLang(cfg?.uiLang || detectDefaultUiLang());
+  applyI18n();
+
   $("settings-btn").addEventListener("click", () => openSettings(false));
   $("room-chip").addEventListener("click", (e) => copyRoomCode(e.currentTarget));
   $("copy-btn").addEventListener("click", (e) => copyTranscript(e.currentTarget));
   $("clear-btn").addEventListener("click", () => {
     if (transcript.length === 0) return;
-    if (!confirm("clear the conversation on this screen? messages already delivered to your partner stay on their side.")) return;
+    if (!confirm(t("system.confirmClearScreen"))) return;
     clearConversation();
+  });
+  $("cfg-swap-lang").addEventListener("click", () => {
+    const my = $("cfg-mylang");
+    const partner = $("cfg-partnerlang");
+    [my.value, partner.value] = [partner.value, my.value];
   });
   $("cfg-room-gen").addEventListener("click", () => {
     $("cfg-room").value = genRoomCode();
   });
   $("cfg-clear-history").addEventListener("click", async () => {
-    if (!confirm("clear all stored messages on this device? this cannot be undone.")) return;
+    if (!confirm(t("system.confirmClearHistory"))) return;
     await vault.clearAll();
     chatEl.innerHTML = "";
-    renderSystem("history cleared");
+    renderSystem(t("system.historyCleared"));
   });
   $("settings").addEventListener("close", async () => {
     if ($("settings").returnValue === "save") {
@@ -763,10 +779,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     await refreshPskKey();
     if (cfg.historyOn) {
-      renderSystem("history is on — enter passphrase in settings to unlock");
+      renderSystem(t("system.historyOnHint"));
     }
     if (cfg.psk) {
-      renderSystem("shared key is active — messages you send are also encrypted with your passphrase");
+      renderSystem(t("system.pskActive"));
     }
     await restartTransport();
   }
