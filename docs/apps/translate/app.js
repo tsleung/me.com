@@ -693,6 +693,18 @@ async function handleSettingsSave() {
     vault.lock();
   }
 
+  // Only these fields actually affect the live transport. Everything
+  // else (language pair, names, UI lang, API key, PSK, historyOn) is a
+  // pure client-side update — tearing down WS/PC/DC for a name change
+  // or UI-language toggle would drop mid-conversation for no reason.
+  const prev = cfg;
+  const transportDirty =
+    !transport ||
+    !prev ||
+    prev.sigMode !== next.sigMode ||
+    prev.sigUrl !== next.sigUrl ||
+    prev.roomCode !== next.roomCode;
+
   cfg = next;
   saveCfg(cfg);
   setUiLang(cfg.uiLang);
@@ -701,7 +713,9 @@ async function handleSettingsSave() {
   renderRoomChip();
   refreshSetupUI();
   await refreshPskKey();
-  await restartTransport();
+  if (transportDirty) {
+    await restartTransport();
+  }
   if (cfg.historyOn && vault.isUnlocked()) await restoreHistory();
   return true;
 }
