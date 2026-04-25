@@ -1208,6 +1208,7 @@ function dictationLang() {
 
 let recognition = null;
 let recognitionActive = false;
+let micUserStopped = false; // distinguishes user-initiated stop from auto-end
 let dictationBase = "";
 let dictationFinal = "";
 
@@ -1228,6 +1229,8 @@ function refreshMicTooltip() {
 }
 
 function stopDictation() {
+  // User-initiated stop: prevents the onend handler from auto-restarting.
+  micUserStopped = true;
   if (recognition && recognitionActive) {
     try { recognition.stop(); } catch {}
   }
@@ -1240,10 +1243,16 @@ function startDictation() {
   }
   if (recognitionActive) { stopDictation(); return; }
 
+  micUserStopped = false;
+
   const r = new SpeechRecognitionCtor();
   r.lang = dictationLang();
   r.interimResults = true;
-  r.continuous = false;
+  // continuous=true so a pause to think doesn't end the session. Browsers
+  // still impose their own silence timeouts (Chrome a few seconds, Safari
+  // ~60s); the onend handler auto-restarts when that fires, so dictation
+  // survives thoughtful pauses until the user explicitly taps stop.
+  r.continuous = true;
   r.maxAlternatives = 1;
 
   const inputEl = $("input");
@@ -1262,17 +1271,38 @@ function startDictation() {
     inputEl.dispatchEvent(new Event("input", { bubbles: true }));
   };
   r.onerror = (e) => {
+    // "no-speech" and "aborted" are normal during a continuous session — let
+    // onend decide whether to restart. Permission denials are terminal.
     if (e.error === "no-speech" || e.error === "aborted") return;
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
       renderSystem(t("error.micDenied"));
+      micUserStopped = true;
     } else {
       renderSystem(t("error.micGeneric"));
     }
   };
   r.onend = () => {
+    if (!micUserStopped) {
+      // Browser-imposed silence timeout. Promote whatever's in the input now
+      // into the base so the next session appends cleanly, and restart.
+      dictationBase = inputEl.value;
+      dictationFinal = "";
+      try {
+        r.start();
+        return;
+      } catch {
+        // start() throws InvalidStateError on rapid restarts — fall through
+        // and tear down so the next click reinitialises cleanly.
+      }
+    }
     recognitionActive = false;
     recognition = null;
+    micUserStopped = false;
     setMicRecording(false);
+    // Defensive: ensure send button reflects current connection/cfg state
+    // after a dictation session, in case anything during recording stalled
+    // a prior refresh.
+    refreshSendButton();
   };
 
   try {
