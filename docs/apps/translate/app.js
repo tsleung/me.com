@@ -24,6 +24,7 @@ const $ = (id) => document.getElementById(id);
 const CFG_KEYS = [
   "apiKey", "myLang", "partnerLang", "roomCode", "displayName",
   "partnerName", "sigMode", "sigUrl", "historyOn", "uiLang",
+  "dictationLang",
 ];
 
 function loadCfg() {
@@ -706,6 +707,7 @@ function openSettings(initial = false) {
     $("cfg-history").checked   = !!cfg.historyOn;
     $("cfg-psk").value         = cfg.psk || "";
     $("cfg-uilang").value      = cfg.uiLang || getUiLang();
+    $("cfg-dictation-lang").value = cfg.dictationLang || "auto";
   } else if (shareParams) {
     // Arrived from a share link. Pre-fill everything except the API key.
     $("cfg-room").value        = shareParams.roomCode;
@@ -738,6 +740,7 @@ async function handleSettingsSave() {
     historyOn:   $("cfg-history").checked,
     psk:         $("cfg-psk").value.trim(),
     uiLang:      $("cfg-uilang").value,
+    dictationLang: $("cfg-dictation-lang").value,
   };
   if (next.roomCode.length < 8) { alert(t("system.roomCodeTooShort")); return false; }
 
@@ -769,6 +772,7 @@ async function handleSettingsSave() {
   clearUrlHash();
   renderRoomChip();
   refreshSetupUI();
+  refreshMicTooltip();
   await refreshPskKey();
   if (transportDirty) {
     await restartTransport();
@@ -1152,6 +1156,151 @@ async function doSend() {
   }
 }
 
+// ---- Voice input (Web Speech API) ---------------------------------------
+//
+// Tap mic → speak → transcript fills #input. Tap again (or speech ends) to
+// stop. The user reviews and uses the existing preview/send path; no audio
+// ever leaves the browser. Hidden entirely if the API isn't available
+// (Firefox), so users don't see a button that does nothing.
+
+const SpeechRecognitionCtor =
+  typeof window !== "undefined" &&
+  (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+// Settings dropdown values that carry a UI-only suffix (e.g. "zh-TW-tw" so
+// "taiwanese mandarin" and "mandarin (traditional)" stay distinct picks even
+// though they resolve to the same recognizer tag) get normalized here.
+const DICTATION_PRESET_TO_TAG = {
+  "auto":      null,
+  "en-US":     "en-US",
+  "zh-TW":     "zh-TW",
+  "zh-TW-tw":  "zh-TW",
+};
+
+// cfg.myLang is intentionally free-form (decision log: multi-script output),
+// so this is a best-effort hint. Order matters — more specific patterns
+// (zh-Hant, cantonese) come before the catch-all chinese/mandarin.
+function dictationLang() {
+  // Explicit pick from settings wins. "auto" falls through to free-text.
+  const preset = cfg?.dictationLang;
+  if (preset && preset !== "auto") {
+    const tag = DICTATION_PRESET_TO_TAG[preset];
+    if (tag) return tag;
+  }
+  const raw = (cfg?.myLang || "").toLowerCase();
+  const map = [
+    [/(zh-tw|traditional|繁體|繁体|hant|台灣|taiwan)/, "zh-TW"],
+    [/(cantonese|粵|粤|yue|hong\s*kong|hk\b)/,        "zh-HK"],
+    [/(zh-cn|simplified|普通话|简体|mandarin|chinese|^zh\b)/, "zh-CN"],
+    [/(japanese|日本語|^ja\b|jp\b)/,                   "ja-JP"],
+    [/(korean|한국|^ko\b|kr\b)/,                       "ko-KR"],
+    [/(french|français|francais|^fr\b)/,               "fr-FR"],
+    [/(spanish|español|espanol|^es\b)/,                "es-ES"],
+    [/(german|deutsch|^de\b)/,                         "de-DE"],
+    [/(italian|italiano|^it\b)/,                       "it-IT"],
+    [/(portuguese|português|portugues|^pt\b)/,         "pt-PT"],
+    [/(russian|русский|^ru\b)/,                        "ru-RU"],
+    [/(english|^en\b)/,                                "en-US"],
+  ];
+  for (const [rx, tag] of map) if (rx.test(raw)) return tag;
+  return navigator.language || "en-US";
+}
+
+let recognition = null;
+let recognitionActive = false;
+let dictationBase = "";
+let dictationFinal = "";
+
+function setMicRecording(on) {
+  const btn = $("mic-btn");
+  if (!btn) return;
+  btn.classList.toggle("btn-recording", on);
+  btn.textContent = on ? t("composer.micStop") : t("composer.mic");
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function refreshMicTooltip() {
+  const btn = $("mic-btn");
+  if (!btn || btn.hidden) return;
+  // Surface the resolved BCP-47 tag so users can verify recognition language
+  // without opening settings — and notice when auto-detect picks "wrong."
+  btn.title = `${t("composer.micTitle")} (${dictationLang()})`;
+}
+
+function stopDictation() {
+  if (recognition && recognitionActive) {
+    try { recognition.stop(); } catch {}
+  }
+}
+
+function startDictation() {
+  if (!SpeechRecognitionCtor) {
+    renderSystem(t("error.micNotSupported"));
+    return;
+  }
+  if (recognitionActive) { stopDictation(); return; }
+
+  const r = new SpeechRecognitionCtor();
+  r.lang = dictationLang();
+  r.interimResults = true;
+  r.continuous = false;
+  r.maxAlternatives = 1;
+
+  const inputEl = $("input");
+  dictationBase = inputEl.value;
+  dictationFinal = "";
+
+  r.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const res = e.results[i];
+      if (res.isFinal) dictationFinal += res[0].transcript;
+      else interim += res[0].transcript;
+    }
+    const sep = dictationBase && !/\s$/.test(dictationBase) ? " " : "";
+    inputEl.value = dictationBase + sep + dictationFinal + interim;
+    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  r.onerror = (e) => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      renderSystem(t("error.micDenied"));
+    } else {
+      renderSystem(t("error.micGeneric"));
+    }
+  };
+  r.onend = () => {
+    recognitionActive = false;
+    recognition = null;
+    setMicRecording(false);
+  };
+
+  try {
+    r.start();
+    recognition = r;
+    recognitionActive = true;
+    setMicRecording(true);
+  } catch {
+    renderSystem(t("error.micGeneric"));
+    setMicRecording(false);
+  }
+}
+
+function initMicButton() {
+  const btn = $("mic-btn");
+  if (!btn) return;
+  if (!SpeechRecognitionCtor) {
+    btn.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  btn.addEventListener("click", () => {
+    if (recognitionActive) stopDictation();
+    else startDictation();
+  });
+  refreshMicTooltip();
+}
+
 // ---- Event wiring --------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1217,6 +1366,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Reset so picking the same file twice still fires the change event.
     e.target.value = "";
   });
+  initMicButton();
   $("input").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); doSend(); }
   });
