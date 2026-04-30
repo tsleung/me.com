@@ -369,6 +369,7 @@ class WorkerTransport {
     this._closed = false;
     this._reconnectDelay = 0;
     this._reconnectTimer = null;
+    this._tiebreaker = 0;
   }
 
   async connect() {
@@ -391,8 +392,22 @@ class WorkerTransport {
   _onWsOpen() {
     this._reconnectDelay = 0;
     this._setupPc();
-    this._wsSend({ type: "hello", name: this.cfg.displayName });
+    this._sendHello();
     this.onStateChange("wait");
+  }
+
+  // Hello carries a per-handshake random `tb` so both peers can deterministically
+  // pick a single initiator on glare (both reset their PC simultaneously after a
+  // DC drop). Without it, both sides see each other's hello and both create
+  // offers, leaving the SDP state machine in an unrecoverable place.
+  _sendHello(echo = false) {
+    if (!echo) this._tiebreaker = Math.random();
+    this._wsSend({
+      type: "hello",
+      name: this.cfg.displayName,
+      tb: this._tiebreaker,
+      echo,
+    });
   }
 
   _setupPc() {
@@ -420,16 +435,28 @@ class WorkerTransport {
     switch (msg.type) {
       case "hello":
         if (!this.dc && this.pc) {
-          // We go first (initiator).
-          this.dc = this.pc.createDataChannel("chat");
-          this._wireDataChannel(this.dc);
-          const offer = await this.pc.createOffer();
-          await this.pc.setLocalDescription(offer);
-          this._wsSend({ type: "offer", sdp: offer.sdp });
+          // Echo back so a partner whose own hello reached an empty room
+          // (first-to-arrive case) still learns our tiebreaker. Don't echo
+          // an echo, or we'd ping-pong forever.
+          if (!msg.echo) this._sendHello(true);
+          // Higher tiebreaker initiates; the other side waits for the offer.
+          // Older clients omit `tb` — treat them as -Infinity so we always
+          // initiate against them, preserving prior behavior.
+          const partnerTb = typeof msg.tb === "number" ? msg.tb : -Infinity;
+          if (this._tiebreaker > partnerTb) {
+            this.dc = this.pc.createDataChannel("chat");
+            this._wireDataChannel(this.dc);
+            const offer = await this.pc.createOffer();
+            await this.pc.setLocalDescription(offer);
+            this._wsSend({ type: "offer", sdp: offer.sdp });
+          }
         }
         break;
       case "offer": {
         if (!this.pc) this._setupPc();
+        // Drop offers that race our own — we'd otherwise rollback to stable
+        // and then the partner's answer would arrive in the wrong state.
+        if (this.pc.signalingState !== "stable") break;
         await this.pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
         const ans = await this.pc.createAnswer();
         await this.pc.setLocalDescription(ans);
@@ -437,6 +464,9 @@ class WorkerTransport {
         break;
       }
       case "answer":
+        // Stale answer (e.g. from a prior negotiation that lost the race) —
+        // ignore rather than throw "wrong state: stable".
+        if (this.pc?.signalingState !== "have-local-offer") break;
         await this.pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
         break;
       case "ice":
@@ -474,7 +504,7 @@ class WorkerTransport {
     this.onStateChange("wait");
     if (!this._closed && this.ws?.readyState === WebSocket.OPEN) {
       this._setupPc();
-      this._wsSend({ type: "hello", name: this.cfg.displayName });
+      this._sendHello();
     }
   }
 
