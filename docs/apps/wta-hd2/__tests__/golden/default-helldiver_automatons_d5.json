@@ -1,0 +1,54 @@
+{
+  "cfgKey": "automatons/standard/patrol/d5/seed42/α0.4/γ0.3/liberator/peacemaker/frag/sentry-mg,eagle-airstrike,orbital-precision,eat",
+  "ticks": 300,
+  "finalT": 30000,
+  "finalTickN": 300,
+  "scores": {
+    "advance": {
+      "kills": 4,
+      "fractionCleared": 0.3333
+    },
+    "survival": {
+      "closestEnemyM": 42.9285
+    }
+  },
+  "killsByTier": {
+    "light": 4,
+    "medium": 0,
+    "heavy": 0,
+    "boss": 0
+  },
+  "totalAssignments": 200,
+  "totalShots": 200,
+  "modeHistogram": {
+    "HOLD": 11,
+    "KITE": 263,
+    "PUSH": 26
+  },
+  "heatmapTop3": [
+    {
+      "weapon": "primary",
+      "archetype": "automaton-scout-strider",
+      "credit": 123.5
+    },
+    {
+      "weapon": "primary",
+      "archetype": "automaton-raider",
+      "credit": 35
+    },
+    {
+      "weapon": "primary",
+      "archetype": "automaton-trooper",
+      "credit": 18
+    }
+  ],
+  "shotShare": {
+    "primary": 0.9,
+    "secondary": 0.075,
+    "strat-1": 0.005,
+    "strat-2": 0.01,
+    "strat-3": 0.005,
+    "strat-4": 0.005
+  },
+  "finalAlive": 5
+}

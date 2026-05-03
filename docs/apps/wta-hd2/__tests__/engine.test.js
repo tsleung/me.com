@@ -31,7 +31,9 @@ const DATA = {
 
 const CFG_BUG_PATROL = {
   seed: 1,
-  scenario: { faction: "terminids", subfaction: "standard", encounter: "patrol", difficulty: 5 },
+  // playerMovement: true → engine.test.js exercises the HOLD/KITE/PUSH state
+  // machine; the app default is stationary-turret.
+  scenario: { faction: "terminids", subfaction: "standard", encounter: "patrol", difficulty: 5, playerMovement: true },
   loadout: {
     primary: "lib", secondary: "pm", grenade: "frag",
     stratagems: ["eagle-500kg", "eat", "ac", "orbital-rail"],
@@ -158,6 +160,46 @@ test("player movement is deterministic for a fixed seed", () => {
     assert.equal(s1.player.y, s2.player.y);
     assert.equal(s1.player.mode, s2.player.mode);
   }
+});
+
+test("under-pen weapons cannot kill heavy armor via weakpoint multiplier (regression)", () => {
+  // Liberator (ap=2) vs charger (head weakpoint ac=4, mult=3). The damage
+  // applier used to pick the head and apply 0.1×3 = 0.3 multiplier, doing
+  // 60×0.3 = 18 dmg/shot — enough to chip a 750-HP charger to death in a
+  // few seconds. Real HD2: under-pen rounds bounce off armored weakpoints,
+  // they don't crit. Expected behavior: under-pen path = 0.1× floor with
+  // NO weakpoint multiplier, so a Liberator does ~6 dmg/shot vs charger.
+  // Loadout: Liberator primary only — no grenade, no stratagems. The
+  // Liberator (ap=2) is the only damage source in play, so any HP loss to
+  // the charger has to come from primary chip damage.
+  const cfg = {
+    seed: 1,
+    scenario: { faction: "terminids", subfaction: "standard", encounter: "patrol", difficulty: 1, playerMovement: false, infiniteWaves: false },
+    loadout: { primary: "lib", secondary: null, grenade: null, stratagems: [null, null, null, null] },
+    solver: { alpha: 0.5, gamma: 0.0, reserves: {} },
+  };
+  // Build a one-charger fixture by directly seeding state.enemies.
+  const engine = createEngine(cfg, DATA);
+  let s = engine.initialState;
+  // Inject a charger 30m forward of the player; clear the spawn schedule so
+  // it's the only enemy.
+  s.scheduled = [];
+  const charger = DATA.enemies.find((e) => e.id === "charger");
+  s.enemies.set("c1", {
+    id: "c1", archetypeId: "charger", threatTier: "heavy",
+    hp: charger.hp, parts: charger.parts,
+    position: { x: 0, y: 30 },
+    velocity: { dx: 0, dy: -1 },
+    alive: true,
+    meleeDps: charger.meleeDps, rangedDps: 0,
+  });
+  // Run 50 ticks (5s) — a Liberator shouldn't kill a 750-HP charger in 5s
+  // through head-armor under-pen.
+  for (let i = 0; i < 50; i++) s = engine.tick(s);
+  const c = s.enemies.get("c1");
+  assert.ok(c, "charger should still be in the map");
+  assert.ok(c.hp > charger.hp * 0.5,
+    `charger HP fell from ${charger.hp} to ${c.hp} in 5s with only Liberator chip damage — armor-pen gating regressed`);
 });
 
 test("alpha=0 (clear) vs alpha=1 (survival) produce different assignment patterns", () => {

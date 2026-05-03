@@ -17,6 +17,7 @@ const KEYS = {
   gamma: ["solver", "gamma"],
   mult: ["scenario", "spawnRateMultiplier"],
   iw: ["scenario", "infiniteWaves"],
+  pm: ["scenario", "playerMovement"],
   wc: ["scenario", "waveCadenceSecs"],
   seed: ["seed"],
 };
@@ -58,7 +59,7 @@ export function decodeHash(hash, _data) {
     const last = path[path.length - 1];
     if (k === "diff" || k === "seed" || k === "wc") target[last] = parseInt(v, 10);
     else if (k === "alpha" || k === "gamma" || k === "mult") target[last] = parseFloat(v);
-    else if (k === "iw") target[last] = v === "1" || v === "true";
+    else if (k === "iw" || k === "pm") target[last] = v === "1" || v === "true";
     else target[last] = v;
   }
   return out;

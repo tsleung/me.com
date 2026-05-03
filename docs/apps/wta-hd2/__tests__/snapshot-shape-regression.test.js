@@ -61,7 +61,7 @@ test("L1 — engine.view returns snapshot with all required keys", async () => {
   for (const k of [
     "t", "tickN", "player", "enemies", "projectiles", "effects",
     "weapons", "stratagems", "assignments", "fxFlashes",
-    "nextSpawnT", "totalSpawns", "scores", "scenario",
+    "nextSpawnT", "nextWaveT", "totalSpawns", "scores", "scenario",
   ]) {
     assert.ok(k in snap, `snapshot missing required key: ${k}`);
   }

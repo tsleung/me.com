@@ -5,7 +5,7 @@ import {
   visibleEnemyView,
   effectView,
 } from "./sim.js";
-import { assign as solverAssign } from "./wta-solver.js";
+import { assign as solverAssign, expectedDamagePerShot } from "./wta-solver.js";
 import { buildScenario, defaultWaveCadenceSecs } from "./scenarios.js";
 import { mulberry32, hashString } from "./rng.js";
 
@@ -65,7 +65,20 @@ export function createEngine(cfg, data) {
 
   const view = (state) => snapshot(state, data, c);
 
-  return { initialState: init, tick, view };
+  // Manual override: skip the wave-cadence wait and spawn the next wave at
+  // state.t, anchored on the player's current position so the arc lands at the
+  // expected fixed distance even when the diver has roamed off origin.
+  // Mutates state.scheduled in place; the next tick's applyScheduled fires the
+  // t<=state.t intents. Independent of any auto-queued wave — if
+  // maybeQueueNextWave already queued one, that one still arrives later.
+  const triggerNextWave = (state) => {
+    const origin = { x: state.player?.x ?? 0, y: state.player?.y ?? 0 };
+    pushWaveAtT(state, scenario, state.t, origin);
+    state._nextWaveStartAt = null;
+    return state;
+  };
+
+  return { initialState: init, tick, view, triggerNextWave };
 }
 
 function mergeCfg(cfg) {
@@ -119,17 +132,47 @@ function applyAssignments(state, assignments, cfg) {
     if (!weapon) continue;
 
     if (state.weapons.has(a.weaponId)) {
-      // Direct-fire weapon: damage applies immediately.
-      const dmgPerShot = computeDamage(weapon, target);
+      // Direct-fire weapon: damage applies immediately. Distance feeds the
+      // dispersion model — Liberator at 40 m on a hunter has a much lower
+      // per-shot expected damage than at 5 m.
+      const dxp = (target.position?.x ?? 0) - (state.player?.x ?? 0);
+      const dyp = (target.position?.y ?? 0) - (state.player?.y ?? 0);
+      const distM = Math.hypot(dxp, dyp);
+      const dmgPerShot = computeDamage(weapon, target, distM);
       const totalDmg = dmgPerShot * a.shots;
       target.hp = Math.max(0, target.hp - totalDmg);
       const died = target.hp <= 0;
       if (died) target.alive = false;
+      // Heavy rocket weapons (RR/Spear/EAT/Quasar/etc.) get a three-stage
+      // visual: back-blast smoke at the player → smoke-trail traveling to
+      // the target → delayed explosion. Without this the rare-but-impactful
+      // shot looks identical to a Liberator burst. Damage still resolves now;
+      // the explosion fx is just delayed by the travel time so the visual
+      // matches what the user expects.
+      const fires = firesRocket(weapon);
+      const ROCKET_TRAVEL_MS = 350;
+      if (fires) {
+        state._fxFlashes.push({
+          kind: "back-blast",
+          x: state.player.x, y: state.player.y,
+          r: 3,
+          bornT: state.t, durMs: 500, isKill: false,
+        });
+        state._fxFlashes.push({
+          kind: "rocket",
+          fromX: state.player.x, fromY: state.player.y,
+          x: target.position.x, y: target.position.y,
+          r: 1.5,
+          bornT: state.t, durMs: ROCKET_TRAVEL_MS, isKill: false,
+        });
+      }
       state._fxFlashes.push({
         kind: fxKindForWeapon(weapon, state),
         x: target.position.x, y: target.position.y,
         r: weapon.aoeRadiusM ?? (died ? 3 : 1.5),
-        bornT: state.t, durMs: died ? 700 : 350, isKill: died,
+        bornT: state.t + (fires ? ROCKET_TRAVEL_MS : 0),
+        durMs: died ? 700 : 350,
+        isKill: died,
       });
       weapon.ammoInMag = Math.max(0, weapon.ammoInMag - a.shots);
       weapon.lastFireT = state.t;
@@ -215,6 +258,11 @@ function applyAssignments(state, assignments, cfg) {
               e.landedAt = st.t;
             }
           }
+          // Clear the throw indicator on the diver-side call-in strip — once
+          // the strat has landed, on-field effects (sentry/pickup/dot/mine/
+          // pickup near diver) own the visual; the "CALLED" chip is throw-only.
+          const stratDef = st.stratagems.get(a.weaponId);
+          if (stratDef) stratDef.callInActive = null;
           if (!st._fxFlashes) st._fxFlashes = [];
 
           if (isSentry) {
@@ -235,28 +283,35 @@ function applyAssignments(state, assignments, cfg) {
             return;
           }
           if (isPickup) {
-            // EAT pickup — 2 rockets dropped next to player. Visible until used.
+            // EAT pickup — both rockets fire at the projected target on
+            // landing (proximity not required), so the on-field marker
+            // tracks actual remaining uses. We push it with usesLeft=ROCKETS
+            // and decrement as we fire; once it hits 0, the field is bare —
+            // a spent EAT shouldn't squat on the battlefield for 30s.
             const px = (st.player?.x ?? 0) + 2;
             const py = (st.player?.y ?? 0) + 2;
-            st.effects.push({
+            const ROCKETS = 2;
+            const pickupEff = {
               kind: "pickup",
               x: px, y: py, radiusM: 1,
               bornT: st.t,
               until: st.t + 30 * 1000,
-              usesLeft: 2,
+              usesLeft: ROCKETS,
               weaponName: defId,
-            });
-            // Single immediate AoE on landing simulates the first rocket fired
-            // at the projected target; the second sits in the pickup until reused.
+            };
+            st.effects.push(pickupEff);
             const r2 = aoeR * aoeR;
-            for (const e of st.enemies.values()) {
-              if (!e.alive) continue;
-              const ex = e.position.x - beaconX;
-              const ey = e.position.y - beaconY;
-              if (ex * ex + ey * ey > r2) continue;
-              const dmg = computeDamage(weapon, e);
-              e.hp = Math.max(0, e.hp - dmg);
-              if (e.hp <= 0) e.alive = false;
+            for (let r = 0; r < ROCKETS; r++) {
+              for (const e of st.enemies.values()) {
+                if (!e.alive) continue;
+                const ex = e.position.x - beaconX;
+                const ey = e.position.y - beaconY;
+                if (ex * ex + ey * ey > r2) continue;
+                const dmg = computeDamage(weapon, e);
+                e.hp = Math.max(0, e.hp - dmg);
+                if (e.hp <= 0) e.alive = false;
+              }
+              pickupEff.usesLeft = Math.max(0, pickupEff.usesLeft - 1);
             }
             st._fxFlashes.push({ kind: fxKind, x: beaconX, y: beaconY, r: aoeR, bornT: st.t, durMs: 700, isKill: true });
             return;
@@ -295,6 +350,23 @@ function applyAssignments(state, assignments, cfg) {
   }
 }
 
+// Heavy rocket-style weapons get the multi-stage firing visual (back-blast
+// → trail → delayed explosion). Mirrors render-helpers.js:weaponFiresRocket
+// — duplicated as an inline regex because L1 (engine) doesn't import L3
+// (render). Kept narrow so eruptor / crossbow stay on the simpler path.
+function firesRocket(weapon) {
+  const id = String(weapon.defId || weapon.id || "").toLowerCase();
+  return /recoilless|spear|(^|[-_])eat([-_]|$)|quasar|autocannon|airburst|commando|rocket|missile/.test(id);
+}
+
+// Heavy reloads (anti-tank rockets etc.) root the diver: no movement, no
+// firing other weapons. Same regex as firesRocket today, factored out so the
+// two can diverge if (e.g.) a future weapon travels but reloads on the move.
+function rootsPlayerOnReload(weapon) {
+  const id = String(weapon.defId || weapon.id || "").toLowerCase();
+  return /recoilless|spear|(^|[-_])eat([-_]|$)|quasar|autocannon|airburst|commando|grenade-launcher|hmg|stalwart-em|railgun/.test(id);
+}
+
 function fxKindForWeapon(weapon, _state) {
   const id = weapon.defId || "";
   if (weapon.type === "eagle") {
@@ -320,25 +392,15 @@ function fxKindForWeapon(weapon, _state) {
   return "muzzle";
 }
 
-function computeDamage(weapon, target) {
-  const ap = weapon.armorPen ?? 0;
-  const part = bestPart(target.parts ?? [], ap);
-  const ac = part?.ac ?? 0;
-  const armorMult = ap >= ac + 1 ? 1.0 : ap === ac ? 0.5 : 0.1;
-  const wMult = part?.isWeakPoint ? part.weakPointMultiplier ?? 1 : 1;
-  return (weapon.damage ?? 0) * armorMult * wMult;
-}
-
-function bestPart(parts, ap) {
-  if (!parts || parts.length === 0) return null;
-  let best = null;
-  let bestScore = -1;
-  for (const p of parts) {
-    const accessible = ap >= (p.ac ?? 0);
-    const score = (accessible ? 100 : 0) + (p.isWeakPoint ? p.weakPointMultiplier ?? 1 : 0.5);
-    if (score > bestScore) { best = p; bestScore = score; }
-  }
-  return best;
+// Damage applier — single source of truth for "how much HP does a shot
+// remove from this enemy." Now delegates to the solver's
+// expectedDamagePerShot so solver predictions and engine outcomes can't
+// drift apart. distanceM enables the dispersion model (bigger weapon
+// dispersion × smaller part width = lower per-shot expected damage);
+// distanceM = 0 falls back to deterministic best-pen-able-part for AoE
+// explosions where the strike already landed on the target.
+function computeDamage(weapon, target, distanceM = 0) {
+  return expectedDamagePerShot(weapon, target, distanceM);
 }
 
 function snapshot(state, data, cfg) {
@@ -366,9 +428,13 @@ function snapshot(state, data, cfg) {
       id: w.id, defId: w.defId,
       ammoInMag: w.ammoInMag, magCap: w.magazine,
       ammoReserve: w.ammoReserve,
+      reloadSecs: w.reloadSecs ?? 2,
       reloadingPct: w.reloadingUntil
         ? Math.max(0, 1 - (w.reloadingUntil - state.t) / (w.reloadSecs * 1000))
         : 1,
+      // Heavy reloads root the diver: surface it so the renderer can colour
+      // the bar red and the controller can gate movement.
+      rootsPlayer: rootsPlayerOnReload(w),
     })),
     stratagems: [...state.stratagems.values()].map((s) => {
       const cdSpan = Math.max(1, (s.cooldownUntil ?? 0) - (s.cooldownStartT ?? 0));
@@ -383,7 +449,7 @@ function snapshot(state, data, cfg) {
             Math.max(1, (state.eagleRearmingUntil ?? 0) - (state.eagleRearmStartT ?? 0))))
         : null;
       return {
-        id: s.id, defId: s.defId, type: s.type,
+        id: s.id, defId: s.defId, name: s.name ?? s.defId, type: s.type,
         cooldownPct: cdPct,
         usesRemaining: s.usesRemaining,
         usesMax: s.usesMax ?? null,
@@ -402,6 +468,10 @@ function snapshot(state, data, cfg) {
     assignments: state._lastAssignments ?? [],
     fxFlashes: state._fxFlashes ?? [],
     nextSpawnT: nextScheduledT(state),
+    nextWaveT: (state._nextWaveStartAt != null && state._nextWaveStartAt > state.t)
+      ? state._nextWaveStartAt
+      : null,
+    lastSpawnedWave: state._lastSpawnedWave ?? null,
     totalSpawns: state.scenario?.totalSpawns ?? 0,
     scores: state.scores,
     scenario: {
@@ -481,7 +551,9 @@ function tickEffects(state, _cfg) {
         eff.lastTickT = state.t;
       }
     }
-    // pickup: passive marker, no per-tick action; expires via `until`.
+    // pickup: passive marker. Drops off the field when its uses are spent;
+    // otherwise expires via `until`.
+    if (eff.kind === "pickup" && (eff.usesLeft ?? 0) <= 0) continue;
     remaining.push(eff);
   }
   state.effects = remaining;
@@ -510,11 +582,38 @@ function maybeQueueNextWave(state, scenario, cadenceSecs) {
     if (e.alive) return;
   }
   const startAt = state.t + cadenceSecs * 1000;
+  pushWaveAtT(state, scenario, startAt);
+  state._waveQueued = true;
+  state._nextWaveStartAt = startAt;
+  // Schedule a noop event at startAt-1ms whose fn flips _waveQueued back so the
+  // next-wave check resumes after this wave begins firing. applyScheduled
+  // re-sorts defensively, so no cursor maintenance here.
+  state.scheduled.push({
+    t: startAt - 1,
+    fn: (st) => { st._waveQueued = false; },
+  });
+}
+
+// Push a fresh wave's spawn intents into state.scheduled, anchored at startAt.
+// Bumps _waveCounter so enemy ids stay unique across waves. `origin` translates
+// the intent positions: scenario intents are generated around (0,0), but a
+// manually-triggered wave should arrive on the arc around the player's current
+// position so a roaming diver doesn't get a wave dumped 200m behind them.
+// Auto-queued waves pass {x:0,y:0} (legacy behavior).
+//
+// Also records `state._lastSpawnedWave` so the UI can show "wave N — 12×
+// hunter, 4× warrior" without scanning the whole enemy map.
+//
+// Does NOT touch _waveQueued or _nextWaveStartAt — callers control those.
+function pushWaveAtT(state, scenario, startAt, origin = { x: 0, y: 0 }) {
+  const waveN = (state._waveCounter ?? 1) + 1;
   let id = state._waveCounter ?? 1;
+  const counts = {};
   for (const intent of scenario.spawnIntents) {
+    counts[intent.enemyId] = (counts[intent.enemyId] ?? 0) + 1;
     state.scheduled.push({
       t: startAt + intent.t,
-      fn: ((intent, waveN) => (st) => {
+      fn: ((intent) => (st) => {
         const archetype = scenario.archetypes.find((a) => a.id === intent.enemyId);
         const enemyId = `w${waveN}-e${++id}-${intent.enemyId}`;
         st.enemies.set(enemyId, {
@@ -523,24 +622,22 @@ function maybeQueueNextWave(state, scenario, cadenceSecs) {
           threatTier: archetype?.threatTier ?? "light",
           hp: archetype?.hp ?? 100,
           parts: archetype?.parts ?? [],
-          position: { x: intent.position.x, y: intent.position.y },
+          position: { x: intent.position.x + origin.x, y: intent.position.y + origin.y },
           velocity: { dx: intent.vector.dx, dy: intent.vector.dy },
           alive: true,
           meleeDps: archetype?.meleeDps ?? 10,
           rangedDps: archetype?.rangedDps ?? 0,
         });
-      })(intent, (state._waveCounter ?? 1) + 1),
+      })(intent),
     });
   }
-  state._waveCounter = (state._waveCounter ?? 1) + 1;
-  state._waveQueued = true;
-  // Schedule a noop event at startAt-1ms whose fn flips _waveQueued back so the
-  // next-wave check resumes after this wave begins firing. applyScheduled
-  // re-sorts defensively, so no cursor maintenance here.
-  state.scheduled.push({
-    t: startAt - 1,
-    fn: (st) => { st._waveQueued = false; },
-  });
+  state._waveCounter = waveN;
+  state._lastSpawnedWave = {
+    waveN,
+    counts,
+    t: startAt,
+    manual: !!(origin.x !== 0 || origin.y !== 0),
+  };
 }
 
 // Eagle rearm: shared timer across the whole eagle module of the loadout.
@@ -662,6 +759,8 @@ function triggerResupply(state, resupply, cfg) {
     t: resolveAt,
     fn: (st) => {
       st.effects = st.effects.filter((e) => !(e.kind === "callin" && e.resolveAt === resolveAt && e.weaponId === stratId));
+      const stratDef = st.stratagems.get(stratId);
+      if (stratDef) stratDef.callInActive = null;
       // Refill every weapon: reserve back to starting cap, mag topped up.
       for (const w of st.weapons.values()) {
         const max = w.ammoReserveMax ?? w.ammoReserve ?? 0;
@@ -675,15 +774,21 @@ function triggerResupply(state, resupply, cfg) {
         // Clear any in-flight reload so the freshly-stocked mag fires immediately.
         w.reloadingUntil = null;
       }
-      // Marker effect on the supply box so the renderer can show "I'm here".
-      st.effects.push({
+      // Marker effect on the supply box. HD2's resupply drops 4 pickups,
+      // one per squadmate; in this single-player sim only the diver can
+      // consume, and the refill above already happens on landing — so the
+      // box ships with usesLeft=1 and `tickEffects` drops it after the
+      // landing tick decrements to 0. Same lifecycle as the EAT pickup.
+      const resupplyEff = {
         kind: "pickup",
         x: beaconX, y: beaconY, radiusM: 1.2,
         bornT: st.t,
         until: st.t + 30 * 1000,
-        usesLeft: 4, // resupply box drops 4 supply pickups in HD2
+        usesLeft: 1,
         weaponName: "resupply",
-      });
+      };
+      st.effects.push(resupplyEff);
+      resupplyEff.usesLeft = 0;
       if (!st._fxFlashes) st._fxFlashes = [];
       st._fxFlashes.push({ kind: "spark", x: beaconX, y: beaconY, r: 4, bornT: st.t, durMs: 600, isKill: false });
     },
@@ -710,6 +815,25 @@ const SAFETY_MARGIN_SECS = 0.5;
 const WORLD_LATERAL = 50;
 
 function updatePlayerMovement(state, targets, assignments, cfg) {
+  // Movement off (default) → diver is a stationary turret. Mode pinned to
+  // HOLD so the analytics chip reads cleanly and the battlefield arrow
+  // disappears (drawMovementArrow short-circuits at speed < 0.05).
+  if (cfg.scenario?.playerMovement !== true) {
+    state.player = { ...state.player, vx: 0, vy: 0, mode: "HOLD" };
+    return;
+  }
+
+  // Heavy-reload lockout: if any equipped weapon is in a rooting reload
+  // (RR/Spear/EAT/Quasar/etc.), the diver can't move. Distinct mode tag so
+  // the renderer can colour the arrow / show a "RELOAD" chip rather than
+  // silently dropping into HOLD.
+  for (const w of state.weapons.values()) {
+    if (w.reloadingUntil !== null && w.reloadingUntil > state.t && rootsPlayerOnReload(w)) {
+      state.player = { ...state.player, vx: 0, vy: 0, mode: "RELOAD" };
+      return;
+    }
+  }
+
   const tickSecs = (cfg.tickMs ?? 100) / 1000;
   const aliveThreats = targets.filter((t) => {
     const e = state.enemies.get(t.id);
@@ -717,7 +841,6 @@ function updatePlayerMovement(state, targets, assignments, cfg) {
   });
 
   let mode = "PUSH";
-  let kiteFromX = 0, kiteFromY = 0;
 
   if (aliveThreats.length > 0) {
     // ttkill per target = hp / Σ_assigned (expectedDamagePerSec from that weapon).
@@ -737,59 +860,36 @@ function updatePlayerMovement(state, targets, assignments, cfg) {
     }
 
     let anyUnsafe = false;
-    let nearest = null, nearestD = Infinity;
     for (const t of aliveThreats) {
       const dx = t.position.x - state.player.x;
       const dy = t.position.y - state.player.y;
       const d = Math.hypot(dx, dy);
-      if (d < nearestD) { nearestD = d; nearest = { dx, dy, d }; }
       const speed = Math.hypot(t.velocity?.dx ?? 0, t.velocity?.dy ?? 0);
       const ttp = speed > 0.01 ? d / speed : Infinity;
       const dps = dpsPerTarget.get(t.id) || 0;
       const ttkill = dps > 0 ? (state.enemies.get(t.id)?.hp ?? 0) / dps : Infinity;
-      if (ttkill > ttp - SAFETY_MARGIN_SECS) { anyUnsafe = true; }
+      if (ttkill > ttp - SAFETY_MARGIN_SECS) { anyUnsafe = true; break; }
     }
 
-    if (anyUnsafe && nearest) {
-      mode = "KITE";
-      const norm = nearest.d || 1;
-      kiteFromX = -nearest.dx / norm;
-      kiteFromY = -nearest.dy / norm;
-    } else {
-      mode = "HOLD";
-    }
+    mode = anyUnsafe ? "KITE" : "HOLD";
   }
 
-  let vx = 0, vy = 0;
-  if (mode === "KITE") {
-    vx = kiteFromX * KITE_SPEED_MPS;
-    vy = kiteFromY * KITE_SPEED_MPS;
-  } else if (mode === "PUSH") {
-    // Push along facing.
-    vx = Math.cos(state.player.facingRad) * PUSH_SPEED_MPS;
-    vy = Math.sin(state.player.facingRad) * PUSH_SPEED_MPS;
-  }
-
+  // Movement is scalar along facing only. Lateral kiting/dodging is dodge
+  // geometry that needs richer threat tracking than we have today; "buy time"
+  // is a back-along-facing intent. KITE → negative speed, PUSH → positive.
+  let speed = 0;
+  if (mode === "KITE") speed = -KITE_SPEED_MPS;
+  else if (mode === "PUSH") speed = +PUSH_SPEED_MPS;
+  const fx = Math.cos(state.player.facingRad ?? Math.PI / 2);
+  const fy = Math.sin(state.player.facingRad ?? Math.PI / 2);
+  const vx = fx * speed;
+  const vy = fy * speed;
   const nx = clampWorld(state.player.x + vx * tickSecs);
-  const ny = clampWorldForward(state.player.y + vy * tickSecs);
-  state.player = {
-    ...state.player,
-    x: nx,
-    y: ny,
-    vx,
-    vy,
-    mode,
-  };
+  const ny = clampWorld(state.player.y + vy * tickSecs);
+  state.player = { ...state.player, x: nx, y: ny, vx, vy, mode };
 }
 
 function clampWorld(v) {
-  if (v < -WORLD_LATERAL) return -WORLD_LATERAL;
-  if (v > WORLD_LATERAL) return WORLD_LATERAL;
-  return v;
-}
-
-function clampWorldForward(v) {
-  // Allow some forward drift but no infinite march; let kiting go negative.
   if (v < -WORLD_LATERAL) return -WORLD_LATERAL;
   if (v > WORLD_LATERAL) return WORLD_LATERAL;
   return v;

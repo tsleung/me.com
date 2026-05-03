@@ -91,12 +91,17 @@ function injectScopedStyles(rootEl) {
                           border-radius: 1px; margin-right: 4px;
                           vertical-align: middle; }
     .ana-loadout-row { display: grid;
-                       grid-template-columns: 60px 1fr auto;
+                       grid-template-columns: 110px 1fr auto;
                        align-items: center; gap: 8px;
                        padding: 4px 0; border-bottom: 1px solid var(--dim);
                        font-size: 11px; }
     .ana-loadout-row:last-child { border-bottom: 0; }
-    .ana-slot-id { color: var(--ink-muted); }
+    .ana-slot-id { color: var(--ink-muted); display: flex; flex-direction: column;
+                   line-height: 1.2; min-width: 0; }
+    .ana-slot-name { color: var(--ink); font-size: 11px;
+                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ana-slot-sub  { color: var(--ink-muted); font-size: 9px;
+                     letter-spacing: 0.06em; text-transform: uppercase; }
     .ana-bar-wrap { background: var(--dim); height: 6px; border-radius: 1px;
                     overflow: hidden; position: relative; }
     .ana-bar-fill { background: var(--ink); height: 100%; transition: width 100ms; }
@@ -105,6 +110,7 @@ function injectScopedStyles(rootEl) {
     .ana-bar-ready    { background: var(--on); }
     .ana-bar-cooldown { background: linear-gradient(90deg, var(--accent) 0%, #ffb13a 100%); }
     .ana-bar-exhausted { background: var(--dim); }
+    .ana-bar-rearm    { background: linear-gradient(90deg, #6db5ff 0%, var(--on) 100%); }
     .ana-bar-callin   { background: #6db5ff; height: 100%; }
     .ana-wave-timer { display: flex; justify-content: space-between; align-items: baseline;
                       font-size: 11px; color: var(--ink-muted);
@@ -279,9 +285,9 @@ function updateWaveTimer(timerEl, snapshot) {
   if (!timerEl) return;
   const valEl = timerEl.querySelector(".ana-wave-timer-val");
   if (!valEl) return;
-  const next = snapshot.nextSpawnT;
+  const next = snapshot.nextWaveT;
   const now = snapshot.t ?? 0;
-  if (next == null) {
+  if (next == null || next <= now) {
     const aliveCount = (snapshot.enemies ?? []).filter((e) => e.alive).length;
     valEl.textContent = aliveCount > 0 ? "wave in progress" : "wave complete";
     return;
@@ -392,15 +398,25 @@ function updateLoadout(body, snapshot) {
   sel.exit().remove();
 
   const enter = sel.enter().append("div").attr("class", "ana-loadout-row");
-  enter.append("div").attr("class", "ana-slot-id").text((d) => d.id);
+  const slotCell = enter.append("div").attr("class", "ana-slot-id");
+  slotCell.append("div").attr("class", "ana-slot-name");
+  slotCell.append("div").attr("class", "ana-slot-sub");
   enter.append("div").attr("class", "ana-loadout-mid");
   enter.append("div").attr("class", "ana-loadout-right");
 
   const merged = enter.merge(sel);
 
   merged.each(function (d) {
-    const mid   = this.querySelector(".ana-loadout-mid");
-    const right = this.querySelector(".ana-loadout-right");
+    const nameEl = this.querySelector(".ana-slot-name");
+    const subEl  = this.querySelector(".ana-slot-sub");
+    const mid    = this.querySelector(".ana-loadout-mid");
+    const right  = this.querySelector(".ana-loadout-right");
+    const friendly = d.kind === "strat" ? (d.item.name || d.item.defId || d.id) : d.id;
+    const showSub  = d.kind === "strat" && friendly !== d.id;
+    nameEl.textContent = friendly;
+    nameEl.title = friendly;
+    subEl.textContent = showSub ? d.id : "";
+    subEl.style.display = showSub ? "" : "none";
     if (d.kind === "weapon") {
       const w = d.item;
       const magPct = w.magCap > 0 ? Math.max(0, Math.min(1, w.ammoInMag / w.magCap)) : 0;
@@ -417,21 +433,31 @@ function updateLoadout(body, snapshot) {
       // Use horizontal bars for stratagems too — rings render badly at small
       // sizes and don't compose with reload-progress overlays.
       const cdPct = Math.max(0, Math.min(1, s.cooldownPct ?? 1));
+      // Eagles share a single rearm timer once the loadout is fully spent.
+      // Surface that as the bar instead of the per-eagle "exhausted" state, so
+      // the player can see uses are about to come back.
+      const rearmingPct = s.rearmingPct != null ? Math.max(0, Math.min(1, s.rearmingPct)) : null;
+      const isRearming = rearmingPct != null;
       const isReady = cdPct >= 1 && (s.usesRemaining == null || s.usesRemaining > 0);
-      const isExhausted = s.usesRemaining === 0;
+      const isExhausted = !isRearming && s.usesRemaining === 0;
       const callInPct = s.callInPct != null ? Math.max(0, Math.min(1, s.callInPct)) : null;
-      const barClass = isExhausted
-        ? "ana-bar-fill ana-bar-exhausted"
-        : isReady
-          ? "ana-bar-fill ana-bar-ready"
-          : "ana-bar-fill ana-bar-cooldown";
+      const barClass = isRearming
+        ? "ana-bar-fill ana-bar-rearm"
+        : isExhausted
+          ? "ana-bar-fill ana-bar-exhausted"
+          : isReady
+            ? "ana-bar-fill ana-bar-ready"
+            : "ana-bar-fill ana-bar-cooldown";
+      const barPct = isRearming ? rearmingPct : cdPct;
       mid.innerHTML =
-        `<div class="ana-bar-wrap"><div class="${barClass}" style="width:${(cdPct * 100).toFixed(1)}%"></div></div>` +
+        `<div class="ana-bar-wrap"><div class="${barClass}" style="width:${(barPct * 100).toFixed(1)}%"></div></div>` +
         (callInPct != null
           ? `<div class="ana-bar-wrap ana-bar-overlay"><div class="ana-bar-callin" style="width:${(callInPct * 100).toFixed(1)}%"></div></div>`
           : "");
       const usesText = s.usesRemaining == null ? "∞" : String(s.usesRemaining);
-      const stateText = isExhausted ? "spent" : isReady ? "ready" : `${Math.round(cdPct * 100)}%`;
+      const stateText = isRearming
+        ? `rearm ${Math.round(rearmingPct * 100)}%`
+        : isExhausted ? "spent" : isReady ? "ready" : `${Math.round(cdPct * 100)}%`;
       right.innerHTML = `<span class="ana-uses">${stateText} · ${usesText}</span>`;
     }
   });

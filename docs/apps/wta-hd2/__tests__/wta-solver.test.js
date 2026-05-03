@@ -7,6 +7,10 @@ import {
   reserveBlocked,
   efficiencyFor,
   normalizeWeights,
+  expectedDamagePerShot,
+  defaultDispersionRad,
+  defaultFrontalWidth,
+  partHitProbability,
 } from "../wta-solver.js";
 
 // ---------- fixtures ----------
@@ -405,4 +409,144 @@ test("γ=1: small-arms still picks the light target it can actually hurt", () =>
   // Lib has near-zero efficiency vs charger (under-pen → 0.1 mult, 6 dmg/shot,
   // 250 shots-to-kill → eff ≈ 0). Hunter is well-matched.
   assert.equal(out[0].targetId, "h1");
+});
+
+// ---------- defaultDispersionRad ----------
+
+test("defaultDispersionRad: full-auto rifles get ~3.5° cone", () => {
+  // 600+ RPM → 0.06 rad. At 40 m, dispersion = 2.4 m circle.
+  const rifle = { fireRateRpm: 600 };
+  assert.ok(Math.abs(defaultDispersionRad(rifle) - 0.06) < 1e-9);
+});
+
+test("defaultDispersionRad: DMRs get tighter cone than full-auto", () => {
+  const dmr = { fireRateRpm: 360 };
+  const rifle = { fireRateRpm: 700 };
+  assert.ok(defaultDispersionRad(dmr) < defaultDispersionRad(rifle));
+});
+
+test("defaultDispersionRad: precision/single-shot weapons near-zero cone", () => {
+  const railgun = { fireRateRpm: 60 };
+  assert.ok(defaultDispersionRad(railgun) <= 0.01,
+    `single-shot precision should be tight, got ${defaultDispersionRad(railgun)}`);
+});
+
+test("defaultDispersionRad: stratagems / AoE bypass the dispersion model", () => {
+  assert.equal(defaultDispersionRad({ isStratagem: true, fireRateRpm: 60 }), 0);
+  assert.equal(defaultDispersionRad({ aoeRadiusM: 5, fireRateRpm: 600 }), 0);
+});
+
+test("defaultDispersionRad: explicit value passes through", () => {
+  assert.equal(defaultDispersionRad({ dispersionRad: 0.123, fireRateRpm: 600 }), 0.123);
+});
+
+// ---------- partHitProbability ----------
+
+test("partHitProbability: occluded part (frontalWidth=0) is unhittable", () => {
+  const w = makeWeapon({ fireRateRpm: 600 });
+  const t = makeTarget({
+    parts: [
+      { ac: 1, frontalWidth: 1.5 },
+      { ac: 4, frontalWidth: 0, isWeakPoint: true, weakPointMultiplier: 3 }, // butt — behind
+    ],
+  });
+  assert.equal(partHitProbability(w, t, 1, 30), 0);
+});
+
+test("partHitProbability: bigger part = higher hit fraction", () => {
+  const w = makeWeapon({ fireRateRpm: 600 });
+  const t = makeTarget({
+    parts: [{ ac: 1, frontalWidth: 1.5 }, { ac: 1, frontalWidth: 0.3 }],
+  });
+  const pBig   = partHitProbability(w, t, 0, 30);
+  const pSmall = partHitProbability(w, t, 1, 30);
+  assert.ok(pBig > pSmall);
+});
+
+test("partHitProbability: distance lowers hit rate (precise weapon less)", () => {
+  const auto    = makeWeapon({ fireRateRpm: 600 });   // 0.06
+  const sniper  = makeWeapon({ fireRateRpm: 60 });    // 0.005
+  const t = makeTarget({ parts: [{ ac: 1, frontalWidth: 0.5 }] });
+  const autoNear = partHitProbability(auto, t, 0, 5);
+  const autoFar  = partHitProbability(auto, t, 0, 50);
+  const snipFar  = partHitProbability(sniper, t, 0, 50);
+  assert.ok(autoNear > autoFar);
+  assert.ok(snipFar > autoFar, `sniper at 50m (${snipFar}) should beat auto at 50m (${autoFar})`);
+});
+
+// ---------- expectedDamagePerShot under the dispersion model ----------
+
+test("expectedDamagePerShot: Liberator full-auto at 40m on hunter ≤ 10% per-shot effective", () => {
+  // User's intuition: Maxigun/Liberator-class full-auto can't hit a small
+  // target from 40m more than ~10% of the time. Hunter ≈ 0.5m frontal.
+  const lib = makeWeapon({ damage: 60, armorPen: 2, fireRateRpm: 600, shotsAvailableThisTick: 1 });
+  const hunter = makeTarget({
+    threatTier: "light", hp: 60,
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    distanceM: 40,
+  });
+  // Effective damage = damage × pHit × armorMult. 60 × pHit × 1 (ap > ac).
+  // pHit at 40m with auto (0.06×40=2.4m disp, 0.5m hunter) = 0.5/2.9 ≈ 0.17.
+  // 60 × 0.17 ≈ 10. Per-shot effective < 12.
+  const e = expectedDamagePerShot(lib, hunter, 40);
+  assert.ok(e < 12, `expected ≤12 effective dmg/shot at 40m, got ${e}`);
+  // At point-blank (5m), the same weapon should hit nearly every time.
+  const eClose = expectedDamagePerShot(lib, hunter, 5);
+  assert.ok(eClose > 30, `expected ≥30 dmg/shot at 5m, got ${eClose}`);
+});
+
+test("expectedDamagePerShot: precise weapon doesn't suffer at distance", () => {
+  // Single-shot precision (railgun-ish, low RPM, high damage).
+  const rail = makeWeapon({ damage: 600, armorPen: 5, fireRateRpm: 60, shotsAvailableThisTick: 1 });
+  const charger = makeTarget({
+    threatTier: "heavy", hp: 1500,
+    parts: [
+      { ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 },
+    ],
+    distanceM: 40,
+  });
+  const e = expectedDamagePerShot(rail, charger, 40);
+  // Disp = 0.005 × 40 = 0.2m; pHit = 1.5/(0.2+1.5) ≈ 0.88; dmg ≈ 600×0.88 ≈ 528.
+  assert.ok(e > 400, `precise weapon at 40m should still deliver, got ${e}`);
+});
+
+test("expectedDamagePerShot: occluded weakpoint never crits", () => {
+  // Charger butt — frontalWidth = 0 from front. Even with a high-pen weapon
+  // that COULD pen the butt's ac=3, the butt is behind the model and the
+  // weapon should hit the front (body, ac=5) at glancing armor.
+  const eat = makeWeapon({ damage: 1500, armorPen: 6, fireRateRpm: 60, shotsAvailableThisTick: 1 });
+  const charger = makeTarget({
+    threatTier: "heavy", hp: 1500,
+    parts: [
+      { ac: 5, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 },
+      { ac: 3, frontalWidth: 0, hpFraction: 1, isWeakPoint: true, weakPointMultiplier: 3 }, // butt — occluded
+    ],
+    distanceM: 30,
+  });
+  const e = expectedDamagePerShot(eat, charger, 30);
+  // EAT (ap=6) overpens body (ac=5+1) → armorMult=1.0, damage 1500.
+  // Butt is occluded → no weakpoint contribution.
+  // pHitBody at 30m precision ≈ 1.5/(0.15+1.5) ≈ 0.91.
+  assert.ok(e < 1500, "shouldn't ever exceed raw damage");
+  assert.ok(e > 1200, `EAT at body should hit hard, got ${e}`);
+  // Now a hypothetical visible butt (frontalWidth > 0) should yield higher
+  // expected damage thanks to the 3× weakpoint multiplier.
+  const visBut = { ...charger, parts: [
+    charger.parts[0],
+    { ...charger.parts[1], frontalWidth: 0.3 },
+  ]};
+  const eVis = expectedDamagePerShot(eat, visBut, 30);
+  assert.ok(eVis > e, `visible butt should raise expected damage (${eVis} vs occluded ${e})`);
+});
+
+test("expectedDamagePerShot: AoE/stratagem path bypasses dispersion (deterministic)", () => {
+  // Stratagem with aoeRadiusM > 0 → defaultDispersionRad = 0 → deterministic.
+  // Result must NOT depend on distanceM.
+  const eagle = makeWeapon({ damage: 2000, armorPen: 6, aoeRadiusM: 12, fireRateRpm: 60 });
+  const t = makeTarget({
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+  });
+  const eNear = expectedDamagePerShot(eagle, t, 1);
+  const eFar  = expectedDamagePerShot(eagle, t, 100);
+  assert.equal(eNear, eFar);
 });

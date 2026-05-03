@@ -1,0 +1,54 @@
+{
+  "cfgKey": "terminids/standard/patrol/d9/seed42/α0.4/γ0.3/liberator/peacemaker/frag/sentry-mg,eagle-airstrike,orbital-precision,eat",
+  "ticks": 300,
+  "finalT": 30000,
+  "finalTickN": 300,
+  "scores": {
+    "advance": {
+      "kills": 24,
+      "fractionCleared": 0.8889
+    },
+    "survival": {
+      "closestEnemyM": 52.4878
+    }
+  },
+  "killsByTier": {
+    "light": 17,
+    "medium": 7,
+    "heavy": 0,
+    "boss": 0
+  },
+  "totalAssignments": 231,
+  "totalShots": 231,
+  "modeHistogram": {
+    "HOLD": 0,
+    "KITE": 300,
+    "PUSH": 0
+  },
+  "heatmapTop3": [
+    {
+      "weapon": "primary",
+      "archetype": "terminid-bile-spewer",
+      "credit": 104
+    },
+    {
+      "weapon": "primary",
+      "archetype": "terminid-scavenger",
+      "credit": 52
+    },
+    {
+      "weapon": "primary",
+      "archetype": "terminid-charger",
+      "credit": 44
+    }
+  ],
+  "shotShare": {
+    "primary": 0.9697,
+    "secondary": 0.0087,
+    "strat-1": 0.0043,
+    "strat-2": 0.0087,
+    "strat-3": 0.0043,
+    "strat-4": 0.0043
+  },
+  "finalAlive": 3
+}

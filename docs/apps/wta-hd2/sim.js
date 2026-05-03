@@ -205,6 +205,7 @@ function initStratagems(loadout = {}, data = {}) {
     m.set(slot, {
       id: slot,
       defId: def.id,
+      name: def.name ?? def.id,
       type: def.type,
       cooldownUntil: 0,
       // cooldownStartT lets the snapshot compute progress against the actual

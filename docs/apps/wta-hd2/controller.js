@@ -121,6 +121,16 @@ export function createController({ engineFactory, initialCfg, data, schedule } =
         rebuildEngine();
         break;
       }
+      case "TRIGGER_WAVE": {
+        // Manual override: spawn the next wave at the current sim time. Doesn't
+        // pause playback or rebuild the engine — events land in scheduled and
+        // fire on the next tick. Independent of any auto-queued wave.
+        if (typeof engine.triggerNextWave === "function") {
+          engine.triggerNextWave(state);
+          emit();
+        }
+        break;
+      }
       case "SET_RESERVE": {
         const reserves = { ...(cfg.solver?.reserves ?? {}) };
         reserves[action.stratagemSlot] = action.reserve;

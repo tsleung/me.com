@@ -1,0 +1,53 @@
+{
+  "cfgKey": "illuminate/standard/patrol/d5/seed42/α0.4/γ0.3/liberator/peacemaker/frag/sentry-mg,eagle-airstrike,orbital-precision,eat",
+  "ticks": 300,
+  "finalT": 30000,
+  "finalTickN": 300,
+  "scores": {
+    "advance": {
+      "kills": 9,
+      "fractionCleared": 0.6429
+    },
+    "survival": {
+      "closestEnemyM": 58.0595
+    }
+  },
+  "killsByTier": {
+    "light": 8,
+    "medium": 1,
+    "heavy": 0,
+    "boss": 0
+  },
+  "totalAssignments": 179,
+  "totalShots": 179,
+  "modeHistogram": {
+    "HOLD": 11,
+    "KITE": 269,
+    "PUSH": 20
+  },
+  "heatmapTop3": [
+    {
+      "weapon": "primary",
+      "archetype": "illuminate-overseer",
+      "credit": 111
+    },
+    {
+      "weapon": "primary",
+      "archetype": "illuminate-watcher",
+      "credit": 41
+    },
+    {
+      "weapon": "primary",
+      "archetype": "illuminate-voteless",
+      "credit": 22
+    }
+  ],
+  "shotShare": {
+    "primary": 0.9721,
+    "strat-1": 0.0056,
+    "strat-2": 0.0112,
+    "strat-3": 0.0056,
+    "strat-4": 0.0056
+  },
+  "finalAlive": 5
+}

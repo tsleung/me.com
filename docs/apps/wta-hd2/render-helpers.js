@@ -1,7 +1,8 @@
 // Pure helper math for render-battlefield.js. No DOM, no canvas.
 // Extracted so the math is testable without jsdom/puppeteer.
 
-// World is in meters. Player at world (0, 0) sits near screen bottom-center.
+// World is in meters. The camera follows the player: whatever world position
+// is given as `dims.camera` renders at screen bottom-center (player anchor).
 // Forward (+y in world) goes UP on the screen (subtract y), so the wave
 // approaches from the top of the canvas.
 // Lateral (+x in world) goes RIGHT on the screen.
@@ -23,8 +24,10 @@ export function pixelsPerMeter(W, H) {
 export function worldToScreen(p, dims) {
   const { W, H } = dims;
   const ppm = pixelsPerMeter(W, H);
-  const sx = W / 2 + (p.x ?? 0) * ppm;
-  const sy = (H - PLAYER_BOTTOM_GUTTER_PX) - (p.y ?? 0) * ppm;
+  const camX = dims.camera?.x ?? 0;
+  const camY = dims.camera?.y ?? 0;
+  const sx = W / 2 + ((p.x ?? 0) - camX) * ppm;
+  const sy = (H - PLAYER_BOTTOM_GUTTER_PX) - ((p.y ?? 0) - camY) * ppm;
   return { sx, sy };
 }
 
@@ -105,6 +108,37 @@ const FAMILY_STYLE = {
 
 export function familyStyle(family) {
   return FAMILY_STYLE[family] ?? FAMILY_STYLE.bullet;
+}
+
+// Heavy launcher-style weapons whose reload roots the player in HD2:
+// the diver kneels, can't move, can't fire anything else. Surfacing this
+// to the renderer drives both the reload bar color and the movement-arrow
+// "RELOAD" mode tag. Anti-tank rocket family — recoilless / spear / EAT /
+// quasar — plus autocannon (backpack-fed). Eruptor/crossbow reload faster
+// and don't lock movement.
+export function weaponRoots(defId) {
+  const id = String(defId || "").toLowerCase();
+  return /recoilless|spear|(^|[-_])eat([-_]|$)|quasar|autocannon|airburst|commando|grenade-launcher|hmg|stalwart-em|railgun/.test(id);
+}
+
+// Heavy explosives get a multi-stage firing visual (back-blast → smoke trail
+// → delayed explosion). Without this, an EAT hit looks identical to a Liberator
+// burst — the rare, high-impact shots disappear into the noise. Subset of the
+// explosive family that *travels* (drops the rocket trail). Eruptor / crossbow
+// stay on the simpler explosion-only path since the projectile is small.
+export function weaponFiresRocket(defId) {
+  const id = String(defId || "").toLowerCase();
+  return /recoilless|spear|(^|[-_])eat([-_]|$)|quasar|autocannon|airburst|commando|rocket|missile/.test(id);
+}
+
+// Compact label for reload bars / HUD chips. Strips slot prefixes and
+// hyphens; uppercased for monospace readability over the battlefield.
+export function shortWeaponName(defId) {
+  if (!defId) return "WEAPON";
+  return String(defId)
+    .replace(/^(primary|secondary|grenade|support)-/, "")
+    .replace(/-/g, " ")
+    .toUpperCase();
 }
 
 export function hpBarWidth(currentHp, hpMax, maxWidthPx) {

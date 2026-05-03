@@ -84,6 +84,62 @@
         "armor": "siege-ready",
         "booster": "hellpod-optimization"
       }
+    },
+    {
+      "id": "all-gas-no-brakes",
+      "name": "All gas, no brakes",
+      "blurb": "Chemical warfare. Gas grenade + Orbital Gas Strike + gas mines + napalm cloud cover. Crisper for close-range residue. Confuses bug breaches; suffocates patrols.",
+      "scenario": { "faction": "terminids", "subfaction": "standard", "encounter": "breach", "difficulty": 7 },
+      "loadout": {
+        "primary": "punisher",
+        "secondary": "crisper",
+        "grenade": "gas",
+        "stratagems": ["orbital-gas", "gas-mines", "eagle-napalm", "guard-dog"],
+        "armor": "scout",
+        "booster": "stamina"
+      }
+    },
+    {
+      "id": "all-lasers",
+      "name": "All lasers",
+      "blurb": "Pure energy weapons. Sickle (heat-vent) + LAS-17 Double-Edge melee + Quasar + Orbital Laser + Guard Dog Rover (AX/LAS-5) + Arc Thrower for chain stuns. No bullets, just photons.",
+      "scenario": { "faction": "automatons", "subfaction": "standard", "encounter": "patrol", "difficulty": 7 },
+      "loadout": {
+        "primary": "sickle",
+        "secondary": "stun-lance",
+        "grenade": "stun",
+        "stratagems": ["quasar", "orbital-laser", "guard-dog", "arc-thrower"],
+        "armor": "scout",
+        "booster": "stamina"
+      }
+    },
+    {
+      "id": "lots-of-bullets",
+      "name": "Lots of bullets",
+      "blurb": "Maximum dakka. Liberator + Redeemer SMG (1100 rpm) + Stalwart + MG-43 + Gatling Sentry + supply pack to feed it all. No anti-tank — stratagems handle the chaff so you can outrun heavies.",
+      "scenario": { "faction": "terminids", "subfaction": "standard", "encounter": "patrol", "difficulty": 7 },
+      "loadout": {
+        "primary": "liberator",
+        "secondary": "redeemer",
+        "grenade": "frag",
+        "stratagems": ["stalwart", "machine-gun", "sentry-gatling", "supply-pack"],
+        "armor": "siege-ready",
+        "booster": "hellpod-optimization"
+      }
+    },
+    {
+      "id": "lots-of-fire",
+      "name": "Lots of fire",
+      "blurb": "Burn it all. Incendiary Breaker + P-72 Crisper + thermite grenade + Flamethrower + Eagle Napalm + Incendiary Mines. Firebomb Hellpods so even your drop pods burn. Predator-strain melts.",
+      "scenario": { "faction": "terminids", "subfaction": "predator-strain", "encounter": "breach", "difficulty": 7 },
+      "loadout": {
+        "primary": "incendiary-breaker",
+        "secondary": "crisper",
+        "grenade": "thermite",
+        "stratagems": ["flamethrower", "eagle-napalm", "incendiary-mines", "eagle-airstrike"],
+        "armor": "fortified",
+        "booster": "firebomb-hellpods"
+      }
     }
   ]
 }

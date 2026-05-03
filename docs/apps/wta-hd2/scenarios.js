@@ -73,8 +73,15 @@ function synthesizeEncounter(data, cfg) {
       if (pool.length === 0) continue;
       const target = Math.round(baseSpawns.total * weight);
       if (target === 0) continue;
-      const perEnemy = Math.max(1, Math.floor(target / pool.length));
-      for (const ene of pool) {
+      // When the pool has more archetypes than the target count (common for
+      // bosses/heavies in factions with rich rosters), pick a deterministic
+      // subset of `target` archetypes at count=1 each. Otherwise distribute
+      // `target` across the full pool.
+      const subset = pool.length > target
+        ? deterministicSample(pool, target, `${cfg.faction}|${tier}|${diff}`)
+        : pool;
+      const perEnemy = Math.max(1, Math.floor(target / subset.length));
+      for (const ene of subset) {
         const idx = composition.length;
         composition.push({
           enemyId: ene.id,
@@ -195,16 +202,30 @@ function drawCount(count, rng) {
   return 1;
 }
 
-// Wiki-derived patrol cadence: ~90s between patrols at diff 1, ~30s at diff 10
-// (notes/wta-hd2/2026_05_03_patrol_compositions_and_spawn_rates.md). Linear in
-// difficulty. Used as the default for the infinite-wave loop.
-export function defaultWaveCadenceSecs(diff) {
-  const d = clamp(Number(diff) || 5, 1, 10);
-  return Math.round(90 - (d - 1) * (60 / 9));
+// Default cadence for the infinite-wave loop. Fixed at 43s — roughly the
+// wiki-derived patrol cadence at diff 8, and a value the user dials around.
+// Kept as a function (not a const) for callers that pass difficulty.
+export function defaultWaveCadenceSecs(_diff) {
+  return 43;
 }
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
+}
+
+// Pick `n` items from `pool` deterministically given a seed string, so the
+// same (faction, tier, difficulty) always yields the same subset across
+// rebuilds. Order within the subset preserves pool order.
+function deterministicSample(pool, n, seedStr) {
+  if (n >= pool.length) return [...pool];
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) h = ((h ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
+  const scored = pool.map((e, i) => {
+    h = ((h ^ i) * 16777619) >>> 0;
+    return { e, i, key: h };
+  });
+  scored.sort((a, b) => a.key - b.key);
+  return scored.slice(0, n).sort((a, b) => a.i - b.i).map((s) => s.e);
 }
 
 function degToRad(d) { return (d * Math.PI) / 180; }

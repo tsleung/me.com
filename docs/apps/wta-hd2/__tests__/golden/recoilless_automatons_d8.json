@@ -1,0 +1,54 @@
+{
+  "cfgKey": "automatons/standard/breach/d8/seed7/α0.4/γ0.5/incendiary-breaker/verdict/impact/recoilless,supply-pack,eagle-airstrike,orbital-gatling",
+  "ticks": 300,
+  "finalT": 30000,
+  "finalTickN": 300,
+  "scores": {
+    "advance": {
+      "kills": 20,
+      "fractionCleared": 0.5128
+    },
+    "survival": {
+      "closestEnemyM": 26.5931
+    }
+  },
+  "killsByTier": {
+    "light": 12,
+    "medium": 8,
+    "heavy": 0,
+    "boss": 0
+  },
+  "totalAssignments": 118,
+  "totalShots": 118,
+  "modeHistogram": {
+    "HOLD": 3,
+    "KITE": 297,
+    "PUSH": 0
+  },
+  "heatmapTop3": [
+    {
+      "weapon": "primary",
+      "archetype": "automaton-rocket-devastator",
+      "credit": 16
+    },
+    {
+      "weapon": "primary",
+      "archetype": "automaton-scout-strider",
+      "credit": 15.5
+    },
+    {
+      "weapon": "primary",
+      "archetype": "automaton-heavy-devastator",
+      "credit": 10.5
+    }
+  ],
+  "shotShare": {
+    "grenade": 0.0424,
+    "primary": 0.5,
+    "secondary": 0.4237,
+    "strat-1": 0.0085,
+    "strat-3": 0.0169,
+    "strat-4": 0.0085
+  },
+  "finalAlive": 19
+}

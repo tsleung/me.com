@@ -18,7 +18,7 @@ const ENCOUNTERS = ["patrol", "breach", "drop"];
 const FACTIONS = ["terminids", "automatons", "illuminate"];
 const TICK_MS = 100;
 
-export function mountCompare({ rootEl, engineFactory, getCfg, data, getActive, mode = "factions" }) {
+export function mountCompare({ rootEl, engineFactory, getCfg, data, getActive, isPlaying, mode = "factions" }) {
   rootEl.classList.add("wta-compare-root");
   injectStyles();
   rootEl.innerHTML = "";
@@ -45,6 +45,11 @@ export function mountCompare({ rootEl, engineFactory, getCfg, data, getActive, m
 
   function loop() {
     if (!running) return;
+    if (isPlaying && !isPlaying()) {
+      running = false;
+      if (timer != null) { clearTimeout(timer); timer = null; }
+      return;
+    }
     for (const lane of lanes) {
       lane.state = lane.engine.tick(lane.state);
       paintLane(lane, lane.engine.view(lane.state));
@@ -54,6 +59,7 @@ export function mountCompare({ rootEl, engineFactory, getCfg, data, getActive, m
 
   function start() {
     if (running) return;
+    if (isPlaying && !isPlaying()) return;
     running = true;
     loop();
   }
@@ -74,10 +80,11 @@ export function mountCompare({ rootEl, engineFactory, getCfg, data, getActive, m
   }
 
   const observer = new MutationObserver(() => {
-    if (getActive?.()) start(); else stop();
+    if (getActive?.() && (!isPlaying || isPlaying())) start();
+    else stop();
   });
   observer.observe(rootEl, { attributes: true, attributeFilter: ["data-active"] });
-  if (getActive?.()) start();
+  if (getActive?.() && (!isPlaying || isPlaying())) start();
 
   return {
     start, stop, reset,
@@ -193,10 +200,17 @@ function paintLaneCanvas(canvas, snap) {
   const ctx = canvas.getContext("2d");
   const W = canvas.width;
   const H = canvas.height;
+  // Camera follows the diver, same convention as render-battlefield.js, so
+  // a kiting helldiver doesn't walk off the lane canvas.
+  const player = snap.player || { x: 0, y: 0 };
+  const camX = player.x ?? 0;
+  const camY = player.y ?? 0;
   const cx = W / 2;
   const cy = H - 18;
   const maxRangeM = 80;
   const ppm = (H - 24) / maxRangeM;
+  const wx = (x) => cx + (x - camX) * ppm;
+  const wy = (y) => cy - (y - camY) * ppm;
 
   // bg
   ctx.fillStyle = "#0e0e10";
@@ -220,14 +234,56 @@ function paintLaneCanvas(canvas, snap) {
     ctx.stroke();
   }
 
+  // persistent effects (gas/dot clouds, sentries, call-in beacons, mines).
+  // Compact glyphs only — no labels — since the lane canvas is small.
+  for (const eff of (snap.effects ?? [])) {
+    const sx = wx(eff.x ?? 0);
+    const sy = wy(eff.y ?? 0);
+    const r = (eff.radiusM ?? 1) * ppm;
+    if (eff.kind === "dot" || eff.kind === "gas") {
+      const sub = eff.subKind || (eff.kind === "gas" ? "gas" : "gas");
+      const inner = sub === "fire" ? "rgba(255,130,40,0.45)"
+        : sub === "laser" ? "rgba(255,100,100,0.45)"
+        : "rgba(120,200,80,0.4)";
+      const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+      grad.addColorStop(0, inner);
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (eff.kind === "sentry") {
+      ctx.fillStyle = "rgba(154,166,255,0.85)";
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 4);
+      ctx.lineTo(sx - 3, sy + 3);
+      ctx.lineTo(sx + 3, sy + 3);
+      ctx.closePath();
+      ctx.fill();
+    } else if (eff.kind === "callin") {
+      ctx.strokeStyle = "rgba(58,255,200,0.8)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(3, r), 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (eff.kind === "mine" || eff.kind === "pickup") {
+      ctx.fillStyle = eff.kind === "mine" ? "#ffb13a" : "#ff9050";
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   // enemies
   const fac = snap.scenario?.faction;
   const facColor = fac === "automatons" ? "#c0413f" : fac === "illuminate" ? "#6db5ff" : "#d97a2c";
   const enemies = snap.enemies ?? [];
+  const enemyById = new Map();
   for (const e of enemies) {
     if (!e.alive) continue;
-    const sx = cx + e.x * ppm;
-    const sy = cy - e.y * ppm;
+    enemyById.set(e.id, e);
+    const sx = wx(e.x);
+    const sy = wy(e.y);
     const r = e.threatTier === "boss" ? 4 : e.threatTier === "heavy" ? 3 : e.threatTier === "medium" ? 2 : 1.5;
     ctx.fillStyle = facColor;
     ctx.beginPath();
@@ -235,11 +291,61 @@ function paintLaneCanvas(canvas, snap) {
     ctx.fill();
   }
 
+  // projectiles — tiny line tails + AoE rings
+  for (const p of (snap.projectiles ?? [])) {
+    const sx = wx(p.x);
+    const sy = wy(p.y);
+    if (p.kind === "aoe") {
+      ctx.strokeStyle = "rgba(255,200,80,0.6)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, (p.radiusM ?? 4) * ppm, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      const tailX = sx - (p.vx ?? 0) * ppm * 0.05;
+      const tailY = sy + (p.vy ?? 0) * ppm * 0.05;
+      ctx.strokeStyle = "#fff2c4";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(tailX, tailY);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+    }
+  }
+
+  // tracers — bright lines from diver to each assigned target this tick.
+  // Most prominent visual cue that the loadout is actually shooting; without
+  // these the lane looks idle even at 2 kills/sec. Single batched stroke.
+  const px = wx(player.x ?? 0);
+  const py = wy(player.y ?? 0);
+  ctx.strokeStyle = "rgba(255,242,196,0.85)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const a of (snap.assignments ?? [])) {
+    const t = enemyById.get(a.targetId);
+    if (!t) continue;
+    ctx.moveTo(px, py);
+    ctx.lineTo(wx(t.x), wy(t.y));
+  }
+  ctx.stroke();
+
+  // assignment tell rings — one thin ring per assigned target so the user
+  // sees what's being shot at, not just streaks toward dots.
+  ctx.strokeStyle = "rgba(255,242,196,0.7)";
+  ctx.lineWidth = 0.8;
+  for (const a of (snap.assignments ?? [])) {
+    const t = enemyById.get(a.targetId);
+    if (!t) continue;
+    const r = (t.threatTier === "boss" ? 4 : t.threatTier === "heavy" ? 3 : t.threatTier === "medium" ? 2 : 1.5) + 2;
+    ctx.beginPath();
+    ctx.arc(wx(t.x), wy(t.y), r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   // fx flashes
-  const now = snap.t || 0;
   for (const f of (snap.fxFlashes ?? [])) {
-    const sx = cx + f.x * ppm;
-    const sy = cy - f.y * ppm;
+    const sx = wx(f.x);
+    const sy = wy(f.y);
     const r = Math.max(2, (f.r || 2) * 1.5);
     const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
     if (f.kind === "gas") {
@@ -261,7 +367,7 @@ function paintLaneCanvas(canvas, snap) {
     ctx.fill();
   }
 
-  // player triangle
+  // player triangle (always at screen center-bottom thanks to camera)
   ctx.fillStyle = "#f2f2ee";
   ctx.beginPath();
   ctx.moveTo(cx, cy - 5);

@@ -83,6 +83,16 @@ async function main() {
       }
     }
 
+    const diverCanvas = document.getElementById("diver-profile");
+    if (diverCanvas) {
+      try {
+        const { mountDiverProfile } = await import("./render-diver-profile.js");
+        mountDiverProfile(diverCanvas, controller);
+      } catch (e) {
+        console.warn("diver-profile render unavailable:", e?.message ?? e);
+      }
+    }
+
     const analyticsRoot = document.querySelector(".analytics");
     if (analyticsRoot) {
       try {
@@ -109,6 +119,7 @@ async function main() {
           getCfg: () => controller.getCfg(),
           data,
           getActive: () => active,
+          isPlaying: () => controller.isPlaying?.() ?? false,
           mode: "factions",
         });
         const refresh = () => {
@@ -133,6 +144,24 @@ async function main() {
             refresh();
           });
         });
+        // Sync compare lanes with controller play/pause/restart.
+        let lastPlaying = controller.isPlaying?.() ?? false;
+        const syncCompareToPlay = () => {
+          const playing = controller.isPlaying?.() ?? false;
+          if (playing === lastPlaying) return;
+          lastPlaying = playing;
+          if (!active) return;
+          if (playing) compare.start(); else compare.stop();
+        };
+        const _prevDispatch = controller.dispatch;
+        controller.dispatch = (action) => {
+          _prevDispatch.call(controller, action);
+          if (action?.type === "RESTART" && active) compare.reset();
+          syncCompareToPlay();
+        };
+        // Belt-and-suspenders: also sync on every controller emit, in case
+        // some path mutates play state without going through dispatch.
+        controller.subscribe(() => syncCompareToPlay());
       } catch (e) {
         console.warn("compare mode unavailable:", e?.message ?? e);
         modeSeg.querySelectorAll(".seg-btn").forEach((b) => (b.disabled = true));

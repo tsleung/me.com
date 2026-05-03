@@ -284,5 +284,591 @@
     "speedMps": 2.5,
     "subfactionTags": [],
     "threatTier": "boss"
+  },
+  {
+    "attackRangeM": 35,
+    "faction": "automatons",
+    "glyph": "tri",
+    "hp": 100,
+    "id": "automaton-trooper",
+    "meleeDps": 4,
+    "name": "Trooper",
+    "outline": false,
+    "paletteShift": 0.1,
+    "parts": [
+      {
+        "ac": 2,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 2,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 8,
+    "speedMps": 3,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 4,
+    "faction": "automatons",
+    "glyph": "wedge",
+    "hp": 140,
+    "id": "automaton-raider",
+    "meleeDps": 14,
+    "name": "Raider",
+    "outline": false,
+    "paletteShift": -0.05,
+    "parts": [
+      {
+        "ac": 2,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 2,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 4,
+    "speedMps": 5,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 40,
+    "faction": "automatons",
+    "glyph": "ring",
+    "hp": 220,
+    "id": "automaton-scout-strider",
+    "meleeDps": 0,
+    "name": "Scout Strider",
+    "outline": true,
+    "paletteShift": 0.05,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.35,
+        "isWeakPoint": true,
+        "name": "rider",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 4,
+        "hpFraction": 0.65,
+        "isWeakPoint": false,
+        "name": "chassis",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 12,
+    "speedMps": 2.5,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 6,
+    "faction": "automatons",
+    "glyph": "hex",
+    "hp": 320,
+    "id": "automaton-berserker",
+    "meleeDps": 35,
+    "name": "Berserker",
+    "outline": false,
+    "paletteShift": -0.1,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "midriff",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 4.5,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 45,
+    "faction": "automatons",
+    "glyph": "bar",
+    "hp": 380,
+    "id": "automaton-devastator",
+    "meleeDps": 0,
+    "name": "Devastator",
+    "outline": false,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "torso",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 18,
+    "speedMps": 2,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 55,
+    "faction": "automatons",
+    "glyph": "bar",
+    "hp": 450,
+    "id": "automaton-heavy-devastator",
+    "meleeDps": 0,
+    "name": "Heavy Devastator",
+    "outline": true,
+    "paletteShift": -0.1,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 4,
+        "hpFraction": 0.8,
+        "isWeakPoint": false,
+        "name": "torso",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 28,
+    "speedMps": 2,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 60,
+    "faction": "automatons",
+    "glyph": "bar",
+    "hp": 420,
+    "id": "automaton-rocket-devastator",
+    "meleeDps": 0,
+    "name": "Rocket Devastator",
+    "outline": false,
+    "paletteShift": 0.15,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "shoulder-pods",
+        "weakPointMultiplier": 1.5
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.5,
+        "isWeakPoint": false,
+        "name": "torso",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 32,
+    "speedMps": 2,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 8,
+    "faction": "automatons",
+    "glyph": "ring",
+    "hp": 1500,
+    "id": "automaton-hulk-bruiser",
+    "meleeDps": 55,
+    "name": "Hulk Bruiser",
+    "outline": true,
+    "paletteShift": -0.15,
+    "parts": [
+      {
+        "ac": 4,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "eye",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "vent",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 6,
+        "hpFraction": 0.5,
+        "isWeakPoint": false,
+        "name": "chassis",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 2.8,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 25,
+    "faction": "automatons",
+    "glyph": "ring",
+    "hp": 1500,
+    "id": "automaton-hulk-scorcher",
+    "meleeDps": 20,
+    "name": "Hulk Scorcher",
+    "outline": true,
+    "paletteShift": 0.15,
+    "parts": [
+      {
+        "ac": 4,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "eye",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "vent",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 6,
+        "hpFraction": 0.5,
+        "isWeakPoint": false,
+        "name": "chassis",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 38,
+    "speedMps": 2.8,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 70,
+    "faction": "automatons",
+    "glyph": "ring",
+    "hp": 2400,
+    "id": "automaton-tank-annihilator",
+    "meleeDps": 0,
+    "name": "Annihilator Tank",
+    "outline": true,
+    "paletteShift": -0.25,
+    "parts": [
+      {
+        "ac": 5,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "turret-vent",
+        "weakPointMultiplier": 2.5
+      },
+      {
+        "ac": 7,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "hull",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 60,
+    "speedMps": 1.5,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 60,
+    "faction": "automatons",
+    "glyph": "ring",
+    "hp": 1100,
+    "id": "automaton-gunship",
+    "meleeDps": 0,
+    "name": "Gunship",
+    "outline": true,
+    "paletteShift": 0.2,
+    "parts": [
+      {
+        "ac": 4,
+        "hpFraction": 0.4,
+        "isWeakPoint": true,
+        "name": "thrusters",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 4,
+        "hpFraction": 0.6,
+        "isWeakPoint": false,
+        "name": "fuselage",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 26,
+    "speedMps": 4.5,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 70,
+    "faction": "automatons",
+    "glyph": "star",
+    "hp": 5500,
+    "id": "automaton-factory-strider",
+    "meleeDps": 30,
+    "name": "Factory Strider",
+    "outline": true,
+    "paletteShift": -0.05,
+    "parts": [
+      {
+        "ac": 5,
+        "hpFraction": 0.15,
+        "isWeakPoint": true,
+        "name": "belly-port",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "chin-guns",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 7,
+        "hpFraction": 0.65,
+        "isWeakPoint": false,
+        "name": "hull",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 75,
+    "speedMps": 1.8,
+    "subfactionTags": [],
+    "threatTier": "boss"
+  },
+  {
+    "attackRangeM": 2,
+    "faction": "illuminate",
+    "glyph": "wedge",
+    "hp": 60,
+    "id": "illuminate-voteless",
+    "meleeDps": 10,
+    "name": "Voteless",
+    "outline": false,
+    "paletteShift": -0.15,
+    "parts": [
+      {
+        "ac": 1,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 1,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 4.5,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 30,
+    "faction": "illuminate",
+    "glyph": "tri",
+    "hp": 90,
+    "id": "illuminate-watcher",
+    "meleeDps": 0,
+    "name": "Watcher",
+    "outline": false,
+    "paletteShift": 0.25,
+    "parts": [
+      {
+        "ac": 1,
+        "hpFraction": 1,
+        "isWeakPoint": false,
+        "name": "drone",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 5,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 35,
+    "faction": "illuminate",
+    "glyph": "hex",
+    "hp": 420,
+    "id": "illuminate-overseer",
+    "meleeDps": 18,
+    "name": "Overseer",
+    "outline": false,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 2,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 18,
+    "speedMps": 3.5,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 45,
+    "faction": "illuminate",
+    "glyph": "hex",
+    "hp": 560,
+    "id": "illuminate-elevated-overseer",
+    "meleeDps": 12,
+    "name": "Elevated Overseer",
+    "outline": true,
+    "paletteShift": 0.1,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 24,
+    "speedMps": 3.5,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 60,
+    "faction": "illuminate",
+    "glyph": "ring",
+    "hp": 1700,
+    "id": "illuminate-harvester",
+    "meleeDps": 0,
+    "name": "Harvester",
+    "outline": true,
+    "paletteShift": -0.1,
+    "parts": [
+      {
+        "ac": 5,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "eye",
+        "weakPointMultiplier": 2.5
+      },
+      {
+        "ac": 4,
+        "hpFraction": 0.4,
+        "isWeakPoint": true,
+        "name": "joints",
+        "weakPointMultiplier": 1.5
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.4,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 36,
+    "speedMps": 2.8,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 65,
+    "faction": "illuminate",
+    "glyph": "star",
+    "hp": 5000,
+    "id": "illuminate-leviathan",
+    "meleeDps": 0,
+    "name": "Leviathan",
+    "outline": true,
+    "paletteShift": 0.15,
+    "parts": [
+      {
+        "ac": 5,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "core",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 6,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "hull",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 60,
+    "speedMps": 2,
+    "subfactionTags": [],
+    "threatTier": "boss"
   }
 ]

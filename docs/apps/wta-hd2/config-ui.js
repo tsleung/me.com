@@ -18,7 +18,7 @@ export function defaultConfig(data) {
   const helldiver = presets.find((p) => p.id === "default-helldiver");
   if (helldiver) {
     return {
-      scenario: { spawnRateMultiplier: 1.0, infiniteWaves: true, waveCadenceSecs: null, ...helldiver.scenario },
+      scenario: { spawnRateMultiplier: 1.0, infiniteWaves: true, waveCadenceSecs: 43, playerMovement: false, ...helldiver.scenario },
       loadout: {
         stratagems: [...helldiver.loadout.stratagems],
         primary: helldiver.loadout.primary,
@@ -101,7 +101,14 @@ export function mountConfigUI(rootEl, controller, data) {
   bindDifficulty(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
   bindSpawnRate(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
   bindInfiniteWaves(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
+  bindPlayerMovement(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
   bindWaveCadence(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
+  bindSpawnNow(rootEl, controller);
+  const unsub = controller.subscribe((snap) => {
+    paintWaveTimer(rootEl, cfg, snap);
+    paintWaveSpawnLog(rootEl, snap);
+  });
+  cleanup.push(unsub);
   bindLoadout(rootEl, cfg, data, (newCfg) => commit(newCfg, "SET_LOADOUT"));
   bindAlpha(rootEl, cfg, (newCfg) => commit(newCfg, "SET_ALPHA"));
   bindGamma(rootEl, cfg, (newCfg) => commit(newCfg, "SET_GAMMA"));
@@ -129,6 +136,7 @@ export function mountConfigUI(rootEl, controller, data) {
     syncUrlHash(cfg);
     if (kind === "SET_SCENARIO") {
       paintWaveCadenceState(rootEl, cfg);
+      paintWaveTimer(rootEl, cfg, controller.getSnapshot?.());
       controller.dispatch({ type: "SET_SCENARIO", scenario: cfg.scenario });
     }
     else if (kind === "SET_LOADOUT") controller.dispatch({ type: "SET_LOADOUT", loadout: cfg.loadout });
@@ -166,8 +174,9 @@ function mergeConfig(def, stored, data) {
     const m = Number(stored.scenario.spawnRateMultiplier);
     if (Number.isFinite(m) && m >= 0.25 && m <= 4) cfg.scenario.spawnRateMultiplier = m;
     if (typeof stored.scenario.infiniteWaves === "boolean") cfg.scenario.infiniteWaves = stored.scenario.infiniteWaves;
+    if (typeof stored.scenario.playerMovement === "boolean") cfg.scenario.playerMovement = stored.scenario.playerMovement;
     if (stored.scenario.waveCadenceSecs == null) {
-      cfg.scenario.waveCadenceSecs = null;
+      cfg.scenario.waveCadenceSecs = 43;
     } else {
       const wc = Number(stored.scenario.waveCadenceSecs);
       if (Number.isFinite(wc) && wc >= 5 && wc <= 600) cfg.scenario.waveCadenceSecs = wc;
@@ -279,39 +288,114 @@ function bindInfiniteWaves(root, cfg, onChange) {
   });
 }
 
+function bindPlayerMovement(root, cfg, onChange) {
+  const cb = root.querySelector("#player-movement");
+  if (!cb) return;
+  cb.checked = cfg.scenario.playerMovement === true;
+  cb.addEventListener("change", () => {
+    const next = { ...cfg, scenario: { ...cfg.scenario, playerMovement: !!cb.checked } };
+    onChange(next);
+  });
+}
+
+function bindSpawnNow(root, controller) {
+  const btn = root.querySelector("#wave-spawn-now");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    controller.dispatch({ type: "TRIGGER_WAVE" });
+  });
+}
+
 function bindWaveCadence(root, cfg, onChange) {
   const input = root.querySelector("#wave-cadence");
   if (!input) return;
   input.addEventListener("change", () => {
     const raw = input.value.trim();
-    let next;
-    if (raw === "") {
-      next = { ...cfg, scenario: { ...cfg.scenario, waveCadenceSecs: null } };
-    } else {
-      const v = Math.max(5, Math.min(600, Math.round(Number(raw))));
-      if (!Number.isFinite(v)) return;
-      input.value = String(v);
-      next = { ...cfg, scenario: { ...cfg.scenario, waveCadenceSecs: v } };
-    }
-    onChange(next);
+    const v = raw === ""
+      ? defaultWaveCadenceSecs(cfg.scenario.difficulty)
+      : Math.max(5, Math.min(600, Math.round(Number(raw))));
+    if (!Number.isFinite(v)) return;
+    input.value = String(v);
+    onChange({ ...cfg, scenario: { ...cfg.scenario, waveCadenceSecs: v } });
   });
+}
+
+// Live countdown bar next to the wave-interval input. Reads snapshot.nextWaveT
+// (the scheduled start of the next wave, set when the engine queues one) and
+// counts down cadence → 0 as that moment approaches. While a wave is firing
+// its own spawn intents, nextWaveT is null and the bar shows "incoming"
+// (enemies alive) or "—" (idle).
+function paintWaveTimer(root, cfg, snap) {
+  const timer = root.querySelector("#wave-cadence-timer");
+  if (!timer) return;
+  const fill = timer.querySelector(".wave-cadence-fill");
+  const label = timer.querySelector(".wave-cadence-secs");
+  if (!fill || !label) return;
+
+  const enabled = cfg.scenario.infiniteWaves !== false;
+  if (!enabled) {
+    timer.dataset.state = "off";
+    fill.style.width = "0%";
+    label.textContent = "off";
+    return;
+  }
+
+  const cadence = cfg.scenario.waveCadenceSecs ?? defaultWaveCadenceSecs(cfg.scenario.difficulty);
+  const next = snap?.nextWaveT;
+  const t = snap?.t ?? 0;
+
+  if (next == null || !Number.isFinite(next) || next <= t) {
+    const aliveCount = (snap?.enemies ?? []).filter((e) => e.alive).length;
+    timer.dataset.state = aliveCount > 0 ? "active" : "idle";
+    fill.style.width = aliveCount > 0 ? "100%" : "0%";
+    label.textContent = aliveCount > 0 ? "incoming" : "—";
+    return;
+  }
+
+  const remainingSecs = (next - t) / 1000;
+  const pct = Math.max(0, Math.min(1, 1 - remainingSecs / cadence));
+  timer.dataset.state = "active";
+  fill.style.width = `${(pct * 100).toFixed(1)}%`;
+  label.textContent = remainingSecs >= 1
+    ? `${remainingSecs.toFixed(1)}s`
+    : `${Math.round(remainingSecs * 1000)}ms`;
+}
+
+// Inline log of the most-recently-spawned wave: "wave 4 — 12× hunter, 4×
+// warrior". Reads `snapshot.lastSpawnedWave` (set by engine pushWaveAtT for
+// both auto and manual spawns) and tints accent on manual triggers so the user
+// sees confirmation that the button did something.
+function paintWaveSpawnLog(root, snap) {
+  const el = root.querySelector("#wave-spawn-log");
+  if (!el) return;
+  const w = snap?.lastSpawnedWave;
+  if (!w) {
+    el.dataset.state = "empty";
+    el.textContent = "no waves yet";
+    return;
+  }
+  const parts = [];
+  for (const [enemyId, n] of Object.entries(w.counts)) {
+    parts.push(`${n}× ${enemyId}`);
+  }
+  parts.sort();
+  el.dataset.state = w.manual ? "manual" : "auto";
+  el.textContent = `wave ${w.waveN} — ${parts.join(", ")}`;
 }
 
 function paintWaveCadenceState(root, cfg) {
   const input = root.querySelector("#wave-cadence");
   const hint = root.querySelector("#wave-cadence-hint");
   if (!input) return;
-  const wikiDefault = defaultWaveCadenceSecs(cfg.scenario.difficulty);
+  const fallback = defaultWaveCadenceSecs(cfg.scenario.difficulty);
   const explicit = cfg.scenario.waveCadenceSecs;
   const enabled = cfg.scenario.infiniteWaves !== false;
   input.disabled = !enabled;
-  input.placeholder = `auto (${wikiDefault})`;
-  input.value = explicit == null ? "" : String(explicit);
-  if (hint) {
-    if (!enabled) hint.textContent = "off";
-    else if (explicit == null) hint.textContent = `default ${wikiDefault}s`;
-    else hint.textContent = "";
-  }
+  input.placeholder = String(fallback);
+  input.value = explicit == null ? String(fallback) : String(explicit);
+  if (hint) hint.textContent = enabled ? "" : "off";
+  const btn = root.querySelector("#wave-spawn-now");
+  if (btn) btn.disabled = !enabled;
 }
 
 function bindLoadout(root, cfg, data, onChange) {
@@ -496,6 +580,9 @@ function applyAll(root, cfg, data) {
 
   const infCb = root.querySelector("#infinite-waves");
   if (infCb) infCb.checked = cfg.scenario.infiniteWaves !== false;
+
+  const moveCb = root.querySelector("#player-movement");
+  if (moveCb) moveCb.checked = cfg.scenario.playerMovement === true;
 
   paintWaveCadenceState(root, cfg);
 

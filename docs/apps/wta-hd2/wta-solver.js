@@ -9,39 +9,104 @@ function armorMult(ap, ac) {
   return 0.1;
 }
 
-// Pick the part that maximizes effective damage per shot.
-// "best-accessible" = highest weakPointMultiplier where ap >= ac; fallback to any non-weak armored part.
-function bestPart(weapon, target) {
+// Default per-weapon dispersion (radians of cone half-angle) when the
+// weapon def doesn't specify. Hand-tuned to match HD2 feel:
+//   ≥600 RPM (full-auto rifles, SMGs, MGs)  → ~3.5° cone (sustained fire)
+//   300-600 RPM (DMRs, pistols)             → ~1.7°
+//   <300 RPM (precision/single-shot)        → ~0.3°
+//   stratagems / AoE / explosives           → 0 (deterministic; aim is the throw)
+export function defaultDispersionRad(weapon) {
+  if (weapon.dispersionRad != null) return weapon.dispersionRad;
+  if (weapon.isStratagem || weapon.aoeRadiusM > 0) return 0;
+  const rpm = weapon.fireRateRpm ?? 0;
+  if (rpm >= 600) return 0.06;
+  if (rpm >= 300) return 0.03;
+  if (rpm > 0)    return 0.005;
+  return 0;
+}
+
+// Default frontal silhouette width (m) for a part. Real data should
+// annotate `frontalWidth` per part; until then, fall back by tier and
+// weakpoint-ness so the model is at least directionally correct.
+export function defaultFrontalWidth(part, target) {
+  if (part?.frontalWidth != null) return part.frontalWidth;
+  const tier = target?.threatTier ?? "light";
+  const tierBody = { light: 0.5, medium: 0.8, heavy: 1.5, boss: 2.5 }[tier] ?? 0.8;
+  // Weakpoints are usually small targets (head, butt, leg-joint).
+  if (part?.isWeakPoint) return Math.min(0.4, tierBody * 0.25);
+  // Heavily armored non-weak parts (ac >= 4) are typically the hard plate
+  // facing the player — large but armored. Use full body width.
+  return tierBody;
+}
+
+// Per-shot probability of hitting `part` given the weapon's dispersion at
+// `distanceM`. Width / (dispersion_m + Σwidths) — the residual is "miss
+// entirely" (covered the wrong volume). Width=0 ⇒ part is occluded from the
+// front and unhittable.
+export function partHitProbability(weapon, target, partIdx, distanceM) {
   const parts = target.parts || [];
-  if (parts.length === 0) return { ac: 0, weakMult: 1, isWeakPoint: false };
-  let bestWeak = null;
-  let bestNonWeak = null;
-  for (const p of parts) {
-    if (p.isWeakPoint && weapon.armorPen >= p.ac) {
-      if (bestWeak === null || p.weakPointMultiplier > bestWeak.weakPointMultiplier) {
-        bestWeak = p;
-      }
-    } else {
-      if (bestNonWeak === null || armorMult(weapon.armorPen, p.ac) > armorMult(weapon.armorPen, bestNonWeak.ac)) {
-        bestNonWeak = p;
-      }
-    }
-  }
-  const chosen = bestWeak || bestNonWeak || parts[0];
-  return {
-    ac: chosen.ac,
-    weakMult: chosen.isWeakPoint ? chosen.weakPointMultiplier : 1,
-    isWeakPoint: !!chosen.isWeakPoint,
-  };
+  const dispRad = defaultDispersionRad(weapon);
+  const dispM = dispRad * Math.max(1, distanceM);
+  let sumWidth = 0;
+  for (const p of parts) sumWidth += defaultFrontalWidth(p, target);
+  const w = defaultFrontalWidth(parts[partIdx], target);
+  if (w <= 0 || sumWidth <= 0) return 0;
+  return w / (dispM + sumWidth);
 }
 
 // Expected damage per shot of weapon vs target at distanceM.
-function expectedDamagePerShot(weapon, target, distanceM) {
-  const part = bestPart(weapon, target);
-  const am = armorMult(weapon.armorPen, part.ac);
-  const weakPP = (weapon.weakPointHitRateBase || 0) * (1 / (1 + distanceM / 100));
-  const wpFactor = part.isWeakPoint ? (1 + weakPP * (part.weakMult - 1)) : 1;
-  return weapon.damage * am * wpFactor;
+//
+// Composed as Σ_part pHit(part) × armorMult(ap, ac) × weakpointMult(if
+// penable). Residual probability ("miss entirely") contributes zero.
+// Solver and engine.js:computeDamage MUST agree on this formula — last
+// time they didn't, a Liberator killed a charger from the front in 4 s.
+export function expectedDamagePerShot(weapon, target, distanceM) {
+  const parts = target.parts || [];
+  if (parts.length === 0) return 0;
+  const ap = weapon.armorPen ?? 0;
+  // dispersionRad === 0 → deterministic AoE / point-blank; bypass the
+  // hit-probability model and apply best-pen-able-part damage. Used for
+  // stratagem AoE and any future melee-range mechanic.
+  if (defaultDispersionRad(weapon) === 0) {
+    return deterministicBestPartDamage(weapon, target, ap);
+  }
+  const dispM = defaultDispersionRad(weapon) * Math.max(1, distanceM);
+  let sumWidth = 0;
+  for (const p of parts) sumWidth += defaultFrontalWidth(p, target);
+  if (sumWidth <= 0) return 0;
+  const denom = dispM + sumWidth;
+  let total = 0;
+  for (const p of parts) {
+    const w = defaultFrontalWidth(p, target);
+    if (w <= 0) continue;
+    const pHit = w / denom;
+    const am = armorMult(ap, p.ac ?? 0);
+    const isWeakHit = !!p.isWeakPoint && ap >= (p.ac ?? 0);
+    const wMult = isWeakHit ? (p.weakPointMultiplier ?? 1) : 1;
+    total += pHit * am * wMult;
+  }
+  return (weapon.damage ?? 0) * total;
+}
+
+function deterministicBestPartDamage(weapon, target, ap) {
+  // Mirrors engine's pre-fix bestPart, but with weakpoint multiplier
+  // gated on penetration (matches the August 2026 fix).
+  const parts = target.parts || [];
+  let bestWeak = null;
+  let bestNonWeak = null;
+  for (const p of parts) {
+    if (p.isWeakPoint && ap >= (p.ac ?? 0)) {
+      if (bestWeak == null || (p.weakPointMultiplier ?? 1) > (bestWeak.weakPointMultiplier ?? 1)) bestWeak = p;
+    } else {
+      if (bestNonWeak == null || (p.ac ?? 0) < (bestNonWeak.ac ?? 0)) bestNonWeak = p;
+    }
+  }
+  const chosen = bestWeak || bestNonWeak || parts[0];
+  if (!chosen) return 0;
+  const am = armorMult(ap, chosen.ac ?? 0);
+  const isWeakHit = !!chosen.isWeakPoint && ap >= (chosen.ac ?? 0);
+  const wMult = isWeakHit ? (chosen.weakPointMultiplier ?? 1) : 1;
+  return (weapon.damage ?? 0) * am * wMult;
 }
 
 export function pKill(weapon, target, distanceM) {
