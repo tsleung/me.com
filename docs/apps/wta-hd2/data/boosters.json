@@ -1,0 +1,13 @@
+{
+  "_stub": "M1 stub.",
+  "boosters": [
+    { "id": "vitality",          "name": "Vitality Enhancement",       "effect": "+20% max HP" },
+    { "id": "stamina",           "name": "Stamina Enhancement",        "effect": "+30% max stamina" },
+    { "id": "uav-recon",         "name": "UAV Recon Booster",          "effect": "expanded mini-map" },
+    { "id": "hellpod-optimization","name": "Hellpod Space Optimization","effect": "drop in with full ammo/grenades" },
+    { "id": "muscle-enhancement","name": "Muscle Enhancement",         "effect": "ignore terrain slowdown" },
+    { "id": "flexible-reinforcement","name": "Flexible Reinforcement Budget","effect": "reduced reinforcement cooldown" },
+    { "id": "localization-confusion","name": "Localization Confusion", "effect": "increased breach/drop call-in time" },
+    { "id": "firebomb-hellpods", "name": "Firebomb Hellpods",          "effect": "drop pods explode on landing" }
+  ]
+}

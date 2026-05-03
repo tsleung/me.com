@@ -1,0 +1,2987 @@
+[
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 1,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 2,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 3,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 4,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 5,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 6,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 7,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 8,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 9,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-pouncer",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-stalker",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 45,
+          "minDeg": -45
+        },
+        "spawnTimeSecs": 6
+      }
+    ],
+    "difficulty": 10,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "predator-strain",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 18,
+          "mean": 12
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      }
+    ],
+    "difficulty": 1,
+    "faction": "terminids",
+    "maxConcurrent": 10,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 18,
+          "mean": 12
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      }
+    ],
+    "difficulty": 2,
+    "faction": "terminids",
+    "maxConcurrent": 10,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 18,
+          "mean": 12
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      }
+    ],
+    "difficulty": 3,
+    "faction": "terminids",
+    "maxConcurrent": 10,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 21,
+          "mean": 14
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 11,
+          "mean": 7
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 2,
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      }
+    ],
+    "difficulty": 4,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 24,
+          "mean": 16
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 6
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 2,
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      }
+    ],
+    "difficulty": 5,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 26,
+          "mean": 18
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 13,
+          "mean": 9
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 7
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 1.5
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1.5
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      }
+    ],
+    "difficulty": 6,
+    "faction": "terminids",
+    "maxConcurrent": 16,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 28,
+          "mean": 20
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 14,
+          "mean": 10
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 11,
+          "mean": 8
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 2
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      }
+    ],
+    "difficulty": 7,
+    "faction": "terminids",
+    "maxConcurrent": 18,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 30,
+          "mean": 22
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 15,
+          "mean": 11
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 13,
+          "mean": 9
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2.5
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 2.5
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 30
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-titan",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 10,
+          "minDeg": -10
+        },
+        "spawnTimeSecs": 38
+      }
+    ],
+    "difficulty": 8,
+    "faction": "terminids",
+    "maxConcurrent": 20,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 32,
+          "mean": 24
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 16,
+          "mean": 12
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 14,
+          "mean": 10
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 3
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 30
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-titan",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 10,
+          "minDeg": -10
+        },
+        "spawnTimeSecs": 38
+      }
+    ],
+    "difficulty": 9,
+    "faction": "terminids",
+    "maxConcurrent": 22,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 32,
+          "mean": 24
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 16,
+          "mean": 12
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 14,
+          "mean": 10
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 60,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 8
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 14
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 3
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 22
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 65,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 30
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-titan",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 10,
+          "minDeg": -10
+        },
+        "spawnTimeSecs": 38
+      }
+    ],
+    "difficulty": 10,
+    "faction": "terminids",
+    "maxConcurrent": 22,
+    "spreadSecs": 50,
+    "subfaction": "standard",
+    "type": "breach"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 1,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 2,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 3,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 4,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 5,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 6,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 7,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 8,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 9,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 4
+      }
+    ],
+    "difficulty": 10,
+    "faction": "terminids",
+    "maxConcurrent": 12,
+    "spreadSecs": 25,
+    "subfaction": "standard",
+    "type": "drop"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 1
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 3
+      }
+    ],
+    "difficulty": 1,
+    "faction": "terminids",
+    "maxConcurrent": 8,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 1
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 3
+      }
+    ],
+    "difficulty": 2,
+    "faction": "terminids",
+    "maxConcurrent": 8,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 1
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 3
+      }
+    ],
+    "difficulty": 3,
+    "faction": "terminids",
+    "maxConcurrent": 8,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 9,
+          "mean": 5.5
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 2.5
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2.5
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 2,
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 5
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 10
+      }
+    ],
+    "difficulty": 4,
+    "faction": "terminids",
+    "maxConcurrent": 10,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 10,
+          "mean": 6
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 2,
+          "mean": 1
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 5
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 10
+      }
+    ],
+    "difficulty": 5,
+    "faction": "terminids",
+    "maxConcurrent": 11,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 11,
+          "mean": 7
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 3.5
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 3.5
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 1.5
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4.5
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 11
+      }
+    ],
+    "difficulty": 6,
+    "faction": "terminids",
+    "maxConcurrent": 13,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 12,
+          "mean": 8
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 6,
+          "mean": 4
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 3,
+          "mean": 2
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      }
+    ],
+    "difficulty": 7,
+    "faction": "terminids",
+    "maxConcurrent": 14,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 13,
+          "mean": 9
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 7,
+          "mean": 4.5
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 4.5
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 4,
+          "mean": 2.5
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1.5
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 16
+      }
+    ],
+    "difficulty": 8,
+    "faction": "terminids",
+    "maxConcurrent": 16,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 14,
+          "mean": 10
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 2
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 16
+      }
+    ],
+    "difficulty": 9,
+    "faction": "terminids",
+    "maxConcurrent": 18,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  },
+  {
+    "composition": [
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 14,
+          "mean": 10
+        },
+        "enemyId": "terminid-scavenger",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 50,
+          "minDeg": -50
+        },
+        "spawnTimeSecs": 0
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-hunter",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 55,
+          "minDeg": -55
+        },
+        "spawnTimeSecs": 1
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 8,
+          "mean": 5
+        },
+        "enemyId": "terminid-warrior",
+        "spawnArc": {
+          "distanceM": 70,
+          "maxDeg": 40,
+          "minDeg": -40
+        },
+        "spawnTimeSecs": 2
+      },
+      {
+        "count": {
+          "dist": "poisson",
+          "max": 5,
+          "mean": 3
+        },
+        "enemyId": "terminid-bile-spewer",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 30,
+          "minDeg": -30
+        },
+        "spawnTimeSecs": 4
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 2
+        },
+        "enemyId": "terminid-charger",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 20,
+          "minDeg": -20
+        },
+        "spawnTimeSecs": 12
+      },
+      {
+        "count": {
+          "dist": "fixed",
+          "mean": 1
+        },
+        "enemyId": "terminid-impaler",
+        "spawnArc": {
+          "distanceM": 75,
+          "maxDeg": 15,
+          "minDeg": -15
+        },
+        "spawnTimeSecs": 16
+      }
+    ],
+    "difficulty": 10,
+    "faction": "terminids",
+    "maxConcurrent": 18,
+    "spreadSecs": 30,
+    "subfaction": "standard",
+    "type": "patrol"
+  }
+]

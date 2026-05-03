@@ -1,0 +1,8 @@
+{
+  "builtAt": "2026-05-03T00:00:00Z",
+  "note": "M1 stub data. Replaced by scripts/build-hd2-data.mjs in M2. See notes/wta-hd2/sources.md for upstream provenance.",
+  "schemaVersion": 0,
+  "spawnTablesBuiltAt": "2026-05-03T19:55:11.764Z",
+  "spawnTablesSourceHash": "5a94cc2fa466",
+  "stub": true
+}

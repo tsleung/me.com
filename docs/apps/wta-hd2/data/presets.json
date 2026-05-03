@@ -1,0 +1,89 @@
+{
+  "_note": "Community-curated loadout presets. Each preset names primary/secondary/grenade/4 stratagems/armor/booster + a recommended scenario. The user can apply and then dial difficulty/faction independently.",
+  "presets": [
+    {
+      "id": "default-helldiver",
+      "name": "Default Helldiver",
+      "blurb": "Vanilla starter kit — Liberator + Peacemaker + Frag, MG Sentry + Eagle Airstrike + Orbital Precision + EAT-17 (first anti-heavy unlock at level 5).",
+      "scenario": { "faction": "terminids", "subfaction": "standard", "encounter": "patrol", "difficulty": 8 },
+      "loadout": {
+        "primary": "liberator",
+        "secondary": "peacemaker",
+        "grenade": "frag",
+        "stratagems": ["sentry-mg", "eagle-airstrike", "orbital-precision", "eat"],
+        "armor": "extra-padding",
+        "booster": "vitality"
+      }
+    },
+    {
+      "id": "infinite-no-reload",
+      "name": "Infinite (no reload)",
+      "blurb": "Sickle (heat-vent) + Stun Lance (melee) + Quasar (cooldown) + Guard Dog Rover + Gas grenade. Nothing in the kit ever runs out of ammo.",
+      "scenario": { "faction": "terminids", "subfaction": "predator-strain", "encounter": "patrol", "difficulty": 7 },
+      "loadout": {
+        "primary": "sickle",
+        "secondary": "stun-lance",
+        "grenade": "gas",
+        "stratagems": ["quasar", "guard-dog", "orbital-gas", "eagle-napalm"],
+        "armor": "scout",
+        "booster": "stamina"
+      }
+    },
+    {
+      "id": "spear-anti-tank",
+      "name": "SPEAR anti-tank",
+      "blurb": "FAF-14 SPEAR locks onto fabricators / bile titans from range. Supply pack keeps the tube fed.",
+      "scenario": { "faction": "automatons", "subfaction": "standard", "encounter": "drop", "difficulty": 8 },
+      "loadout": {
+        "primary": "diligence-cs",
+        "secondary": "grenade-pistol",
+        "grenade": "thermite",
+        "stratagems": ["spear", "supply-pack", "eagle-airstrike", "orbital-precision"],
+        "armor": "fortified",
+        "booster": "hellpod-optimization"
+      }
+    },
+    {
+      "id": "recoilless-anti-tank",
+      "name": "Recoilless anti-tank",
+      "blurb": "GR-8 Recoilless + reserve uplink. Two-shot Chargers via leg strip → weak point.",
+      "scenario": { "faction": "terminids", "subfaction": "standard", "encounter": "breach", "difficulty": 7 },
+      "loadout": {
+        "primary": "incendiary-breaker",
+        "secondary": "verdict",
+        "grenade": "impact",
+        "stratagems": ["recoilless", "supply-pack", "eagle-airstrike", "orbital-gatling"],
+        "armor": "engineering-kit",
+        "booster": "vitality"
+      }
+    },
+    {
+      "id": "autocannon-allrounder",
+      "name": "Autocannon all-rounder",
+      "blurb": "AC-8 covers light through heavy. Backpack is the AC's reload, so no shield. Senator handles armored stragglers.",
+      "scenario": { "faction": "automatons", "subfaction": "standard", "encounter": "patrol", "difficulty": 7 },
+      "loadout": {
+        "primary": "sickle",
+        "secondary": "senator",
+        "grenade": "thermite",
+        "stratagems": ["autocannon", "eagle-airstrike", "orbital-precision", "orbital-gatling"],
+        "armor": "fortified",
+        "booster": "vitality"
+      }
+    },
+    {
+      "id": "supply-scorcher",
+      "name": "Supply + Scorcher",
+      "blurb": "PLAS-1 Scorcher chews medium armor; supply pack feeds it + grenades. Stalwart for chaff.",
+      "scenario": { "faction": "automatons", "subfaction": "standard", "encounter": "drop", "difficulty": 6 },
+      "loadout": {
+        "primary": "scorcher",
+        "secondary": "senator",
+        "grenade": "impact",
+        "stratagems": ["supply-pack", "stalwart", "eagle-airstrike", "orbital-precision"],
+        "armor": "siege-ready",
+        "booster": "hellpod-optimization"
+      }
+    }
+  ]
+}

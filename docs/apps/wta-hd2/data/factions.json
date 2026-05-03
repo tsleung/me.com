@@ -1,0 +1,28 @@
+{
+  "terminids": {
+    "name": "Terminids",
+    "subfactions": [
+      { "id": "standard", "name": "standard" },
+      { "id": "predator-strain", "name": "predator strain" },
+      { "id": "shrieker-flock", "name": "shrieker flock" },
+      { "id": "hive-lord", "name": "hive lord" },
+      { "id": "spore-spewer", "name": "spore spewer" }
+    ]
+  },
+  "automatons": {
+    "name": "Automatons",
+    "subfactions": [
+      { "id": "standard", "name": "standard" },
+      { "id": "jet-brigade", "name": "jet brigade" },
+      { "id": "incineration-corps", "name": "incineration corps" },
+      { "id": "assault-force", "name": "assault force" }
+    ]
+  },
+  "illuminate": {
+    "name": "Illuminate",
+    "subfactions": [
+      { "id": "standard", "name": "standard" },
+      { "id": "shock-trooper", "name": "shock trooper" }
+    ]
+  }
+}

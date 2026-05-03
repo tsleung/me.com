@@ -1,0 +1,37 @@
+{
+  "_stub": "M1 stub. Stats are reasonable approximations until M2 build script populates from datamines.",
+  "primaries": [
+    { "id": "liberator",          "name": "AR-23 Liberator",                "ap": 2, "damage": 70,  "fireRateRpm": 640, "magazine": 45, "reloadSecs": 2.0, "ammoReserve": 270, "weakPointHitRateBase": 0.35, "maxRangeM": 80 },
+    { "id": "liberator-pen",      "name": "AR-23P Liberator Penetrator",    "ap": 3, "damage": 60,  "fireRateRpm": 640, "magazine": 30, "reloadSecs": 2.0, "ammoReserve": 240, "weakPointHitRateBase": 0.35, "maxRangeM": 80 },
+    { "id": "diligence-cs",       "name": "R-63CS Diligence Counter Sniper","ap": 3, "damage": 140, "fireRateRpm": 230, "magazine": 15, "reloadSecs": 3.0, "ammoReserve": 90,  "weakPointHitRateBase": 0.65, "maxRangeM": 100 },
+    { "id": "punisher",           "name": "SG-8 Punisher",                  "ap": 2, "damage": 240, "fireRateRpm": 90,  "magazine": 8,  "reloadSecs": 2.5, "ammoReserve": 32,  "weakPointHitRateBase": 0.30, "maxRangeM": 50 },
+    { "id": "scorcher",           "name": "PLAS-1 Scorcher",                "ap": 3, "damage": 100, "fireRateRpm": 250, "magazine": 15, "reloadSecs": 2.5, "ammoReserve": 60,  "weakPointHitRateBase": 0.40, "maxRangeM": 80, "aoeRadiusM": 2 },
+    { "id": "incendiary-breaker", "name": "SG-225IE Breaker Incendiary",    "ap": 2, "damage": 200, "fireRateRpm": 280, "magazine": 25, "reloadSecs": 3.0, "ammoReserve": 75,  "weakPointHitRateBase": 0.30, "maxRangeM": 50 },
+    { "id": "sickle",             "name": "SG-8 Sickle",                    "ap": 2, "damage": 65,  "fireRateRpm": 750, "magazine": 999,"reloadSecs": 3.0, "ammoReserve": 6,   "weakPointHitRateBase": 0.40, "maxRangeM": 80 },
+    { "id": "slugger",            "name": "SG-8S Slugger",                  "ap": 3, "damage": 280, "fireRateRpm": 90,  "magazine": 16, "reloadSecs": 2.5, "ammoReserve": 64,  "weakPointHitRateBase": 0.45, "maxRangeM": 80 },
+    { "id": "blitzer",            "name": "ARC-12 Blitzer",                 "ap": 2, "damage": 250, "fireRateRpm": 60,  "magazine": 999,"reloadSecs": 0,   "ammoReserve": 999, "weakPointHitRateBase": 0.20, "maxRangeM": 35 },
+    { "id": "purifier",           "name": "PLAS-101 Purifier",              "ap": 4, "damage": 250, "fireRateRpm": 220, "magazine": 15, "reloadSecs": 2.5, "ammoReserve": 60,  "weakPointHitRateBase": 0.45, "maxRangeM": 80, "aoeRadiusM": 3 },
+    { "id": "eruptor",            "name": "R-36 Eruptor",                   "ap": 4, "damage": 420, "fireRateRpm": 60,  "magazine": 6,  "reloadSecs": 4.0, "ammoReserve": 24,  "weakPointHitRateBase": 0.30, "maxRangeM": 100, "aoeRadiusM": 4 },
+    { "id": "crossbow",           "name": "CB-9 Exploding Crossbow",        "ap": 4, "damage": 350, "fireRateRpm": 70,  "magazine": 5,  "reloadSecs": 3.5, "ammoReserve": 25,  "weakPointHitRateBase": 0.35, "maxRangeM": 80, "aoeRadiusM": 3.5 }
+  ],
+  "secondaries": [
+    { "id": "peacemaker",      "name": "P-2 Peacemaker",                  "ap": 2, "damage": 60,  "fireRateRpm": 350, "magazine": 15, "reloadSecs": 1.5, "ammoReserve": 90,  "weakPointHitRateBase": 0.30, "maxRangeM": 50 },
+    { "id": "redeemer",        "name": "P-19 Redeemer",                   "ap": 2, "damage": 50,  "fireRateRpm": 1100,"magazine": 31, "reloadSecs": 1.5, "ammoReserve": 124, "weakPointHitRateBase": 0.25, "maxRangeM": 40 },
+    { "id": "senator",         "name": "P-4 Senator",                     "ap": 4, "damage": 175, "fireRateRpm": 90,  "magazine": 6,  "reloadSecs": 2.0, "ammoReserve": 36,  "weakPointHitRateBase": 0.55, "maxRangeM": 60 },
+    { "id": "verdict",         "name": "P-113 Verdict",                   "ap": 3, "damage": 100, "fireRateRpm": 250, "magazine": 12, "reloadSecs": 1.5, "ammoReserve": 84,  "weakPointHitRateBase": 0.45, "maxRangeM": 50 },
+    { "id": "grenade-pistol",  "name": "GP-31 Grenade Pistol",            "ap": 3, "damage": 350, "fireRateRpm": 60,  "magazine": 1,  "reloadSecs": 2.0, "ammoReserve": 8,   "weakPointHitRateBase": 0.10, "maxRangeM": 50, "aoeRadiusM": 5 },
+    { "id": "crisper",         "name": "P-72 Crisper",                    "ap": 2, "damage": 30,  "fireRateRpm": 600, "magazine": 50, "reloadSecs": 3.0, "ammoReserve": 100, "weakPointHitRateBase": 0.10, "maxRangeM": 15 },
+    { "id": "ultimatum",       "name": "SMG-72 Ultimatum",                "ap": 6, "damage": 1500,"fireRateRpm": 30,  "magazine": 1,  "reloadSecs": 3.5, "ammoReserve": 4,   "weakPointHitRateBase": 0.20, "maxRangeM": 25, "aoeRadiusM": 6 },
+    { "id": "stun-lance",      "name": "LAS-17 Double-Edge Sickle (melee)","ap": 3,"damage": 200, "fireRateRpm": 90,  "magazine": 999,"reloadSecs": 0,   "ammoReserve": 999, "weakPointHitRateBase": 0.25, "maxRangeM": 4 },
+    { "id": "stun-baton",      "name": "GP-22 Stun Baton (melee)",        "ap": 0, "damage": 100, "fireRateRpm": 90,  "magazine": 999,"reloadSecs": 0,   "ammoReserve": 999, "weakPointHitRateBase": 0.20, "maxRangeM": 3 }
+  ],
+  "grenades": [
+    { "id": "frag",          "name": "G-6 Frag",                "ap": 2, "damage": 400, "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 7 },
+    { "id": "impact",        "name": "G-16 Impact",             "ap": 2, "damage": 400, "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 5 },
+    { "id": "thermite",      "name": "G-13 Thermite Impact",    "ap": 5, "damage": 2000,"fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 2 },
+    { "id": "stun",          "name": "G-23 Stun",               "ap": 0, "damage": 1,   "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 8 },
+    { "id": "smoke",         "name": "G-3 Smoke",               "ap": 0, "damage": 1,   "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 8 },
+    { "id": "gas",           "name": "G-4 Gas",                 "ap": 0, "damage": 80,  "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 8 },
+    { "id": "high-explosive","name": "G-12 High Explosive",     "ap": 3, "damage": 600, "fireRateRpm": 30, "magazine": 1, "reloadSecs": 0, "ammoReserve": 4, "weakPointHitRateBase": 0.10, "maxRangeM": 30, "aoeRadiusM": 8 }
+  ]
+}

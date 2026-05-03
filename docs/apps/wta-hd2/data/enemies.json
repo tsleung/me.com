@@ -1,0 +1,288 @@
+[
+  {
+    "attackRangeM": 2,
+    "faction": "terminids",
+    "glyph": "wedge",
+    "hp": 50,
+    "id": "terminid-scavenger",
+    "meleeDps": 8,
+    "name": "Scavenger",
+    "outline": false,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 1,
+        "hpFraction": 1,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 6,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 3,
+    "faction": "terminids",
+    "glyph": "tri",
+    "hp": 75,
+    "id": "terminid-hunter",
+    "meleeDps": 18,
+    "name": "Hunter",
+    "outline": false,
+    "paletteShift": 0.05,
+    "parts": [
+      {
+        "ac": 2,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 1,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 7,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 3,
+    "faction": "terminids",
+    "glyph": "wedge",
+    "hp": 90,
+    "id": "terminid-pouncer",
+    "meleeDps": 22,
+    "name": "Pouncer",
+    "outline": false,
+    "paletteShift": -0.15,
+    "parts": [
+      {
+        "ac": 2,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 1,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 7.5,
+    "subfactionTags": [],
+    "threatTier": "light"
+  },
+  {
+    "attackRangeM": 2.5,
+    "faction": "terminids",
+    "glyph": "hex",
+    "hp": 250,
+    "id": "terminid-warrior",
+    "meleeDps": 28,
+    "name": "Warrior",
+    "outline": false,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 2,
+        "hpFraction": 0.75,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 4,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 4,
+    "faction": "terminids",
+    "glyph": "hex",
+    "hp": 350,
+    "id": "terminid-stalker",
+    "meleeDps": 40,
+    "name": "Stalker",
+    "outline": true,
+    "paletteShift": -0.2,
+    "parts": [
+      {
+        "ac": 3,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2.5
+      },
+      {
+        "ac": 2,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 6.5,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 30,
+    "faction": "terminids",
+    "glyph": "bar",
+    "hp": 350,
+    "id": "terminid-bile-spewer",
+    "meleeDps": 12,
+    "name": "Bile Spewer",
+    "outline": false,
+    "paletteShift": 0.1,
+    "parts": [
+      {
+        "ac": 2,
+        "hpFraction": 0.4,
+        "isWeakPoint": true,
+        "name": "sac",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.6,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 22,
+    "speedMps": 2.5,
+    "subfactionTags": [],
+    "threatTier": "medium"
+  },
+  {
+    "attackRangeM": 3,
+    "faction": "terminids",
+    "glyph": "ring",
+    "hp": 750,
+    "id": "terminid-charger",
+    "meleeDps": 60,
+    "name": "Charger",
+    "outline": false,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 4,
+        "hpFraction": 0.2,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.5,
+        "isWeakPoint": false,
+        "name": "butt",
+        "weakPointMultiplier": 1
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.3,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 0,
+    "speedMps": 6,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 35,
+    "faction": "terminids",
+    "glyph": "ring",
+    "hp": 1100,
+    "id": "terminid-impaler",
+    "meleeDps": 0,
+    "name": "Impaler",
+    "outline": true,
+    "paletteShift": -0.1,
+    "parts": [
+      {
+        "ac": 4,
+        "hpFraction": 0.3,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 2.5
+      },
+      {
+        "ac": 5,
+        "hpFraction": 0.7,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 35,
+    "speedMps": 1.8,
+    "subfactionTags": [],
+    "threatTier": "heavy"
+  },
+  {
+    "attackRangeM": 40,
+    "faction": "terminids",
+    "glyph": "star",
+    "hp": 6000,
+    "id": "terminid-bile-titan",
+    "meleeDps": 80,
+    "name": "Bile Titan",
+    "outline": true,
+    "paletteShift": 0,
+    "parts": [
+      {
+        "ac": 5,
+        "hpFraction": 0.15,
+        "isWeakPoint": true,
+        "name": "head",
+        "weakPointMultiplier": 3
+      },
+      {
+        "ac": 3,
+        "hpFraction": 0.25,
+        "isWeakPoint": true,
+        "name": "sac",
+        "weakPointMultiplier": 2
+      },
+      {
+        "ac": 7,
+        "hpFraction": 0.6,
+        "isWeakPoint": false,
+        "name": "body",
+        "weakPointMultiplier": 1
+      }
+    ],
+    "rangedDps": 50,
+    "speedMps": 2.5,
+    "subfactionTags": [],
+    "threatTier": "boss"
+  }
+]

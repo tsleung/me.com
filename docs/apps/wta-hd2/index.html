@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Defeat aggressive ES-module caching during dev. -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>wta-hd2 / terranleung.com</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header>
+  <div class="title">
+    <a href="/" class="home">←</a>
+    <h1>wta-hd2</h1>
+    <span class="subtitle">helldivers 2 loadout sim via weapon-target assignment</span>
+  </div>
+  <nav class="run-controls" aria-label="run">
+    <button id="ctrl-play" class="ctrl-btn" disabled>play</button>
+    <button id="ctrl-pause" class="ctrl-btn" disabled>pause</button>
+    <button id="ctrl-step" class="ctrl-btn" disabled>step</button>
+    <button id="ctrl-restart" class="ctrl-btn" disabled>restart</button>
+    <div class="speed-seg" role="group" aria-label="speed">
+      <span class="speed-seg-label">speed</span>
+      <button class="speed-btn" data-speed="0.5">0.5×</button>
+      <button class="speed-btn active" data-speed="1">1×</button>
+      <button class="speed-btn" data-speed="2">2×</button>
+      <button class="speed-btn" data-speed="4">4×</button>
+    </div>
+    <button id="ctrl-reset" class="ctrl-btn" title="clear localStorage + URL hash, reload with default loadout">reset</button>
+    <span class="muted small" id="run-status">stub — sim arrives in M2</span>
+  </nav>
+</header>
+
+<main>
+  <section class="config" id="config-panel" aria-label="configuration">
+
+    <div class="config-row" data-row="scenario">
+      <div class="row-label">scenario</div>
+      <div class="row-fields">
+        <div class="field">
+          <label class="field-label">faction</label>
+          <div class="faction-with-mode">
+            <div class="seg" id="mode-seg" role="tablist" title="single — battle one faction; all — compare same loadout across all 3 factions">
+              <button class="seg-btn" data-value="single" role="tab">single</button>
+              <button class="seg-btn" data-value="all" role="tab">all</button>
+            </div>
+            <div class="seg" id="faction-seg" role="tablist">
+              <button class="seg-btn" data-value="terminids" role="tab">terminids</button>
+              <button class="seg-btn" data-value="automatons" role="tab">automatons</button>
+              <button class="seg-btn" data-value="illuminate" role="tab">illuminate</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="subfaction">subfaction</label>
+          <select id="subfaction" class="select"></select>
+        </div>
+        <div class="field">
+          <label class="field-label">encounter</label>
+          <div class="seg" id="encounter-seg" role="tablist">
+            <button class="seg-btn" data-value="patrol" role="tab">patrol</button>
+            <button class="seg-btn" data-value="breach" role="tab">breach / drop</button>
+          </div>
+        </div>
+        <div class="field field-difficulty">
+          <label class="field-label" for="difficulty">difficulty</label>
+          <input type="number" id="difficulty" class="num-input" min="1" max="10" step="1" value="7" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label class="field-label" for="spawn-rate">spawn rate <span class="muted" id="spawn-rate-val">1.0×</span></label>
+          <input type="range" id="spawn-rate" class="slider" min="0.25" max="4" step="0.25" value="1">
+        </div>
+        <div class="field">
+          <label class="field-label" for="infinite-waves">infinite waves</label>
+          <label class="toggle">
+            <input type="checkbox" id="infinite-waves" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="field">
+          <label class="field-label" for="wave-cadence">wave interval (s) <span class="muted" id="wave-cadence-hint"></span></label>
+          <input type="number" id="wave-cadence" class="num-input" min="5" max="600" step="1" inputmode="numeric" placeholder="auto">
+        </div>
+      </div>
+    </div>
+
+    <div class="config-row" data-row="loadout">
+      <div class="row-label">loadout</div>
+      <div class="row-fields loadout-grid">
+        <div class="field">
+          <label class="field-label" for="strat-1">stratagem 1</label>
+          <select id="strat-1" class="select" data-slot="strat-1"></select>
+          <div class="field-detail" id="strat-1-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="strat-2">stratagem 2</label>
+          <select id="strat-2" class="select" data-slot="strat-2"></select>
+          <div class="field-detail" id="strat-2-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="strat-3">stratagem 3</label>
+          <select id="strat-3" class="select" data-slot="strat-3"></select>
+          <div class="field-detail" id="strat-3-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="strat-4">stratagem 4</label>
+          <select id="strat-4" class="select" data-slot="strat-4"></select>
+          <div class="field-detail" id="strat-4-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="primary">primary</label>
+          <select id="primary" class="select" data-slot="primary"></select>
+          <div class="field-detail" id="primary-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="secondary">secondary</label>
+          <select id="secondary" class="select" data-slot="secondary"></select>
+          <div class="field-detail" id="secondary-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="grenade">grenade</label>
+          <select id="grenade" class="select" data-slot="grenade"></select>
+          <div class="field-detail" id="grenade-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="armor">armor passive</label>
+          <select id="armor" class="select" data-slot="armor"></select>
+          <div class="field-detail" id="armor-detail"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="booster">booster</label>
+          <select id="booster" class="select" data-slot="booster"></select>
+          <div class="field-detail" id="booster-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-row" data-row="solver">
+      <div class="row-label">solver</div>
+      <div class="row-fields">
+        <div class="field">
+          <label class="field-label" for="alpha">survival ↔ clear <span class="muted" id="alpha-val"></span></label>
+          <input type="range" id="alpha" class="slider" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="gamma">right-tool weight <span class="muted" id="gamma-val"></span></label>
+          <input type="range" id="gamma" class="slider" min="0" max="1" step="0.05" value="0.3">
+        </div>
+      </div>
+    </div>
+
+    <div class="config-row" data-row="presets">
+      <div class="row-label">presets</div>
+      <div class="row-fields" id="presets-row"></div>
+    </div>
+  </section>
+
+  <section class="sim-area">
+    <div class="battlefield-wrap">
+      <canvas id="battlefield" width="800" height="600" aria-label="battlefield"></canvas>
+      <div class="battlefield-placeholder" id="battlefield-placeholder">
+        <div class="ph-title">M1 — skeleton</div>
+        <div class="ph-text">
+          sim loop &amp; canvas rendering land in M2.<br>
+          dropdowns populate, selections persist (try reloading).
+        </div>
+      </div>
+      <div id="play-overlay" class="play-overlay" hidden>
+        <div class="play-overlay-inner">
+          <div class="play-overlay-glyph"></div>
+          <div class="play-overlay-label">play</div>
+          <div class="play-overlay-hint">click anywhere to start the sim</div>
+        </div>
+      </div>
+      <div id="compare-pane" class="compare-pane" hidden></div>
+    </div>
+
+    <aside class="analytics">
+      <div class="panel">
+        <div class="panel-title">assignment heatmap <span class="muted small">(M4)</span></div>
+        <div class="panel-body panel-placeholder">weapons × archetypes</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">scores <span class="muted small">(M3)</span></div>
+        <div class="panel-body panel-placeholder">advance + survival</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">loadout status <span class="muted small">(M4)</span></div>
+        <div class="panel-body panel-placeholder">ammo &amp; cooldowns</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">wave <span class="muted small">(M4)</span></div>
+        <div class="panel-body panel-placeholder">alive vs killed</div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

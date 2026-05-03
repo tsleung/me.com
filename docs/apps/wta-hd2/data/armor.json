@@ -1,0 +1,15 @@
+{
+  "_stub": "M1 stub. Typed effects schema solidifies in M3.",
+  "passives": [
+    { "id": "extra-padding",     "name": "Extra Padding",     "effect": "+1 armor rating" },
+    { "id": "fortified",         "name": "Fortified",         "effect": "+50% explosive resist; -30% recoil" },
+    { "id": "med-kit",           "name": "Med-Kit",           "effect": "+2 stims; +20% stim duration" },
+    { "id": "scout",             "name": "Scout",             "effect": "reduced detection radius" },
+    { "id": "engineering-kit",   "name": "Engineering Kit",   "effect": "+2 grenade capacity; -30% recoil" },
+    { "id": "servo-assisted",    "name": "Servo-Assisted",    "effect": "+30% throw distance; +50% limb HP" },
+    { "id": "democracy-protects","name": "Democracy Protects","effect": "50% chance to survive lethal blow" },
+    { "id": "siege-ready",       "name": "Siege-Ready",       "effect": "+30% primary mag size; +1 primary reserve" },
+    { "id": "peak-physique",     "name": "Peak Physique",     "effect": "improved melee; faster weapon handling" },
+    { "id": "unflinching",       "name": "Unflinching",       "effect": "reduced flinch from incoming hits" }
+  ]
+}
