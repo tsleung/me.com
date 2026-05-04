@@ -128,7 +128,7 @@ function buildLaneEl(parent, label, variant, dim, layout) {
     </div>
     <div class="sl-canvas-wrap">
       <canvas class="sl-canvas" width="300" height="180"></canvas>
-      <canvas class="sl-diver" width="120" height="146"></canvas>
+      <canvas class="sl-diver" width="180" height="220"></canvas>
     </div>
     <div class="sl-row">
       <div class="sl-stat">
@@ -448,17 +448,24 @@ export function injectSimLaneStyles() {
     .sim-lane { background: var(--panel,#17171a); border:1px solid var(--dim,#2a2a2e); border-radius:2px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
     .sl-canvas-wrap { position:relative; width:100%; }
     .sl-canvas { display:block; width:100%; height:auto; background:#0e0e10; border:1px solid #1f1f23; border-radius:2px; }
-    /* Diver silhouette — small overlay pinned to the top-right of the lane
-       canvas, mirrors the single-mode placement so the visual language is
-       consistent. pointer-events:none so map clicks aren't intercepted. */
+    /* Diver silhouette overlay, top-right of the lane mini-map. The painter
+       designs at an internal 180×220 grid with 11px verb / 9px sub text;
+       rendering smaller than that scales the text down with the figure, so
+       at <120px wide the action label was unreadable. We size the overlay
+       at ~180px wide minimum so the painter's text comes out close to its
+       designed CSS-pixel size. aspect-ratio matches the painter's natural
+       180:220, not the canvas attribute width:height. */
     .sl-diver {
       position:absolute; top:6px; right:6px;
-      width:60px; aspect-ratio:120/146;
+      width:180px; aspect-ratio:180/220;
       pointer-events:none;
       border-radius:2px;
     }
-    @media (min-width: 1280px) {
-      .sl-diver { width:72px; }
+    @media (max-width: 1280px) {
+      .sl-diver { width:150px; }
+    }
+    @media (max-width: 1024px) {
+      .sl-diver { width:130px; }
     }
     .sl-analytics { margin-top:8px; }
     .sl-analytics .ana-stack-lane { gap:8px; }
