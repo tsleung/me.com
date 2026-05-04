@@ -2,6 +2,7 @@ import { loadData } from "./data-loader.js";
 import { createEngine } from "./engine.js";
 import { createController } from "./controller.js";
 import { mountConfigUI, loadConfig } from "./config-ui.js";
+import { mountTooltips } from "./tooltips.js";
 
 async function main() {
   const status = document.getElementById("run-status");
@@ -46,6 +47,7 @@ async function main() {
     });
 
     mountConfigUI(document.body, controller, data);
+    mountTooltips(document);
 
     // Idle overlay: big PLAY button on the canvas while sim isn't running.
     const playOverlay = document.getElementById("play-overlay");
@@ -121,11 +123,21 @@ async function main() {
           getActive: () => active,
           isPlaying: () => controller.isPlaying?.() ?? false,
           mode: "factions",
+          // Lanes share a single global policy; each lane's policy grid
+          // dispatches against this controller so an edit applies to all
+          // three solvers in lockstep.
+          controller,
         });
         const refresh = () => {
           comparePane.hidden = !active;
           comparePane.dataset.active = active ? "1" : "";
           if (canvas) canvas.style.display = active ? "none" : "";
+          if (diverCanvas) diverCanvas.hidden = active;
+          // The right-side analytics column is single-controller; in compare
+          // mode each lane carries its own copy. Toggle a body data-attr so
+          // CSS can hide the global column AND collapse the sim-area grid
+          // to a single full-width column for the lanes.
+          document.body.dataset.compareActive = active ? "1" : "";
           modeSeg.querySelectorAll(".seg-btn").forEach((b) => {
             b.classList.toggle("active", b.dataset.value === (active ? "all" : "single"));
           });

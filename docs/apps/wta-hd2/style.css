@@ -55,6 +55,8 @@ h1 {
   margin: 0;
 }
 .subtitle { color: var(--ink-muted); font-size: 12px; }
+.subtitle-link { color: inherit; text-decoration: underline; text-decoration-color: var(--dim); text-underline-offset: 2px; }
+.subtitle-link:hover { color: var(--ink); text-decoration-color: var(--accent); }
 
 .run-controls {
   display: flex;
@@ -228,13 +230,26 @@ main {
   min-height: 14px;
 }
 
+.wave-fields { align-items: stretch; }
+.wave-fields .field-toggle,
+.wave-fields .field-cadence { min-width: 140px; flex: 0 0 auto; }
+.wave-fields .field-cadence { width: 120px; min-width: 120px; }
+.wave-fields .field-wave-status {
+  flex: 1 1 320px;
+  min-width: 280px;
+}
+
 .wave-cadence-timer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 8px;
   font-size: 10px;
   color: var(--ink-muted);
+  height: 30px;
+  padding: 0 8px;
+  background: var(--panel);
+  border: 1px solid var(--dim);
+  border-radius: 2px;
 }
 .wave-cadence-bar {
   flex: 1;
@@ -250,10 +265,11 @@ main {
   transition: width 100ms linear;
 }
 .wave-cadence-secs {
-  width: 64px;
+  width: 56px;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
+  flex: 0 0 auto;
 }
 .wave-cadence-timer[data-state="active"] .wave-cadence-fill { background: var(--on); }
 .wave-cadence-timer[data-state="idle"] .wave-cadence-fill { background: var(--dim); }
@@ -261,14 +277,15 @@ main {
 .wave-spawn-now {
   background: transparent;
   color: var(--ink-muted);
-  border: 1px solid var(--dim);
-  padding: 2px 6px;
+  border: 1px solid var(--edge);
+  padding: 3px 10px;
   border-radius: 2px;
   font: inherit;
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   cursor: pointer;
+  flex: 0 0 auto;
   transition: color 80ms linear, border-color 80ms linear, background 80ms linear;
 }
 .wave-spawn-now:hover { color: var(--ink); border-color: var(--ink-muted); }
@@ -278,10 +295,11 @@ main {
 .wave-spawn-log {
   font-size: 10px;
   color: var(--ink-muted);
-  margin-top: 4px;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
   min-height: 14px;
   line-height: 1.3;
+  padding-left: 2px;
 }
 .wave-spawn-log[data-state="empty"] { opacity: 0.55; font-style: italic; }
 .wave-spawn-log[data-state="manual"] { color: var(--accent); }
@@ -428,6 +446,79 @@ main {
   background: transparent;
   color: var(--ink-muted);
 }
+/* Even when the faction-segment is disabled (compare/all mode), the
+   subfaction chip stays interactive so each lane can pick its variant. */
+#faction-seg.disabled .subfaction-chip { cursor: pointer; opacity: 1; pointer-events: auto; }
+#faction-seg.disabled .subfaction-chip:hover { color: var(--ink); border-color: var(--edge); }
+
+/* Faction tab body: name + subfaction chip. Two visual pieces but one
+   button — the chip swallows its own click via stopPropagation in JS. */
+#faction-seg .seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+.faction-name { font-size: 12px; }
+.subfaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: color 80ms ease, border-color 80ms ease, background 80ms ease;
+}
+.subfaction-chip:hover { color: var(--ink); border-color: var(--edge); }
+.seg-btn.active .subfaction-chip {
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(0, 0, 0, 0.85);
+}
+.seg-btn.active .subfaction-chip:hover { color: #000; }
+.subfaction-chip-arrow { font-size: 9px; opacity: 0.7; }
+
+.subfaction-pop {
+  position: fixed;
+  z-index: 1100;
+  min-width: 160px;
+  max-width: 260px;
+  background: #1a1a1f;
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+  padding: 4px;
+  font-family: var(--mono);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.subfaction-pop[hidden] { display: none; }
+.subfaction-pop-header {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 4px 8px 6px;
+}
+.subfaction-pop-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.subfaction-pop-item:hover { background: rgba(255, 255, 255, 0.06); }
+.subfaction-pop-item.active { color: var(--accent); }
+.subfaction-pop-item.active::before { content: "✓ "; color: var(--accent); }
 
 /* compare mode pane */
 .compare-pane {
@@ -448,6 +539,14 @@ main {
   gap: 0;
   min-height: 0;
 }
+
+/* In compare mode, each lane carries its own analytics cluster, so the
+   right-side column would be redundant (and would be lying about which
+   sim it's describing). Collapse the sim-area grid to a single full-width
+   column for the lanes and hide the global analytics column. */
+body[data-compare-active="1"] .sim-area { grid-template-columns: 1fr; }
+body[data-compare-active="1"] .analytics { display: none; }
+body[data-compare-active="1"] .battlefield-wrap { border-right: 0; }
 
 .battlefield-wrap {
   position: relative;
@@ -484,6 +583,7 @@ main {
   z-index: 4;
   border-radius: 2px;
 }
+.diver-profile[hidden] { display: none; }
 @media (max-width: 900px) {
   .diver-profile {
     width: 140px;
@@ -577,3 +677,58 @@ main {
   .config { padding: 12px 14px; }
   .analytics { padding: 12px 14px; }
 }
+
+/* ---- tooltips ----------------------------------------------------------- */
+
+/* Subtle "?" indicator after any element carrying [data-help] (added by
+   tooltips.js as `.has-help`). Keeps labels readable at a glance but
+   signals there's more info on hover/click. */
+.has-help { cursor: help; }
+.has-help:focus { outline: none; }
+.has-help:focus-visible::after { border-color: var(--accent); color: var(--ink); }
+
+.field-label.has-help::after,
+.row-label.has-help::after,
+.seg.has-help::after {
+  content: "?";
+  display: inline-block;
+  margin-left: 6px;
+  width: 12px;
+  height: 12px;
+  line-height: 11px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  border: 1px solid var(--dim);
+  border-radius: 50%;
+  color: var(--ink-muted);
+  vertical-align: 1px;
+  transition: color 80ms ease, border-color 80ms ease;
+}
+.field-label.has-help:hover::after,
+.row-label.has-help:hover::after,
+.seg.has-help:hover::after {
+  color: var(--ink);
+  border-color: var(--edge);
+}
+
+.tooltip-pop {
+  position: fixed;
+  z-index: 1000;
+  max-width: 280px;
+  background: #1a1a1f;
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  white-space: normal;
+}
+.tooltip-pop[hidden] { display: none; }

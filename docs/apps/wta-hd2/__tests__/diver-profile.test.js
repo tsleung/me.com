@@ -41,12 +41,14 @@ test("deriveDiverAction: secondary beats nothing", () => {
   assert.equal(action.kind, "fire-secondary");
 });
 
-test("deriveDiverAction: rooting reload outranks firing primary in same tick", () => {
-  // rare but possible if a queued shot resolves while reload countdown ticks
+test("deriveDiverAction: rooting reload still works when a state.weapons entry has rootsPlayer", () => {
+  // rocket-class state.weapons is an unusual loadout (most rockets live in
+  // state.stratagems and route through call-in), but the reload-heavy branch
+  // is still wired for it.
   const s = snap({
     weapons: [
       { id: "primary", defId: "liberator", reloadingPct: 1, rootsPlayer: false },
-      { id: "strat-1", defId: "recoilless", reloadingPct: 0.4, rootsPlayer: true, reloadSecs: 6 },
+      { id: "support", defId: "recoilless", reloadingPct: 0.4, rootsPlayer: true, reloadSecs: 6 },
     ],
     assignments: [{ weaponId: "primary", targetId: "e1", shots: 1 }],
   });
@@ -54,6 +56,20 @@ test("deriveDiverAction: rooting reload outranks firing primary in same tick", (
   assert.equal(action.kind, "reload-heavy");
   assert.equal(action.defId, "recoilless");
   assert.ok(Math.abs(action.secsRemaining - 0.6 * 6) < 1e-9, `secsRemaining=${action.secsRemaining}`);
+});
+
+test("deriveDiverAction: rocket call-in beats primary firing in same tick", () => {
+  // If the primary autopilot clips a hunter while the recoilless is mid
+  // call-in, the user's intuition is "I'm shooting my recoilless" — that
+  // pose should win.
+  const s = snap({
+    weapons: [{ id: "primary", defId: "liberator", reloadingPct: 1, rootsPlayer: false }],
+    stratagems: [{ id: "strat-1", defId: "recoilless", type: "support", callInPct: 0.3 }],
+    assignments: [{ weaponId: "primary", targetId: "e1", shots: 1 }],
+  });
+  const { action } = deriveDiverAction(s);
+  assert.equal(action.kind, "fire-heavy");
+  assert.equal(action.defId, "recoilless");
 });
 
 test("deriveDiverAction: light reload chosen when no heavy active and not firing primary", () => {
@@ -65,21 +81,31 @@ test("deriveDiverAction: light reload chosen when no heavy active and not firing
   assert.equal(action.slot, "primary");
 });
 
-test("deriveDiverAction: support stratagem fired through assignments → fire-heavy when rocket-class", () => {
+test("deriveDiverAction: rocket-class support stratagem mid-call-in → fire-heavy for the whole window", () => {
+  // Sim collapses recoilless/autocannon use into a beacon throw + call-in.
+  // The pose should hold for the entire call-in (callInPct in (0,1)), not
+  // just the single tick the assignment fires.
   const s = snap({
-    weapons: [],
-    stratagems: [{ id: "strat-1", defId: "recoilless", type: "support", callInPct: null }],
-    assignments: [{ weaponId: "strat-1", targetId: "e1", shots: 1 }],
+    stratagems: [{ id: "strat-1", defId: "recoilless", type: "support", callInPct: 0.5 }],
   });
   const { action } = deriveDiverAction(s);
   assert.equal(action.kind, "fire-heavy");
   assert.equal(action.defId, "recoilless");
+  assert.equal(action.family, "explosive");
 });
 
-test("deriveDiverAction: support stratagem flamethrower → fire-stratagem (not heavy)", () => {
+test("deriveDiverAction: autocannon mid-call-in → fire-heavy", () => {
   const s = snap({
-    stratagems: [{ id: "strat-2", defId: "flamethrower", type: "support", callInPct: null }],
-    assignments: [{ weaponId: "strat-2", targetId: "e1", shots: 1 }],
+    stratagems: [{ id: "strat-2", defId: "autocannon", type: "support", callInPct: 0.05 }],
+  });
+  const { action } = deriveDiverAction(s);
+  assert.equal(action.kind, "fire-heavy");
+  assert.equal(action.defId, "autocannon");
+});
+
+test("deriveDiverAction: non-rocket support stratagem mid-call-in → fire-stratagem", () => {
+  const s = snap({
+    stratagems: [{ id: "strat-2", defId: "flamethrower", type: "support", callInPct: 0.4 }],
   });
   const { action } = deriveDiverAction(s);
   assert.equal(action.kind, "fire-stratagem");

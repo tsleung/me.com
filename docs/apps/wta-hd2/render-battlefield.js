@@ -149,6 +149,13 @@ export function mountBattlefield(canvas, controller) {
     // 10. Cartoonish fx particles (explosions, gas, electric, laser, fire, spark)
     drawFxParticles(ctx, dims, fxQueue, snapshot.t);
 
+    // 11. Death banner — controller flashes "DIVER KIA" for 3s of real time
+    // after the diver's hp hits zero. Engine has already respawned underneath
+    // by the time this draws; the banner is only an attention cue.
+    if (snapshot.deathBanner?.active) {
+      drawDeathBanner(ctx, cssW, cssH);
+    }
+
     ctx.restore();
   }
 
@@ -642,6 +649,55 @@ function drawPlayer(ctx, dims, player) {
   ctx.restore();
   drawMovementArrow(ctx, dims, player, sx, sy);
   drawVelocityReadout(ctx, player, sx, sy);
+  drawPlayerHpBar(ctx, player, sx, sy);
+}
+
+function drawDeathBanner(ctx, cssW, cssH) {
+  const text = "DIVER KIA — RESPAWNING";
+  ctx.save();
+  ctx.font = "700 22px ui-monospace, SF Mono, Menlo, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const padX = 18;
+  const padY = 10;
+  const m = ctx.measureText(text);
+  const w = m.width + padX * 2;
+  const h = 22 + padY * 2;
+  const cx = cssW / 2;
+  const cy = cssH / 2;
+  ctx.fillStyle = "rgba(20, 0, 0, 0.85)";
+  ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+  ctx.strokeStyle = "#ff3a3a";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+  ctx.fillStyle = "#ff5a5a";
+  ctx.fillText(text, cx, cy);
+  ctx.restore();
+}
+
+// Diver HP bar — sits above the triangle so it doesn't fight with the
+// reload-bar stack below. Wider than enemy bars (the diver is the focus).
+// Hidden once the diver is dead (hp=0) since the engine doesn't have a
+// respawn path yet — the empty bar would be misleading.
+function drawPlayerHpBar(ctx, player, sx, sy) {
+  const hpMax = player.hpMax ?? 0;
+  if (hpMax <= 0) return;
+  const hp = Math.max(0, player.hp ?? 0);
+  const W = 28;
+  const H = 4;
+  const bx = sx - W / 2;
+  const by = sy - 18;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(bx - 1, by - 1, W + 2, H + 2);
+  ctx.fillStyle = "rgba(40,40,44,0.9)";
+  ctx.fillRect(bx, by, W, H);
+  const frac = Math.max(0, Math.min(1, hp / hpMax));
+  // Green when healthy, amber under half, red under a quarter.
+  const fg = frac > 0.5 ? "#4caf50" : frac > 0.25 ? "#d97a2c" : "#ff3a3a";
+  ctx.fillStyle = fg;
+  ctx.fillRect(bx, by, W * frac, H);
+  ctx.restore();
 }
 
 // Reload bars stacked below the diver. One row per weapon currently

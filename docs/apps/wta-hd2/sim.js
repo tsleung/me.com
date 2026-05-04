@@ -7,6 +7,16 @@ const DEFAULT_CFG = {
   maxRangeM: 80,
 };
 
+// Aggro radius: enemies within this distance of the diver retarget their
+// velocity each tick toward the player. Outside this radius they keep their
+// spawn vector — preserves "leaker" intents from scenario authors while
+// stopping close-in enemies from straight-lining past a kiting diver.
+const AGGRO_RANGE_M = 40;
+// Melee contact radius. At this distance, enemies drain player.hp at meleeDps.
+const MELEE_RANGE_M = 1.5;
+// HD2 diver baseline (Helldiver Vitality booster off): 150 HP.
+const PLAYER_HP_MAX = 150;
+
 export function createInitialState(cfg, data) {
   const seed = cfg.seed ?? hashString(loadoutKey(cfg));
   const rng = mulberry32(seed);
@@ -15,7 +25,7 @@ export function createInitialState(cfg, data) {
     tickN: 0,
     seed,
     rng,
-    player: { x: 0, y: 0, hp: 1, facingRad: Math.PI / 2, vx: 0, vy: 0, mode: "HOLD" },
+    player: { x: 0, y: 0, hp: PLAYER_HP_MAX, hpMax: PLAYER_HP_MAX, facingRad: Math.PI / 2, vx: 0, vy: 0, mode: "HOLD" },
     enemies: new Map(),
     weapons: initWeapons(cfg.loadout, data),
     stratagems: initStratagems(cfg.loadout, data),
@@ -37,6 +47,7 @@ export function tick(state, cfg = {}) {
   applyScheduled(next, c);
   spawnEnemies(next, c);
   moveEnemies(next, c);
+  resolveMelee(next, c);
   advanceProjectiles(next, c);
   resolveImpacts(next, c);
   tickReloads(next, c);
@@ -202,30 +213,43 @@ function initStratagems(loadout = {}, data = {}) {
     const def = all.find((s) => s.id === ids[i]);
     if (!def) continue;
     const slot = `strat-${i + 1}`;
-    m.set(slot, {
-      id: slot,
-      defId: def.id,
-      name: def.name ?? def.id,
-      type: def.type,
-      cooldownUntil: 0,
-      // cooldownStartT lets the snapshot compute progress against the actual
-      // cooldown duration instead of a hard-coded 60s denominator (which was
-      // wrong for everything except 60s stratagems).
-      cooldownStartT: 0,
-      cooldownSecsOwn: def.cooldownSecs ?? 60,
-      callInSecs: def.callInSecs ?? 0,
-      usesRemaining: def.uses,
-      // Captured at init so eagle rearm and resupply-style refills know what
-      // "full" looks like.
-      usesMax: def.uses,
-      callInActive: null,
-      damage: def.effects?.[0]?.damage ?? 0,
-      armorPen: def.effects?.[0]?.ap ?? 0,
-      aoeRadiusM: def.effects?.[0]?.aoeRadiusM ?? 0,
-      effects: def.effects ?? [],
-    });
+    m.set(slot, instantiateStratagem(slot, def));
+  }
+  // Resupply is universally available in HD2 — every helldiver can call it
+  // regardless of loadout. Inject it as an implicit slot under its own id so
+  // the loadout panel surfaces the cooldown alongside the four chosen
+  // stratagems and `maybeAutoCallResupply` always has something to find.
+  // Skip if the loadout already contains it (don't double-render).
+  if (!ids.includes("resupply")) {
+    const resupplyDef = all.find((s) => s.id === "resupply");
+    if (resupplyDef) m.set("resupply", instantiateStratagem("resupply", resupplyDef));
   }
   return m;
+}
+
+function instantiateStratagem(slot, def) {
+  return {
+    id: slot,
+    defId: def.id,
+    name: def.name ?? def.id,
+    type: def.type,
+    cooldownUntil: 0,
+    // cooldownStartT lets the snapshot compute progress against the actual
+    // cooldown duration instead of a hard-coded 60s denominator (which was
+    // wrong for everything except 60s stratagems).
+    cooldownStartT: 0,
+    cooldownSecsOwn: def.cooldownSecs ?? 60,
+    callInSecs: def.callInSecs ?? 0,
+    usesRemaining: def.uses,
+    // Captured at init so eagle rearm and resupply-style refills know what
+    // "full" looks like.
+    usesMax: def.uses,
+    callInActive: null,
+    damage: def.effects?.[0]?.damage ?? 0,
+    armorPen: def.effects?.[0]?.ap ?? 0,
+    aoeRadiusM: def.effects?.[0]?.aoeRadiusM ?? 0,
+    effects: def.effects ?? [],
+  };
 }
 
 function computeShotsThisTick(w, tickMs, _t) {
@@ -261,12 +285,49 @@ function spawnEnemies(state, _cfg) {
 }
 
 function moveEnemies(state, cfg) {
+  const dt = cfg.tickMs / 1000;
+  const px = state.player?.x ?? 0;
+  const py = state.player?.y ?? 0;
   for (const e of state.enemies.values()) {
     if (!e.alive) continue;
     if (!e.velocity) continue;
-    const dt = cfg.tickMs / 1000;
+    // Within aggro radius, retarget toward the player at the spawn-vector
+    // magnitude so kiting actually shakes pursuers. Outside the radius keep
+    // the spawn vector — long-range "leaker" intents survive.
+    const dx = px - e.position.x;
+    const dy = py - e.position.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 0.01 && d <= AGGRO_RANGE_M) {
+      const speed = Math.hypot(e.velocity.dx, e.velocity.dy);
+      if (speed > 0.01) {
+        e.velocity.dx = (dx / d) * speed;
+        e.velocity.dy = (dy / d) * speed;
+      }
+    }
     e.position.x += e.velocity.dx * dt;
     e.position.y += e.velocity.dy * dt;
+  }
+}
+
+// Closes the loop on PUSH/HOLD/KITE: any enemy whose body overlaps the
+// diver drains player.hp at its meleeDps. Without this the mode chip is
+// decorative — kiting has no analytical consequence.
+function resolveMelee(state, cfg) {
+  if (!state.player) return;
+  const dt = cfg.tickMs / 1000;
+  const px = state.player.x ?? 0;
+  const py = state.player.y ?? 0;
+  let drained = 0;
+  for (const e of state.enemies.values()) {
+    if (!e.alive) continue;
+    if (!e.meleeDps) continue;
+    const dx = e.position.x - px;
+    const dy = e.position.y - py;
+    if (Math.hypot(dx, dy) > MELEE_RANGE_M) continue;
+    drained += e.meleeDps * dt;
+  }
+  if (drained > 0) {
+    state.player.hp = Math.max(0, (state.player.hp ?? 0) - drained);
   }
 }
 

@@ -175,6 +175,18 @@ test("SET_GAMMA updates solver.gamma", () => {
   assert.equal(lastCfg.solver.gamma, 0.7);
 });
 
+test("SET_SKILL updates solver.skill", () => {
+  let lastCfg = null;
+  const s = fakeSchedule();
+  const c = createController({
+    engineFactory: (cfg) => { lastCfg = cfg; return fakeEngine(); },
+    initialCfg: { solver: { alpha: 0.5, gamma: 0.3, skill: 1.0 } },
+    schedule: s,
+  });
+  c.dispatch({ type: "SET_SKILL", skill: 1.6 });
+  assert.equal(lastCfg.solver.skill, 1.6);
+});
+
 test("SET_RESERVE merges into solver.reserves keyed by slot", () => {
   let lastCfg = null;
   const s = fakeSchedule();
@@ -227,4 +239,49 @@ test("controller with real engine + L1 wires through end-to-end", async () => {
   c.dispatch({ type: "PAUSE" });
   assert.ok(seen.length > 5, `should have streamed snapshots, got ${seen.length}`);
   assert.ok(c.getSnapshot().tickN > 10, `should have advanced sim time, got ${c.getSnapshot().tickN}`);
+});
+
+test("diver death restarts the engine immediately and flashes a 3s banner", () => {
+  let factoryCalls = 0;
+  // Engine that kills the diver on the 3rd tick.
+  function dyingEngine() {
+    let n = 0;
+    return {
+      initialState: { tickN: 0, t: 0, player: { hp: 150, hpMax: 150 } },
+      tick(s) {
+        n++;
+        const hp = n >= 3 ? 0 : 150;
+        return { tickN: n, t: n * 100, player: { hp, hpMax: 150 } };
+      },
+      view(s) { return { tickN: s.tickN, t: s.t, player: s.player }; },
+    };
+  }
+  const sched = fakeSchedule();
+  const c = createController({
+    engineFactory: () => { factoryCalls++; return dyingEngine(); },
+    initialCfg: {},
+    schedule: sched,
+  });
+  const seen = [];
+  c.subscribe((snap) => seen.push(snap));
+
+  c.dispatch({ type: "STEP" });
+  c.dispatch({ type: "STEP" });
+  assert.equal(factoryCalls, 1, "no respawn yet");
+  assert.equal(seen.at(-1).deathBanner, undefined);
+
+  // Third step kills the diver (tickN=3, hp=0). Engine respawns; tickN resets.
+  c.dispatch({ type: "STEP" });
+  assert.equal(factoryCalls, 2, "engine should have been rebuilt on death");
+  assert.equal(c.getSnapshot().tickN, 0, "snapshot should reflect the fresh engine");
+  assert.equal(c.getSnapshot().deathBanner?.active, true, "banner should be active");
+
+  // Banner persists for ~3s of wall time, then a trailing emit clears it.
+  sched.advance(2900);
+  // emit() is only called when something happens; force a fresh snapshot.
+  c.dispatch({ type: "STEP" });
+  assert.equal(c.getSnapshot().deathBanner?.active, true, "banner still active under 3s");
+
+  sched.advance(200); // total ~3.1s — clear-emit fires
+  assert.equal(c.getSnapshot().deathBanner, undefined, "banner cleared after 3s");
 });

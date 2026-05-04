@@ -16,7 +16,7 @@
   <div class="title">
     <a href="/" class="home">←</a>
     <h1>wta-hd2</h1>
-    <span class="subtitle">helldivers 2 loadout sim via weapon-target assignment</span>
+    <span class="subtitle">helldivers 2 loadout sim via <a href="https://en.wikipedia.org/wiki/Weapon_target_assignment_problem" target="_blank" rel="noopener noreferrer" class="subtitle-link">weapon-target assignment</a></span>
   </div>
   <nav class="run-controls" aria-label="run">
     <button id="ctrl-play" class="ctrl-btn" disabled>play</button>
@@ -39,12 +39,12 @@
   <section class="config" id="config-panel" aria-label="configuration">
 
     <div class="config-row" data-row="scenario">
-      <div class="row-label">scenario</div>
+      <div class="row-label" data-help="The mission setup: which faction you're up against, what kind of encounter, and how hard it is. Determines what spawns at you.">scenario</div>
       <div class="row-fields">
         <div class="field">
-          <label class="field-label">faction</label>
+          <label class="field-label" data-help="Which enemy faction to fight. Each tab carries its own subfaction chip — click the chip (▾) to pick a variant for that faction. In 'all' mode every lane uses its own subfaction.">faction</label>
           <div class="faction-with-mode">
-            <div class="seg" id="mode-seg" role="tablist" title="single — battle one faction; all — compare same loadout across all 3 factions">
+            <div class="seg" id="mode-seg" role="tablist" data-help="single = run one battle against the chosen faction. all = run the same loadout against every faction in parallel and compare scores.">
               <button class="seg-btn" data-value="single" role="tab">single</button>
               <button class="seg-btn" data-value="all" role="tab">all</button>
             </div>
@@ -56,41 +56,39 @@
           </div>
         </div>
         <div class="field">
-          <label class="field-label" for="subfaction">subfaction</label>
-          <select id="subfaction" class="select"></select>
-        </div>
-        <div class="field">
-          <label class="field-label">encounter</label>
+          <label class="field-label" data-help="patrol = ambient roaming spawns at a steady cadence. breach / drop = scripted reinforcement events with bigger bursts of enemies.">encounter</label>
           <div class="seg" id="encounter-seg" role="tablist">
             <button class="seg-btn" data-value="patrol" role="tab">patrol</button>
             <button class="seg-btn" data-value="breach" role="tab">breach / drop</button>
           </div>
         </div>
         <div class="field field-difficulty">
-          <label class="field-label" for="difficulty">difficulty</label>
+          <label class="field-label" for="difficulty" data-help="Mission difficulty 1–10. Higher difficulty spawns more enemies, tougher armor classes, and shortens the default wave interval.">difficulty</label>
           <input type="number" id="difficulty" class="num-input" min="1" max="10" step="1" value="7" inputmode="numeric">
         </div>
         <div class="field">
-          <label class="field-label" for="spawn-rate">spawn rate <span class="muted" id="spawn-rate-val">1.0×</span></label>
+          <label class="field-label" for="spawn-rate" data-help="Multiplier on the number of enemies in each spawned wave. 1× is baseline; 4× quadruples the count for stress-testing a loadout.">spawn rate <span class="muted" id="spawn-rate-val">1.0×</span></label>
           <input type="range" id="spawn-rate" class="slider" min="0.25" max="4" step="0.25" value="1">
         </div>
-        <div class="field">
-          <label class="field-label" for="infinite-waves">infinite waves</label>
+      </div>
+    </div>
+
+    <div class="config-row" data-row="waves">
+      <div class="row-label" data-help="Pacing of enemy reinforcements over the battle. Toggle infinite waves on/off, set the cadence, and watch the next-wave countdown.">waves</div>
+      <div class="row-fields wave-fields">
+        <div class="field field-toggle">
+          <label class="field-label" for="infinite-waves" data-help="When on, fresh waves keep arriving on the wave-interval cadence. When off, only the initial spawn runs and the battle ends when those enemies are cleared.">infinite waves</label>
           <label class="toggle">
             <input type="checkbox" id="infinite-waves" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="field">
-          <label class="field-label" for="player-movement">diver movement</label>
-          <label class="toggle">
-            <input type="checkbox" id="player-movement">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="field">
-          <label class="field-label" for="wave-cadence">wave interval (s) <span class="muted" id="wave-cadence-hint"></span></label>
+        <div class="field field-cadence">
+          <label class="field-label" for="wave-cadence" data-help="Seconds between auto-spawned waves (5–600). Leave blank or empty to fall back to the difficulty-based default.">wave interval (s) <span class="muted" id="wave-cadence-hint"></span></label>
           <input type="number" id="wave-cadence" class="num-input" min="5" max="600" step="1" inputmode="numeric" placeholder="auto">
+        </div>
+        <div class="field field-grow field-wave-status">
+          <label class="field-label" data-help="Live countdown to the next wave. Bar fills as the cadence elapses. Click 'spawn now' to trigger one immediately instead of waiting.">next wave</label>
           <div class="wave-cadence-timer" id="wave-cadence-timer" data-state="idle">
             <div class="wave-cadence-bar"><div class="wave-cadence-fill"></div></div>
             <div class="wave-cadence-secs" id="wave-cadence-secs">—</div>
@@ -102,73 +100,91 @@
     </div>
 
     <div class="config-row" data-row="loadout">
-      <div class="row-label">loadout</div>
+      <div class="row-label" data-help="The diver's kit: 4 stratagems, primary, secondary, grenade, armor passive, and booster. This is what the solver has to work with.">loadout</div>
       <div class="row-fields loadout-grid">
         <div class="field">
-          <label class="field-label" for="strat-1">stratagem 1</label>
+          <label class="field-label" for="strat-1" data-help="Stratagem call-in (slot 1 of 4). Each stratagem has its own cooldown after use and a fixed number of uses per mission. Includes orbitals, eagles, support weapons, and sentries.">stratagem 1</label>
           <select id="strat-1" class="select" data-slot="strat-1"></select>
           <div class="field-detail" id="strat-1-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="strat-2">stratagem 2</label>
+          <label class="field-label" for="strat-2" data-help="Stratagem call-in (slot 2 of 4). Each stratagem has its own cooldown after use and a fixed number of uses per mission.">stratagem 2</label>
           <select id="strat-2" class="select" data-slot="strat-2"></select>
           <div class="field-detail" id="strat-2-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="strat-3">stratagem 3</label>
+          <label class="field-label" for="strat-3" data-help="Stratagem call-in (slot 3 of 4). Each stratagem has its own cooldown after use and a fixed number of uses per mission.">stratagem 3</label>
           <select id="strat-3" class="select" data-slot="strat-3"></select>
           <div class="field-detail" id="strat-3-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="strat-4">stratagem 4</label>
+          <label class="field-label" for="strat-4" data-help="Stratagem call-in (slot 4 of 4). Each stratagem has its own cooldown after use and a fixed number of uses per mission.">stratagem 4</label>
           <select id="strat-4" class="select" data-slot="strat-4"></select>
           <div class="field-detail" id="strat-4-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="primary">primary</label>
+          <label class="field-label" for="primary" data-help="Primary weapon — the diver's main rifle / shotgun / SMG. Carries most of the chaff-clear and elite damage workload.">primary</label>
           <select id="primary" class="select" data-slot="primary"></select>
           <div class="field-detail" id="primary-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="secondary">secondary</label>
+          <label class="field-label" for="secondary" data-help="Sidearm — backup weapon used when the primary is reloading or out of ammo, or for finishing low-health targets.">secondary</label>
           <select id="secondary" class="select" data-slot="secondary"></select>
           <div class="field-detail" id="secondary-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="grenade">grenade</label>
+          <label class="field-label" for="grenade" data-help="Throwable. Used for closing breaches/holes, breaking armor, or burst-clearing clustered chaff. Limited count per mission.">grenade</label>
           <select id="grenade" class="select" data-slot="grenade"></select>
           <div class="field-detail" id="grenade-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="armor">armor passive</label>
+          <label class="field-label" for="armor" data-help="Armor passive — a perk tied to the chosen armor (e.g. extra grenades, padding, stim duration). Modifies survival, stamina, or utility but doesn't change damage output.">armor passive</label>
           <select id="armor" class="select" data-slot="armor"></select>
           <div class="field-detail" id="armor-detail"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="booster">booster</label>
+          <label class="field-label" for="booster" data-help="Squad-wide buff selected at deployment (e.g. stamina, hellpod optimization, vitality). Applies for the whole mission.">booster</label>
           <select id="booster" class="select" data-slot="booster"></select>
           <div class="field-detail" id="booster-detail"></div>
         </div>
       </div>
     </div>
 
+    <div class="config-row" data-row="presets">
+      <div class="row-label" data-help="Curated scenario + loadout combos. Click to overwrite the current scenario and loadout in one shot — useful as a starting point.">presets</div>
+      <div class="row-fields" id="presets-row"></div>
+    </div>
+
     <div class="config-row" data-row="solver">
-      <div class="row-label">solver</div>
+      <div class="row-label" data-help="Knobs that shape how the WTA solver picks targets and how the simulated diver actually fires. They don't change the loadout — they change how the loadout is played.">solver</div>
       <div class="row-fields">
         <div class="field">
-          <label class="field-label" for="alpha">survival ↔ clear <span class="muted" id="alpha-val"></span></label>
+          <label class="field-label" for="alpha" data-help="Tradeoff between killing fast and staying alive. Left = clear-focused (prioritize damage / kill rate). Right = survival-first (prioritize the most threatening targets, even if slower to clear).">survival ↔ clear <span class="muted" id="alpha-val"></span></label>
           <input type="range" id="alpha" class="slider" min="0" max="1" step="0.05" value="0.5">
         </div>
         <div class="field">
-          <label class="field-label" for="gamma">right-tool weight <span class="muted" id="gamma-val"></span></label>
+          <label class="field-label" for="gamma" data-help="How strongly the solver prefers ideal weapon-vs-archetype matchups (e.g. AT weapons on heavies) instead of just shooting the nearest target. Higher = pickier; lower = greedier.">right-tool weight <span class="muted" id="gamma-val"></span></label>
           <input type="range" id="gamma" class="slider" min="0" max="1" step="0.05" value="0.3">
         </div>
+        <div class="field">
+          <label class="field-label" for="skill" data-help="Aim quality of the simulated diver. Higher skill tightens the dispersion cone, raising hit probability and making weapon DPS closer to its on-paper value.">player skill <span class="muted" id="skill-val"></span></label>
+          <input type="range" id="skill" class="slider" min="0.5" max="2" step="0.05" value="1">
+        </div>
+        <div class="field">
+          <label class="field-label" for="player-movement" data-help="Allow the simulated diver to reposition (push toward targets, hold ground, or kite away) instead of standing still. Off = stationary firing platform; on = realistic movement.">diver movement</label>
+          <label class="toggle">
+            <input type="checkbox" id="player-movement">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="field">
+          <label class="field-label" for="ammo-conservation" data-help="When on, the solver discounts the value of firing scarce-ammo weapons (recoilless, autocannon, EAT, etc.) on distant targets — preferring to wait until the engagement is favorable instead of burning a cooldown at long range.">ammo conservation</label>
+          <label class="toggle">
+            <input type="checkbox" id="ammo-conservation">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
-    </div>
-
-    <div class="config-row" data-row="presets">
-      <div class="row-label">presets</div>
-      <div class="row-fields" id="presets-row"></div>
     </div>
   </section>
 

@@ -8,6 +8,13 @@ import {
 import { assign as solverAssign, expectedDamagePerShot } from "./wta-solver.js";
 import { buildScenario, defaultWaveCadenceSecs } from "./scenarios.js";
 import { mulberry32, hashString } from "./rng.js";
+// --- composed feature modules (each removable in isolation) ----------------
+//
+// Each lives under ./features/. Removing one means deleting its file and the
+// import + call site here. Snapshot fields (verdict, player.{vx,vy,mode})
+// are the only outward leak. See docs at the top of each feature file.
+import { updateMovement } from "./features/movement-policy.js";
+import { classifyOutcome } from "./features/verdict.js";
 
 const DEFAULT_CFG = {
   tickMs: 100,
@@ -44,22 +51,34 @@ export function createEngine(cfg, data) {
     const weapons = visibleWeaponView(next, c);
     const targets = visibleEnemyView(next, c);
     const effects = effectView(next);
+    const skill = c.solver?.skill ?? 1.0;
     const assignments = solverAssign({
       weapons,
       targets,
       effects,
       alpha: c.solver?.alpha ?? 0.5,
       gamma: c.solver?.gamma ?? 0.3,
+      skill,
+      // features/ammo-conservation.js — opt-in distance discount for
+      // scarce-ammo weapons. Off by default to preserve goldens; flip
+      // via cfg.solver.ammoConservation = true.
+      ammoConservation: c.solver?.ammoConservation ?? false,
       reserves: c.solver?.reserves ?? {},
+      policy: c.solver?.policy ?? null,
       rng: next.rng,
       tickMs: c.tickMs,
     });
-    applyAssignments(next, assignments, c);
+    applyAssignments(next, assignments, c, skill);
     // Resupply has no damage, so the WTA solver will never pick it. Trigger it
     // out-of-band when any weapon is bone-dry and resupply is off cooldown.
     maybeAutoCallResupply(next, c);
     next._lastAssignments = assignments;
-    updatePlayerMovement(next, targets, assignments, c);
+    // features/movement-policy.js owns HOLD/KITE/PUSH/RELOAD math. The
+    // module handles the playerMovement on/off gate internally; we pass
+    // damage + rooting predicates so it can compute sustained DPS the
+    // same way the solver predicts and recognise rooting reloads.
+    const dmgFn = (w, t, dist) => expectedDamagePerShot(w, t, dist, skill);
+    updateMovement(next, targets, c, dmgFn, rootsPlayerOnReload);
     return next;
   };
 
@@ -123,7 +142,7 @@ function hydrateSpawnSchedule(state, scenario) {
   }
 }
 
-function applyAssignments(state, assignments, cfg) {
+function applyAssignments(state, assignments, cfg, skill = 1) {
   state._fxFlashes = [];
   for (const a of assignments) {
     const target = state.enemies.get(a.targetId);
@@ -138,7 +157,7 @@ function applyAssignments(state, assignments, cfg) {
       const dxp = (target.position?.x ?? 0) - (state.player?.x ?? 0);
       const dyp = (target.position?.y ?? 0) - (state.player?.y ?? 0);
       const distM = Math.hypot(dxp, dyp);
-      const dmgPerShot = computeDamage(weapon, target, distM);
+      const dmgPerShot = computeDamage(weapon, target, distM, skill);
       const totalDmg = dmgPerShot * a.shots;
       target.hp = Math.max(0, target.hp - totalDmg);
       const died = target.hp <= 0;
@@ -399,8 +418,8 @@ function fxKindForWeapon(weapon, _state) {
 // dispersion × smaller part width = lower per-shot expected damage);
 // distanceM = 0 falls back to deterministic best-pen-able-part for AoE
 // explosions where the strike already landed on the target.
-function computeDamage(weapon, target, distanceM = 0) {
-  return expectedDamagePerShot(weapon, target, distanceM);
+function computeDamage(weapon, target, distanceM = 0, skill = 1) {
+  return expectedDamagePerShot(weapon, target, distanceM, skill);
 }
 
 function snapshot(state, data, cfg) {
@@ -411,6 +430,8 @@ function snapshot(state, data, cfg) {
       x: state.player.x, y: state.player.y, facingRad: state.player.facingRad,
       vx: state.player.vx ?? 0, vy: state.player.vy ?? 0,
       mode: state.player.mode ?? "HOLD",
+      hp: state.player.hp ?? 0,
+      hpMax: state.player.hpMax ?? 0,
     },
     enemies: [...state.enemies.values()].map((e) => ({
       id: e.id,
@@ -481,6 +502,14 @@ function snapshot(state, data, cfg) {
       difficulty: cfg.scenario?.difficulty,
       archetypes: state.scenario?.archetypes ?? [],
     },
+    // features/verdict.js — terminal outcome string, computed each tick
+    // from snapshot fields above. "in-progress" until something ends.
+    verdict: classifyOutcome({
+      t: state.t, tickN: state.tickN,
+      player: { hp: state.player.hp ?? 1 },
+      enemies: [...state.enemies.values()],
+      nextSpawnT: nextScheduledT(state),
+    }),
   };
 }
 
@@ -796,101 +825,6 @@ function triggerResupply(state, resupply, cfg) {
 
 }
 
-// --- player movement: HOLD / KITE / PUSH ---
-//
-// Mode is derived AFTER assignment so we can ask "given what we just decided
-// to fire, will the threats reach me before I kill them?"
-//
-// HOLD: every visible threat is killable before it closes to melee, given the
-//       current assignment's expected DPS contributions.
-// KITE: at least one threat will arrive before the weapon assigned to it is
-//       ready (reload/cooldown), so we back away to buy time.
-// PUSH: arc is empty, or all threats already in the kill window.
-//
-// Movement integrates at fixed `tickMs`. Speeds are intentionally small —
-// the engagement geometry shouldn't whiplash per tick.
-const KITE_SPEED_MPS = 3.0;
-const PUSH_SPEED_MPS = 1.5;
-const SAFETY_MARGIN_SECS = 0.5;
-const WORLD_LATERAL = 50;
-
-function updatePlayerMovement(state, targets, assignments, cfg) {
-  // Movement off (default) → diver is a stationary turret. Mode pinned to
-  // HOLD so the analytics chip reads cleanly and the battlefield arrow
-  // disappears (drawMovementArrow short-circuits at speed < 0.05).
-  if (cfg.scenario?.playerMovement !== true) {
-    state.player = { ...state.player, vx: 0, vy: 0, mode: "HOLD" };
-    return;
-  }
-
-  // Heavy-reload lockout: if any equipped weapon is in a rooting reload
-  // (RR/Spear/EAT/Quasar/etc.), the diver can't move. Distinct mode tag so
-  // the renderer can colour the arrow / show a "RELOAD" chip rather than
-  // silently dropping into HOLD.
-  for (const w of state.weapons.values()) {
-    if (w.reloadingUntil !== null && w.reloadingUntil > state.t && rootsPlayerOnReload(w)) {
-      state.player = { ...state.player, vx: 0, vy: 0, mode: "RELOAD" };
-      return;
-    }
-  }
-
-  const tickSecs = (cfg.tickMs ?? 100) / 1000;
-  const aliveThreats = targets.filter((t) => {
-    const e = state.enemies.get(t.id);
-    return e && e.alive;
-  });
-
-  let mode = "PUSH";
-
-  if (aliveThreats.length > 0) {
-    // ttkill per target = hp / Σ_assigned (expectedDamagePerSec from that weapon).
-    const damagePerSecPerWeapon = (a, target) => {
-      const w = state.weapons.get(a.weaponId) ?? state.stratagems.get(a.weaponId);
-      if (!w) return 0;
-      const dmg = computeDamage(w, target);
-      const fireRate = w.fireRateRpm ? w.fireRateRpm / 60 : 1; // rounds/sec
-      return dmg * fireRate;
-    };
-    const dpsPerTarget = new Map();
-    for (const a of assignments) {
-      const tgt = state.enemies.get(a.targetId);
-      if (!tgt || !tgt.alive) continue;
-      const dps = damagePerSecPerWeapon(a, tgt);
-      dpsPerTarget.set(a.targetId, (dpsPerTarget.get(a.targetId) || 0) + dps);
-    }
-
-    let anyUnsafe = false;
-    for (const t of aliveThreats) {
-      const dx = t.position.x - state.player.x;
-      const dy = t.position.y - state.player.y;
-      const d = Math.hypot(dx, dy);
-      const speed = Math.hypot(t.velocity?.dx ?? 0, t.velocity?.dy ?? 0);
-      const ttp = speed > 0.01 ? d / speed : Infinity;
-      const dps = dpsPerTarget.get(t.id) || 0;
-      const ttkill = dps > 0 ? (state.enemies.get(t.id)?.hp ?? 0) / dps : Infinity;
-      if (ttkill > ttp - SAFETY_MARGIN_SECS) { anyUnsafe = true; break; }
-    }
-
-    mode = anyUnsafe ? "KITE" : "HOLD";
-  }
-
-  // Movement is scalar along facing only. Lateral kiting/dodging is dodge
-  // geometry that needs richer threat tracking than we have today; "buy time"
-  // is a back-along-facing intent. KITE → negative speed, PUSH → positive.
-  let speed = 0;
-  if (mode === "KITE") speed = -KITE_SPEED_MPS;
-  else if (mode === "PUSH") speed = +PUSH_SPEED_MPS;
-  const fx = Math.cos(state.player.facingRad ?? Math.PI / 2);
-  const fy = Math.sin(state.player.facingRad ?? Math.PI / 2);
-  const vx = fx * speed;
-  const vy = fy * speed;
-  const nx = clampWorld(state.player.x + vx * tickSecs);
-  const ny = clampWorld(state.player.y + vy * tickSecs);
-  state.player = { ...state.player, x: nx, y: ny, vx, vy, mode };
-}
-
-function clampWorld(v) {
-  if (v < -WORLD_LATERAL) return -WORLD_LATERAL;
-  if (v > WORLD_LATERAL) return WORLD_LATERAL;
-  return v;
-}
+// Player movement (HOLD / KITE / PUSH / RELOAD) lives in
+// features/movement-policy.js. See that file's header for the policy
+// rules. The engine just calls `updateMovement` once per tick.

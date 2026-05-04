@@ -39,15 +39,28 @@ const THROW_HOLD_MS = 700; // diver stays in throw-back pose this long after a s
 // stop being shown). Returns { action, memory }.
 //
 // Priority ladder (highest first):
-//   throw           — a stratagem ball just left the diver's hand (sticky 700ms)
-//   reload-heavy    — any rooting reload in progress (RR/Spear/EAT/etc.)
-//   fire-heavy      — assignment fired through a rocket-class support stratagem
+//   fire-heavy      — rocket-class support stratagem mid-call-in (recoilless,
+//                     autocannon, spear, quasar, EAT)
+//   throw           — non-held stratagem ball in flight (eagle/orbital/sentry
+//                     /mine), sticky 700ms after the throw
+//   fire-stratagem  — non-rocket support stratagem mid-call-in (stalwart,
+//                     MG-43, flamer, arc-thrower)
+//   reload-heavy    — any rooting reload in progress (state.weapons-based)
 //   reload-light    — primary/secondary mid-reload
 //   fire-primary    — primary in this tick's assignments
 //   fire-secondary  — secondary in this tick's assignments
-//   fire-stratagem  — non-rocket support stratagem in this tick's assignments
 //   throw-grenade   — grenade slot fired
 //   idle            — nothing happening
+//
+// The sim collapses every stratagem use (held weapons too) into a beacon
+// throw + call-in resolve. So firing a recoilless registers in assignments
+// for one tick, then nothing for the remaining 4s of call-in — which is why
+// the old "look at assignments[].weaponId" detection felt invisible. We
+// instead read off `callInPct != null` so the held-weapon pose persists for
+// the entire call-in window, matching the user's mental model ("I'm using
+// my autocannon right now"). Support-class held weapons rank above
+// primary/secondary firing because they're the loadout decision that
+// dominates the moment.
 export function deriveDiverAction(snapshot, memory = {}) {
   const t = snapshot?.t ?? 0;
   const weapons = snapshot?.weapons ?? [];
@@ -58,22 +71,51 @@ export function deriveDiverAction(snapshot, memory = {}) {
   const nowActive = new Set();
   let throwUntilT = memory.throwUntilT ?? 0;
   let throwingDefId = memory.throwingDefId ?? null;
+
+  // Walk every stratagem currently in call-in, classifying it. Held weapons
+  // (support type) drive the firing pose for the entire call-in window; pure
+  // throw stratagems (eagle/orbital/sentry/mine) only get the brief throw
+  // pose at the start.
+  let activeRocketHeavy = null;
+  let activeStratLight = null;
   for (const s of stratagems) {
     if (s.callInPct == null) continue;
     nowActive.add(s.id);
-    if (!prevActive.has(s.id)) {
+    const isHeldSupport = s.type === "support";
+    const isRocket = isHeldSupport && weaponFiresRocket(s.defId);
+    if (isRocket) {
+      activeRocketHeavy = activeRocketHeavy ?? s;
+    } else if (isHeldSupport) {
+      activeStratLight = activeStratLight ?? s;
+    } else if (!prevActive.has(s.id)) {
+      // Newly-thrown non-held stratagem — light up the throw pose for ~700ms,
+      // then fall through to idle while the call-in continues in the world.
       throwUntilT = t + THROW_HOLD_MS;
       throwingDefId = s.defId;
     }
   }
   const newMemory = { activeCallIns: nowActive, throwUntilT, throwingDefId };
 
+  // Held rocket support weapon mid-call-in — kneeling tube pose with smoke
+  // back-blast for the entire call-in window. Beats everything else: this is
+  // the most distinctive thing the diver can be doing.
+  if (activeRocketHeavy) {
+    return {
+      action: {
+        kind: "fire-heavy",
+        defId: activeRocketHeavy.defId,
+        family: weaponFamily(activeRocketHeavy.defId, activeRocketHeavy.id),
+      },
+      memory: newMemory,
+    };
+  }
+
+  // Throw window for pure-call-in stratagems (eagles/orbitals/sentries/mines).
   if (t < throwUntilT && throwingDefId) {
     const t01 = 1 - Math.max(0, (throwUntilT - t) / THROW_HOLD_MS);
     return { action: { kind: "throw", defId: throwingDefId, t01 }, memory: newMemory };
   }
 
-  const stratById = new Map(stratagems.map((s) => [s.id, s]));
   const weaponById = new Map(weapons.map((w) => [w.id, w]));
 
   const rootedReload = weapons.find((w) => w.rootsPlayer && (w.reloadingPct ?? 1) < 1);
@@ -89,8 +131,20 @@ export function deriveDiverAction(snapshot, memory = {}) {
     };
   }
 
-  let firingHeavy = null;
-  let firingStratLight = null;
+  // Held non-rocket support weapon mid-call-in (stalwart/MG/flamer/arc). Same
+  // pose family as the primary fire — standing rifle — but coloured by the
+  // weapon's own family for the muzzle flash.
+  if (activeStratLight) {
+    return {
+      action: {
+        kind: "fire-stratagem",
+        defId: activeStratLight.defId,
+        family: weaponFamily(activeStratLight.defId, activeStratLight.id),
+      },
+      memory: newMemory,
+    };
+  }
+
   let firingPrimary = false;
   let firingSecondary = false;
   let firingGrenade = false;
@@ -99,23 +153,12 @@ export function deriveDiverAction(snapshot, memory = {}) {
     if (id === "primary") firingPrimary = true;
     else if (id === "secondary") firingSecondary = true;
     else if (id === "grenade") firingGrenade = true;
-    else if (typeof id === "string" && id.startsWith("strat-")) {
-      const s = stratById.get(id);
-      if (!s) continue;
-      // Only treat support-type stratagems as "fired from the hip" — orbital,
-      // eagle, sentry etc. are throw-only and would have been caught by the
-      // throw branch above.
-      if (s.type !== "support") continue;
-      if (weaponFiresRocket(s.defId)) firingHeavy = s;
-      else firingStratLight = s;
-    }
+    // Stratagem firing is captured via callInPct above — assignment-based
+    // detection would only catch the single throw tick and miss the rest of
+    // the call-in.
   }
 
-  if (firingHeavy) {
-    return { action: { kind: "fire-heavy", defId: firingHeavy.defId, family: weaponFamily(firingHeavy.defId, firingHeavy.id) }, memory: newMemory };
-  }
-
-  // Light reload only matters when a heavy isn't drowning it out visually.
+  // Light reload only matters when nothing else more distinctive is going on.
   const lightReload = weapons.find((w) => !w.rootsPlayer && (w.reloadingPct ?? 1) < 1);
   if (lightReload) {
     return {
@@ -138,9 +181,6 @@ export function deriveDiverAction(snapshot, memory = {}) {
     const w = weaponById.get("secondary");
     return { action: { kind: "fire-secondary", defId: w?.defId, family: weaponFamily(w?.defId, "secondary") }, memory: newMemory };
   }
-  if (firingStratLight) {
-    return { action: { kind: "fire-stratagem", defId: firingStratLight.defId, family: weaponFamily(firingStratLight.defId, firingStratLight.id) }, memory: newMemory };
-  }
   if (firingGrenade) {
     const w = weaponById.get("grenade");
     return { action: { kind: "throw-grenade", defId: w?.defId }, memory: newMemory };
@@ -158,7 +198,7 @@ export function mountDiverProfile(canvas, controller) {
 
   const ctx = canvas.getContext("2d");
   let snapshot = controller.getSnapshot ? controller.getSnapshot() : null;
-  let memory = { activeCallIns: new Set(), throwUntilT: 0, throwingDefId: null };
+  let memory = newDiverProfileMemory();
   let dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
   let cssW = W;
   let cssH = H;
@@ -192,44 +232,7 @@ export function mountDiverProfile(canvas, controller) {
   function draw() {
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Internal coords are W×H; scale to fit cssW/cssH so external CSS sizing
-    // doesn't squish the silhouette.
-    const sx = cssW / W;
-    const sy = cssH / H;
-    ctx.scale(sx, sy);
-
-    ctx.fillStyle = BG;
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = BORDER;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
-
-    // Title strip
-    ctx.fillStyle = TXT_DIM;
-    ctx.font = "600 9px ui-monospace, SF Mono, Menlo, monospace";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText("DIVER PROFILE", 8, 6);
-
-    let action;
-    if (snapshot) {
-      const r = deriveDiverAction(snapshot, memory);
-      action = r.action;
-      memory = r.memory;
-    } else {
-      action = { kind: "idle" };
-    }
-
-    // Ground line
-    ctx.strokeStyle = "rgba(120, 120, 130, 0.35)";
-    ctx.beginPath();
-    ctx.moveTo(10, GROUND_Y + 0.5);
-    ctx.lineTo(W - 10, GROUND_Y + 0.5);
-    ctx.stroke();
-
-    drawPose(ctx, action, snapshot?.t ?? 0);
-    drawActionLabel(ctx, action);
-
+    memory = paintDiverProfile(ctx, snapshot, memory, { width: cssW, height: cssH });
     ctx.restore();
   }
 
@@ -248,6 +251,59 @@ export function mountDiverProfile(canvas, controller) {
     unsubscribe();
     snapshot = null;
   };
+}
+
+// Paint one frame into ctx. The caller owns transform/sizing — `width` and
+// `height` are CSS pixels, internal silhouette geometry is the constant W×H
+// design grid. Returns the next `memory` for the next call so the throw
+// stickiness and prev-active-call-in tracking persist across frames. Used
+// by both `mountDiverProfile` (RAF/single mode) and the compare lane
+// painter (10 Hz/per lane).
+export function paintDiverProfile(ctx, snapshot, memory, { width = W, height = H } = {}) {
+  const sx = width / W;
+  const sy = height / H;
+  ctx.save();
+  ctx.scale(sx, sy);
+
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = BORDER;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
+
+  ctx.fillStyle = TXT_DIM;
+  ctx.font = "600 9px ui-monospace, SF Mono, Menlo, monospace";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("DIVER PROFILE", 8, 6);
+
+  let action;
+  let nextMemory = memory ?? newDiverProfileMemory();
+  if (snapshot) {
+    const r = deriveDiverAction(snapshot, nextMemory);
+    action = r.action;
+    nextMemory = r.memory;
+  } else {
+    action = { kind: "idle" };
+  }
+
+  ctx.strokeStyle = "rgba(120, 120, 130, 0.35)";
+  ctx.beginPath();
+  ctx.moveTo(10, GROUND_Y + 0.5);
+  ctx.lineTo(W - 10, GROUND_Y + 0.5);
+  ctx.stroke();
+
+  drawPose(ctx, action, snapshot?.t ?? 0);
+  drawActionLabel(ctx, action);
+
+  ctx.restore();
+  return nextMemory;
+}
+
+// Fresh memory carrier for the per-instance state the renderer threads
+// across frames (newly-active call-ins + sticky throw window).
+export function newDiverProfileMemory() {
+  return { activeCallIns: new Set(), throwUntilT: 0, throwingDefId: null };
 }
 
 // ---- pose rendering ----------------------------------------------------

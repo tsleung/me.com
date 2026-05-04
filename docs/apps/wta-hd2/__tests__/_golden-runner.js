@@ -97,6 +97,9 @@ export function runGoldenScenario(data, cfg, ticks) {
     ticks,
     finalT: lastSnap.t,
     finalTickN: lastSnap.tickN,
+    // Verdict is the headline outcome: clear / wipe / stalemate / in-progress.
+    // Categorical → diff-stable across small balance tweaks.
+    verdict: lastSnap.verdict ?? "in-progress",
     scores: {
       advance: {
         kills: lastSnap.scores?.advance?.kills ?? 0,

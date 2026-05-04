@@ -77,6 +77,61 @@ test("enemy movement honors velocity * dt", () => {
   assert.ok(Math.abs(e1.position.y - (50 - 3 * 0.1)) < 1e-6, `expected ~49.7 got ${e1.position.y}`);
 });
 
+test("enemies retarget toward the player when within aggro radius", () => {
+  // Enemy at (0, 30) with a velocity pointing along +x — would whiff past the
+  // diver in the original (no-retarget) model. With aggro retargeting it
+  // converges back onto the diver at the same speed.
+  const s0 = createInitialState(MIN_CFG, MIN_DATA);
+  s0.enemies.set("e1", {
+    id: "e1", archetypeId: "scavenger", threatTier: "light",
+    hp: 50, parts: [], position: { x: 0, y: 30 }, velocity: { dx: 3, dy: 0 }, alive: true,
+  });
+  const s1 = tick(s0);
+  const e1 = s1.enemies.get("e1");
+  // Should be heading -y toward the player at speed 3, not +x.
+  assert.ok(e1.velocity.dy < -1, `expected dy ~-3, got ${e1.velocity.dy}`);
+  assert.ok(Math.abs(e1.velocity.dx) < 0.5, `expected dx ~0, got ${e1.velocity.dx}`);
+});
+
+test("enemies outside aggro radius keep their spawn vector", () => {
+  // 60m is beyond AGGRO_RANGE_M (40m) — the leaker intent stands.
+  const s0 = createInitialState(MIN_CFG, MIN_DATA);
+  s0.enemies.set("e1", {
+    id: "e1", archetypeId: "scavenger", threatTier: "light",
+    hp: 50, parts: [], position: { x: 0, y: 60 }, velocity: { dx: 3, dy: 0 }, alive: true,
+  });
+  const s1 = tick(s0);
+  const e1 = s1.enemies.get("e1");
+  assert.equal(e1.velocity.dx, 3);
+  assert.equal(e1.velocity.dy, 0);
+});
+
+test("melee contact drains player.hp at meleeDps * dt", () => {
+  const s0 = createInitialState(MIN_CFG, MIN_DATA);
+  const startHp = s0.player.hp;
+  s0.enemies.set("e1", {
+    id: "e1", archetypeId: "warrior", threatTier: "medium",
+    hp: 250, parts: [], position: { x: 0, y: 0.5 }, velocity: { dx: 0, dy: 0 },
+    alive: true, meleeDps: 20,
+  });
+  const s1 = tick(s0);
+  // 20 dps × 0.1s tick = 2 hp drained.
+  assert.ok(Math.abs(s1.player.hp - (startHp - 2)) < 1e-6,
+    `expected hp drop of 2, got ${startHp - s1.player.hp}`);
+});
+
+test("enemies outside melee range do not damage the diver", () => {
+  const s0 = createInitialState(MIN_CFG, MIN_DATA);
+  const startHp = s0.player.hp;
+  s0.enemies.set("e1", {
+    id: "e1", archetypeId: "warrior", threatTier: "medium",
+    hp: 250, parts: [], position: { x: 0, y: 5 }, velocity: { dx: 0, dy: 0 },
+    alive: true, meleeDps: 20,
+  });
+  const s1 = tick(s0);
+  assert.equal(s1.player.hp, startHp);
+});
+
 test("visibleEnemyView clips to forward arc", () => {
   const s = createInitialState(MIN_CFG, MIN_DATA);
   // facing +y (PI/2). Front enemy at +y is visible; rear at -y is not.

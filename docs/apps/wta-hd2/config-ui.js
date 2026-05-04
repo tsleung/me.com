@@ -10,15 +10,34 @@ const ENCOUNTERS = ["patrol", "breach", "drop"];
 
 // ---- Public helpers -------------------------------------------------------
 
+// Build the per-faction subfaction map: { terminids: <first>, automatons:
+// <first>, illuminate: <first> } using each faction's first declared
+// subfaction. This is the source of truth — `cfg.scenario.subfaction` is a
+// derived view that always equals `subfactions[faction]`.
+function defaultSubfactionsMap(data) {
+  const out = {};
+  for (const fac of Object.keys(data.factions ?? {})) {
+    out[fac] = data.factions[fac]?.subfactions?.[0]?.id ?? "standard";
+  }
+  return out;
+}
+
 export function defaultConfig(data) {
   // Prefer the canonical "Default Helldiver" preset for the first-time
   // experience — single sim against bugs with the starter kit. Falls back
   // to alphabetical-first picks if that preset is missing (test fixtures).
   const presets = data.presets ?? [];
   const helldiver = presets.find((p) => p.id === "default-helldiver");
+  const subsMap = defaultSubfactionsMap(data);
   if (helldiver) {
+    // Honor the preset's subfaction for its faction — but every other
+    // faction still gets its own first-subfaction default so the "all" view
+    // works without further setup.
+    if (helldiver.scenario?.faction && helldiver.scenario?.subfaction) {
+      subsMap[helldiver.scenario.faction] = helldiver.scenario.subfaction;
+    }
     return {
-      scenario: { spawnRateMultiplier: 1.0, infiniteWaves: true, waveCadenceSecs: 43, playerMovement: false, ...helldiver.scenario },
+      scenario: { spawnRateMultiplier: 1.0, infiniteWaves: true, waveCadenceSecs: 43, playerMovement: false, ...helldiver.scenario, subfactions: subsMap },
       loadout: {
         stratagems: [...helldiver.loadout.stratagems],
         primary: helldiver.loadout.primary,
@@ -27,13 +46,13 @@ export function defaultConfig(data) {
         armor: helldiver.loadout.armor,
         booster: helldiver.loadout.booster,
       },
-      solver: { alpha: 0.4, gamma: 0.3, reserves: {} },
+      solver: { alpha: 0.4, gamma: 0.3, skill: 1.0, reserves: {} },
       seed: 1,
     };
   }
 
   const firstFaction = Object.keys(data.factions)[0];
-  const firstSub = data.factions[firstFaction]?.subfactions?.[0]?.id ?? "standard";
+  const firstSub = subsMap[firstFaction] ?? "standard";
   const strats = listStratagems(data);
   const prims = data.weapons?.primaries ?? [];
   const secs = data.weapons?.secondaries ?? [];
@@ -44,6 +63,7 @@ export function defaultConfig(data) {
     scenario: {
       faction: firstFaction,
       subfaction: firstSub,
+      subfactions: subsMap,
       encounter: "patrol",
       difficulty: 7,
     },
@@ -96,7 +116,8 @@ export function mountConfigUI(rootEl, controller, data) {
   const cleanup = [];
 
   bindFactionSegment(rootEl, cfg, data, (newCfg) => commit(newCfg, "SET_SCENARIO"));
-  bindSubfactionSelect(rootEl, cfg, data, (newCfg) => commit(newCfg, "SET_SCENARIO"));
+  // Subfaction picker is now a popover attached to each faction tab — see
+  // `mountFactionSubfactionChips` inside bindFactionSegment.
   bindEncounterSegment(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
   bindDifficulty(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
   bindSpawnRate(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SCENARIO"));
@@ -112,6 +133,8 @@ export function mountConfigUI(rootEl, controller, data) {
   bindLoadout(rootEl, cfg, data, (newCfg) => commit(newCfg, "SET_LOADOUT"));
   bindAlpha(rootEl, cfg, (newCfg) => commit(newCfg, "SET_ALPHA"));
   bindGamma(rootEl, cfg, (newCfg) => commit(newCfg, "SET_GAMMA"));
+  bindSkill(rootEl, cfg, (newCfg) => commit(newCfg, "SET_SKILL"));
+  bindAmmoConservation(rootEl, cfg, (newCfg) => commit(newCfg, "SET_AMMO_CONSERVATION"));
   bindRunControls(rootEl, controller);
   bindShareButton(rootEl, () => cfg);
   bindPresets(rootEl, data, (preset) => applyPreset(preset));
@@ -142,6 +165,8 @@ export function mountConfigUI(rootEl, controller, data) {
     else if (kind === "SET_LOADOUT") controller.dispatch({ type: "SET_LOADOUT", loadout: cfg.loadout });
     else if (kind === "SET_ALPHA") controller.dispatch({ type: "SET_ALPHA", alpha: cfg.solver.alpha });
     else if (kind === "SET_GAMMA") controller.dispatch({ type: "SET_GAMMA", gamma: cfg.solver.gamma });
+    else if (kind === "SET_SKILL") controller.dispatch({ type: "SET_SKILL", skill: cfg.solver.skill });
+    else if (kind === "SET_AMMO_CONSERVATION") controller.dispatch({ type: "SET_AMMO_CONSERVATION", enabled: cfg.solver.ammoConservation });
   }
 
   return () => { cleanup.forEach((fn) => fn()); };
@@ -164,10 +189,28 @@ function mergeConfig(def, stored, data) {
   if (stored.scenario) {
     if (data.factions[stored.scenario.faction]) {
       cfg.scenario.faction = stored.scenario.faction;
-      const subs = data.factions[cfg.scenario.faction].subfactions.map((s) => s.id);
-      cfg.scenario.subfaction = subs.includes(stored.scenario.subfaction)
-        ? stored.scenario.subfaction : subs[0];
     }
+    // Per-faction subfactions map. Read the new `subfactions` field if
+    // present; otherwise fall back to the legacy single `subfaction` and
+    // assign it to whichever faction the stored cfg was set on.
+    cfg.scenario.subfactions = cfg.scenario.subfactions ?? defaultSubfactionsMap(data);
+    if (stored.scenario.subfactions && typeof stored.scenario.subfactions === "object") {
+      for (const fac of Object.keys(stored.scenario.subfactions)) {
+        const validSubs = (data.factions[fac]?.subfactions ?? []).map((s) => s.id);
+        const v = stored.scenario.subfactions[fac];
+        if (validSubs.includes(v)) cfg.scenario.subfactions[fac] = v;
+      }
+    } else if (stored.scenario.subfaction) {
+      const fac = stored.scenario.faction ?? cfg.scenario.faction;
+      const validSubs = (data.factions[fac]?.subfactions ?? []).map((s) => s.id);
+      if (validSubs.includes(stored.scenario.subfaction)) {
+        cfg.scenario.subfactions[fac] = stored.scenario.subfaction;
+      }
+    }
+    // Derive the active-faction subfaction (engine reads this).
+    cfg.scenario.subfaction = cfg.scenario.subfactions[cfg.scenario.faction]
+      ?? data.factions[cfg.scenario.faction]?.subfactions?.[0]?.id
+      ?? "standard";
     if (ENCOUNTERS.includes(stored.scenario.encounter)) cfg.scenario.encounter = stored.scenario.encounter;
     const d = Number(stored.scenario.difficulty);
     if (Number.isInteger(d) && d >= 1 && d <= 10) cfg.scenario.difficulty = d;
@@ -206,33 +249,151 @@ function mergeConfig(def, stored, data) {
     if (a >= 0 && a <= 1) cfg.solver.alpha = a;
     const g = Number(stored.solver.gamma);
     if (g >= 0 && g <= 1) cfg.solver.gamma = g;
+    const sk = Number(stored.solver.skill);
+    if (sk >= 0.5 && sk <= 2) cfg.solver.skill = sk;
+    if (typeof stored.solver.ammoConservation === "boolean") cfg.solver.ammoConservation = stored.solver.ammoConservation;
   }
   if (Number.isInteger(stored.seed)) cfg.seed = stored.seed;
   return cfg;
 }
 
+// Faction tabs do double duty: clicking the tab body selects the faction
+// (single mode); clicking the chevron-chip on the tab opens a popover that
+// lets the user pick that faction's subfaction. The chip works in both
+// single and "all" modes, so each lane in the all-view stays configurable.
 function bindFactionSegment(root, cfg, data, onChange) {
   const seg = root.querySelector("#faction-seg");
   if (!seg) return;
+
+  // Build chip + arrow inside each tab once; subsequent paints just update
+  // the chip text. Click handler on the chip stops propagation so it doesn't
+  // also fire the tab's faction-select click.
+  const popover = ensureSubfactionPopover();
+
   seg.querySelectorAll(".seg-btn").forEach((btn) => {
+    const facId = btn.dataset.value;
+    if (!btn.querySelector(".faction-name")) {
+      const name = document.createElement("span");
+      name.className = "faction-name";
+      name.textContent = btn.textContent.trim();
+      const chip = document.createElement("span");
+      chip.className = "subfaction-chip";
+      chip.dataset.faction = facId;
+      chip.title = "subfaction — click to change";
+      chip.innerHTML = `<span class="subfaction-chip-name"></span><span class="subfaction-chip-arrow">▾</span>`;
+      btn.textContent = "";
+      btn.appendChild(name);
+      btn.appendChild(chip);
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openSubfactionPopover({
+          chip,
+          faction: facId,
+          data,
+          getCfg: () => cfg,
+          onPick: (subId) => {
+            const subsMap = { ...(cfg.scenario.subfactions ?? {}) };
+            subsMap[facId] = subId;
+            const next = { ...cfg, scenario: { ...cfg.scenario, subfactions: subsMap } };
+            // If the changed faction is the active one, update the derived
+            // `subfaction` field that the engine reads.
+            if (cfg.scenario.faction === facId) next.scenario.subfaction = subId;
+            cfg = next;
+            paintSubfactionChips(root, cfg, data);
+            onChange(next);
+          },
+        });
+      });
+    }
+
     btn.addEventListener("click", () => {
       if (seg.classList.contains("disabled")) return;
       const v = btn.dataset.value;
       if (cfg.scenario.faction === v) return;
-      const next = { ...cfg, scenario: { ...cfg.scenario, faction: v, subfaction: data.factions[v].subfactions[0].id } };
+      const subForFac = (cfg.scenario.subfactions ?? {})[v]
+        ?? data.factions[v].subfactions[0].id;
+      const next = { ...cfg, scenario: { ...cfg.scenario, faction: v, subfaction: subForFac } };
+      cfg = next;
       paintSegment(seg, v);
-      paintSubfactionOptions(root, next, data);
+      paintSubfactionChips(root, cfg, data);
       onChange(next);
     });
   });
+
+  paintSubfactionChips(root, cfg, data);
+  // Close popover on resize / scroll / outside-click — handled by the
+  // popover module itself; nothing else to wire here.
+  popover; // referenced to prevent dead-code stripping in some bundlers
 }
 
-function bindSubfactionSelect(root, cfg, data, onChange) {
-  const sel = root.querySelector("#subfaction");
-  if (!sel) return;
-  sel.addEventListener("change", () => {
-    const next = { ...cfg, scenario: { ...cfg.scenario, subfaction: sel.value } };
-    onChange(next);
+let _subfactionPop = null;
+function ensureSubfactionPopover() {
+  if (_subfactionPop) return _subfactionPop;
+  const el = document.createElement("div");
+  el.className = "subfaction-pop";
+  el.hidden = true;
+  document.body.appendChild(el);
+  _subfactionPop = el;
+  document.addEventListener("click", () => hideSubfactionPopover());
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideSubfactionPopover(); });
+  window.addEventListener("scroll", () => hideSubfactionPopover(), true);
+  window.addEventListener("resize", () => hideSubfactionPopover());
+  return el;
+}
+
+function hideSubfactionPopover() {
+  if (_subfactionPop) _subfactionPop.hidden = true;
+}
+
+function openSubfactionPopover({ chip, faction, data, getCfg, onPick }) {
+  const pop = ensureSubfactionPopover();
+  const subs = data.factions?.[faction]?.subfactions ?? [];
+  const cfg = getCfg();
+  const current = (cfg.scenario.subfactions ?? {})[faction];
+  pop.innerHTML = "";
+  pop.dataset.faction = faction;
+  const header = document.createElement("div");
+  header.className = "subfaction-pop-header";
+  header.textContent = `${faction} subfaction`;
+  pop.appendChild(header);
+  for (const sub of subs) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "subfaction-pop-item";
+    if (sub.id === current) row.classList.add("active");
+    row.textContent = sub.name ?? sub.id;
+    row.addEventListener("click", (e) => {
+      e.stopPropagation();
+      hideSubfactionPopover();
+      if (sub.id !== current) onPick(sub.id);
+    });
+    pop.appendChild(row);
+  }
+  pop.hidden = false;
+  // Position below the chip; flip above if it would clip the viewport.
+  pop.style.left = "0px";
+  pop.style.top = "0px";
+  const r = chip.getBoundingClientRect();
+  const pr = pop.getBoundingClientRect();
+  let x = r.left;
+  let y = r.bottom + 4;
+  if (y + pr.height > window.innerHeight - 8) y = r.top - pr.height - 4;
+  x = Math.max(8, Math.min(window.innerWidth - pr.width - 8, x));
+  pop.style.left = `${Math.round(x)}px`;
+  pop.style.top = `${Math.round(y)}px`;
+}
+
+function paintSubfactionChips(root, cfg, data) {
+  const seg = root.querySelector("#faction-seg");
+  if (!seg) return;
+  const subsMap = cfg.scenario.subfactions ?? {};
+  seg.querySelectorAll(".seg-btn").forEach((btn) => {
+    const facId = btn.dataset.value;
+    const chipName = btn.querySelector(".subfaction-chip-name");
+    if (!chipName) return;
+    const subId = subsMap[facId] ?? data.factions?.[facId]?.subfactions?.[0]?.id ?? "";
+    const subDef = (data.factions?.[facId]?.subfactions ?? []).find((s) => s.id === subId);
+    chipName.textContent = subDef?.name ?? subId;
   });
 }
 
@@ -294,6 +455,16 @@ function bindPlayerMovement(root, cfg, onChange) {
   cb.checked = cfg.scenario.playerMovement === true;
   cb.addEventListener("change", () => {
     const next = { ...cfg, scenario: { ...cfg.scenario, playerMovement: !!cb.checked } };
+    onChange(next);
+  });
+}
+
+function bindAmmoConservation(root, cfg, onChange) {
+  const cb = root.querySelector("#ammo-conservation");
+  if (!cb) return;
+  cb.checked = cfg.solver?.ammoConservation === true;
+  cb.addEventListener("change", () => {
+    const next = { ...cfg, solver: { ...(cfg.solver ?? {}), ammoConservation: !!cb.checked } };
     onChange(next);
   });
 }
@@ -454,6 +625,25 @@ function bindGamma(root, cfg, onChange) {
   });
 }
 
+function bindSkill(root, cfg, onChange) {
+  const slider = root.querySelector("#skill");
+  const label = root.querySelector("#skill-val");
+  if (!slider) return;
+  slider.disabled = false;
+  // Player skill divides effective dispersion: 1.0 baseline, >1 tightens cone.
+  const paint = (v) => {
+    if (!label) return;
+    label.textContent = v < 0.85 ? "shaky" : v > 1.4 ? "expert" : v > 1.05 ? "skilled" : "average";
+  };
+  paint(Number(slider.value));
+  slider.addEventListener("input", () => {
+    const v = Number(slider.value);
+    paint(v);
+    const next = { ...cfg, solver: { ...cfg.solver, skill: v } };
+    onChange(next);
+  });
+}
+
 function bindRunControls(root, controller) {
   const map = [
     ["#ctrl-play",    () => controller.dispatch({ type: "PLAY" })],
@@ -536,19 +726,6 @@ function paintSegment(seg, value) {
   });
 }
 
-function paintSubfactionOptions(root, cfg, data) {
-  const sel = root.querySelector("#subfaction");
-  if (!sel) return;
-  sel.innerHTML = "";
-  for (const sub of data.factions[cfg.scenario.faction].subfactions) {
-    const opt = document.createElement("option");
-    opt.value = sub.id;
-    opt.textContent = sub.name;
-    sel.appendChild(opt);
-  }
-  sel.value = cfg.scenario.subfaction;
-}
-
 function paintDetail(root, slotId, list, valueId) {
   const el = root.querySelector(`#${slotId}-detail`);
   if (!el) return;
@@ -567,7 +744,7 @@ function paintDetail(root, slotId, list, valueId) {
 function applyAll(root, cfg, data) {
   paintSegment(root.querySelector("#faction-seg"), cfg.scenario.faction);
   paintSegment(root.querySelector("#encounter-seg"), cfg.scenario.encounter);
-  paintSubfactionOptions(root, cfg, data);
+  paintSubfactionChips(root, cfg, data);
 
   const diffInput = root.querySelector("#difficulty");
   if (diffInput) diffInput.value = String(cfg.scenario.difficulty);
@@ -591,6 +768,12 @@ function applyAll(root, cfg, data) {
 
   const gammaSlider = root.querySelector("#gamma");
   if (gammaSlider) gammaSlider.value = String(cfg.solver.gamma ?? 0.3);
+
+  const skillSlider = root.querySelector("#skill");
+  if (skillSlider) skillSlider.value = String(cfg.solver.skill ?? 1.0);
+
+  const ammoCb = root.querySelector("#ammo-conservation");
+  if (ammoCb) ammoCb.checked = cfg.solver?.ammoConservation === true;
 
   setSel(root, "strat-1", cfg.loadout.stratagems[0]);
   setSel(root, "strat-2", cfg.loadout.stratagems[1]);

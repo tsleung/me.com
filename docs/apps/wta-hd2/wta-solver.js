@@ -1,6 +1,8 @@
 // L1 — pure WTA solver. No DOM, no clock, no Math.random.
 // Algorithm: greedy maximum-marginal-return.
 
+import { ammoConservationFactor } from "./features/ammo-conservation.js";
+
 const TIER_CLEAR_VALUE = { light: 1, medium: 3, heavy: 8, boss: 20 };
 
 function armorMult(ap, ac) {
@@ -39,14 +41,22 @@ export function defaultFrontalWidth(part, target) {
   return tierBody;
 }
 
+// Player skill multiplier — divides effective dispersion. skill=1 baseline
+// "average aim"; skill=2 halves the cone (great aim); skill=0.5 doubles it
+// (shaky). Stratagems / AoE bypass this (their dispersion is already 0).
+function effectiveDispersion(weapon, skill) {
+  const base = defaultDispersionRad(weapon);
+  if (base === 0) return 0;
+  return base / Math.max(0.1, skill || 1);
+}
+
 // Per-shot probability of hitting `part` given the weapon's dispersion at
 // `distanceM`. Width / (dispersion_m + Σwidths) — the residual is "miss
 // entirely" (covered the wrong volume). Width=0 ⇒ part is occluded from the
 // front and unhittable.
-export function partHitProbability(weapon, target, partIdx, distanceM) {
+export function partHitProbability(weapon, target, partIdx, distanceM, skill = 1) {
   const parts = target.parts || [];
-  const dispRad = defaultDispersionRad(weapon);
-  const dispM = dispRad * Math.max(1, distanceM);
+  const dispM = effectiveDispersion(weapon, skill) * Math.max(1, distanceM);
   let sumWidth = 0;
   for (const p of parts) sumWidth += defaultFrontalWidth(p, target);
   const w = defaultFrontalWidth(parts[partIdx], target);
@@ -60,17 +70,21 @@ export function partHitProbability(weapon, target, partIdx, distanceM) {
 // penable). Residual probability ("miss entirely") contributes zero.
 // Solver and engine.js:computeDamage MUST agree on this formula — last
 // time they didn't, a Liberator killed a charger from the front in 4 s.
-export function expectedDamagePerShot(weapon, target, distanceM) {
+//
+// `skill` (default 1.0) is the player precision multiplier. Solver and
+// engine MUST pass the same value to stay aligned.
+export function expectedDamagePerShot(weapon, target, distanceM, skill = 1) {
   const parts = target.parts || [];
   if (parts.length === 0) return 0;
   const ap = weapon.armorPen ?? 0;
+  const eff = effectiveDispersion(weapon, skill);
   // dispersionRad === 0 → deterministic AoE / point-blank; bypass the
   // hit-probability model and apply best-pen-able-part damage. Used for
   // stratagem AoE and any future melee-range mechanic.
-  if (defaultDispersionRad(weapon) === 0) {
+  if (eff === 0) {
     return deterministicBestPartDamage(weapon, target, ap);
   }
-  const dispM = defaultDispersionRad(weapon) * Math.max(1, distanceM);
+  const dispM = eff * Math.max(1, distanceM);
   let sumWidth = 0;
   for (const p of parts) sumWidth += defaultFrontalWidth(p, target);
   if (sumWidth <= 0) return 0;
@@ -109,8 +123,8 @@ function deterministicBestPartDamage(weapon, target, ap) {
   return (weapon.damage ?? 0) * am * wMult;
 }
 
-export function pKill(weapon, target, distanceM) {
-  const exp = expectedDamagePerShot(weapon, target, distanceM);
+export function pKill(weapon, target, distanceM, skill = 1) {
+  const exp = expectedDamagePerShot(weapon, target, distanceM, skill);
   if (exp <= 0) return 0;
   const shotsToKill = Math.ceil(target.hp / exp);
   if (shotsToKill <= 0) return 1;
@@ -133,8 +147,8 @@ export function valueFor(target, alpha, distanceM) {
 // → 0  = no penetration (e.g. Liberator into chargers when ap < ac).
 // Used only by the γ-weighted value path; keeps existing α/β math
 // untouched so legacy callers and tests are unaffected.
-export function efficiencyFor(weapon, target, distanceM) {
-  const exp = expectedDamagePerShot(weapon, target, distanceM);
+export function efficiencyFor(weapon, target, distanceM, skill = 1) {
+  const exp = expectedDamagePerShot(weapon, target, distanceM, skill);
   if (exp <= 0) return 0;
   const hp = Math.max(1, target.hp || 0);
   return Math.max(0, Math.min(1, hp / exp));
@@ -144,13 +158,13 @@ export function efficiencyFor(weapon, target, distanceM) {
 // `weights` is auto-clamped to the simplex (non-negative, sums to 1)
 // in normalizeWeights below; callers can pass partial objects and we
 // fill in defaults.
-export function valueForWeighted(weapon, target, weights, distanceM) {
+export function valueForWeighted(weapon, target, weights, distanceM, skill = 1) {
   const range = target.attackRangeM || 0;
   const dps = distanceM < range ? (target.meleeDps || 0) : (target.rangedDps || 0);
   const ttp = Math.max(1, target.timeToReachPlayerSecs || 0);
   const threat = dps * (1 / ttp);
   const clearValue = TIER_CLEAR_VALUE[target.threatTier] ?? 1;
-  const eff = weights.gamma > 0 ? efficiencyFor(weapon, target, distanceM) : 0;
+  const eff = weights.gamma > 0 ? efficiencyFor(weapon, target, distanceM, skill) : 0;
   return weights.alpha * threat + weights.beta * clearValue + weights.gamma * eff;
 }
 
@@ -206,12 +220,17 @@ function projectedTarget(target, secs) {
 // For single-target: pKill * value of the primary.
 // For stratagems with callInSecs > 0: project all participants forward to
 // predicted landing positions before computing distances + AoE membership.
-function pairValue(weapon, primary, targets, weights) {
+function pairValue(weapon, primary, targets, weights, skill = 1, conserveFn = null) {
   const callIn = weapon.callInSecs || 0;
   const projPrimary = projectedTarget(primary, callIn);
   const primaryDist = projPrimary.distanceM;
-  const primaryPK = pKill(weapon, projPrimary, primaryDist);
-  const primaryVal = valueForWeighted(weapon, projPrimary, weights, primaryDist) * primaryPK;
+  const primaryPK = pKill(weapon, projPrimary, primaryDist, skill);
+  // features/ammo-conservation.js — distance discount for scarce-ammo
+  // weapons. `conserveFn` is null when the feature is off (default), 1.0
+  // otherwise. Wired through assign() so the solver itself stays unaware
+  // of the feature module's internals.
+  const conserveMult = conserveFn ? conserveFn(weapon, primaryDist) : 1.0;
+  const primaryVal = valueForWeighted(weapon, projPrimary, weights, primaryDist, skill) * primaryPK * conserveMult;
   const aoe = weapon.aoeRadiusM || 0;
   if (aoe <= 0) return primaryVal;
   const r2 = aoe * aoe;
@@ -220,8 +239,10 @@ function pairValue(weapon, primary, targets, weights) {
     if (t.id === primary.id) continue;
     const projT = projectedTarget(t, callIn);
     if (dist2(projT.position, projPrimary.position) > r2) continue;
-    const pk = pKill(weapon, projT, projT.distanceM);
-    total += pk * valueForWeighted(weapon, projT, weights, projT.distanceM);
+    const pk = pKill(weapon, projT, projT.distanceM, skill);
+    // Same conserve multiplier across all AoE participants (it's about
+    // the weapon's distance to the engagement, not per-target).
+    total += pk * valueForWeighted(weapon, projT, weights, projT.distanceM, skill) * conserveMult;
   }
   return total;
 }
@@ -246,8 +267,22 @@ function inRange(weapon, target) {
   return proj.distanceM <= range;
 }
 
+// True iff `policy` denies the (weaponId, threatTier) pair. Policy is
+// shaped like `{ [weaponId]: { [tier]: "allow" | "deny" } }`. Missing
+// keys default to allow — i.e. policy is an *opt-in* deny list.
+export function policyDenies(policy, weaponId, tier) {
+  if (!policy) return false;
+  const row = policy[weaponId];
+  if (!row) return false;
+  return row[tier] === "deny";
+}
+
 export function assign(input) {
-  const { weapons = [], targets = [], alpha = 0.5, beta, gamma = 0, reserves = {} } = input || {};
+  const { weapons = [], targets = [], alpha = 0.5, beta, gamma = 0, skill = 1, ammoConservation = false, reserves = {}, policy = null } = input || {};
+  // Build the ammo-conservation closure ONCE per assign() call — null when
+  // the feature is off (default). Plumbed into pairValue without coupling
+  // the solver to the feature module's identity beyond this one import.
+  const conserveFn = ammoConservation ? ammoConservationFactor : null;
   const weights = normalizeWeights({ alpha, beta, gamma });
   if (weapons.length === 0 || targets.length === 0) return [];
 
@@ -278,19 +313,60 @@ export function assign(input) {
   // bit-exact because the filter result is identical.
   let aliveTargets = [...tState.values()].filter((x) => x.alive);
 
+  // The diver has one pair of hands: at most one held weapon
+  // (primary / secondary / grenade — anything with `isStratagem === false`)
+  // can fire per tick. Stratagems are throw-and-go (or persistent sentries)
+  // and are not gated by this flag — they can run in parallel with a
+  // held-weapon shot.
+  let heldFiredThisTick = false;
+
+  // Per-target "no permitted shooter exists" cache. Recomputed when
+  // weapons retire or kills happen (i.e. on every outer-loop iteration).
+  // The fallback rule: if every weapon that *could* otherwise fire on
+  // target T is policy-denied, we lift the policy for T this tick so
+  // the threat doesn't go un-engaged just because the user denied the
+  // tier. Better to surprise the user with an "off-policy" shot than
+  // to let a heavy walk into the diver because the policy was wrong.
+  function noPermittedShooterFor(t) {
+    if (!policy) return false;
+    for (const wid of weaponOrder) {
+      const w = wState.get(wid);
+      if (w.fired || w.shotsLeft <= 0) continue;
+      if (!w.isStratagem && heldFiredThisTick) continue;
+      if (!inRange(w, t)) continue;
+      if (reserveBlocked(w, t)) continue;
+      if (!policyDenies(policy, wid, t.threatTier)) return false;
+    }
+    return true;
+  }
+
   while (true) {
     let bestVal = 0;
     let bestPair = null;
 
+    // Pre-compute fallback set once per outer iteration. A target is in
+    // `fallbackTids` iff every otherwise-eligible weapon is denied.
+    const fallbackTids = new Set();
+    if (policy) {
+      for (const tid of targetOrder) {
+        const t = tState.get(tid);
+        if (!t.alive) continue;
+        if (noPermittedShooterFor(t)) fallbackTids.add(tid);
+      }
+    }
+
     for (const wid of weaponOrder) {
       const w = wState.get(wid);
       if (w.fired || w.shotsLeft <= 0) continue;
+      // Held weapons share the diver's hands — only one per tick.
+      if (!w.isStratagem && heldFiredThisTick) continue;
       for (const tid of targetOrder) {
         const t = tState.get(tid);
         if (!t.alive) continue;
         if (!inRange(w, t)) continue;
         if (reserveBlocked(w, t)) continue;
-        const v = pairValue(w, t, aliveTargets, weights);
+        if (policyDenies(policy, wid, t.threatTier) && !fallbackTids.has(tid)) continue;
+        const v = pairValue(w, t, aliveTargets, weights, skill, conserveFn);
         if (v > bestVal) {
           bestVal = v;
           bestPair = { wid, tid };
@@ -332,6 +408,7 @@ export function assign(input) {
     // Weapon is one-shot per tick: spent it.
     w.shotsLeft -= shots;
     w.fired = true;
+    if (!w.isStratagem) heldFiredThisTick = true;
   }
 
   return out;

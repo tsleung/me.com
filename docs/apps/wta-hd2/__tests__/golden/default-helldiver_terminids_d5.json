@@ -3,13 +3,14 @@
   "ticks": 300,
   "finalT": 30000,
   "finalTickN": 300,
+  "verdict": "in-progress",
   "scores": {
     "advance": {
       "kills": 15,
       "fractionCleared": 0.9375
     },
     "survival": {
-      "closestEnemyM": 43.7384
+      "closestEnemyM": 0.2574
     }
   },
   "killsByTier": {
@@ -18,23 +19,23 @@
     "heavy": 0,
     "boss": 0
   },
-  "totalAssignments": 244,
-  "totalShots": 244,
+  "totalAssignments": 264,
+  "totalShots": 264,
   "modeHistogram": {
-    "HOLD": 3,
-    "KITE": 297,
+    "HOLD": 276,
+    "KITE": 24,
     "PUSH": 0
   },
   "heatmapTop3": [
     {
       "weapon": "primary",
       "archetype": "terminid-bile-spewer",
-      "credit": 86
+      "credit": 88
     },
     {
       "weapon": "primary",
-      "archetype": "terminid-warrior",
-      "credit": 63
+      "archetype": "terminid-charger",
+      "credit": 72
     },
     {
       "weapon": "primary",
@@ -43,12 +44,13 @@
     }
   ],
   "shotShare": {
-    "primary": 0.918,
-    "secondary": 0.0615,
-    "strat-1": 0.0041,
-    "strat-2": 0.0082,
-    "strat-3": 0.0041,
-    "strat-4": 0.0041
+    "grenade": 0.0341,
+    "primary": 0.7765,
+    "secondary": 0.1705,
+    "strat-1": 0.0038,
+    "strat-2": 0.0076,
+    "strat-3": 0.0038,
+    "strat-4": 0.0038
   },
   "finalAlive": 1
 }

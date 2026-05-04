@@ -96,6 +96,11 @@ function injectScopedStyles(rootEl) {
                        padding: 4px 0; border-bottom: 1px solid var(--dim);
                        font-size: 11px; }
     .ana-loadout-row:last-child { border-bottom: 0; }
+    .ana-loadout-row[data-id] { cursor: pointer; }
+    .ana-loadout-row[data-id]:hover { background: rgba(255, 255, 255, 0.03); }
+    .ana-loadout-row[data-id]:hover .ana-slot-name::after {
+      content: " ↻"; color: var(--on); font-size: 11px;
+    }
     .ana-slot-id { color: var(--ink-muted); display: flex; flex-direction: column;
                    line-height: 1.2; min-width: 0; }
     .ana-slot-name { color: var(--ink); font-size: 11px;
@@ -118,6 +123,12 @@ function injectScopedStyles(rootEl) {
                       border-top: 1px solid var(--dim); }
     .ana-wave-timer .ana-wave-timer-val { color: var(--ink); font-variant-numeric: tabular-nums; }
     .ana-uses { color: var(--ink-muted); font-size: 10px; }
+    .ana-uses.dry { color: #ff5050; font-weight: 600; letter-spacing: 0.04em; }
+    .ana-bar-fill.dry { background: #ff5050; }
+    .ana-dry-banner { font-size: 10px; padding: 4px 8px; margin: 4px 0 2px;
+                       border: 1px solid #ff5050; color: #ff5050;
+                       background: rgba(255, 80, 80, 0.08);
+                       letter-spacing: 0.04em; text-transform: uppercase; }
     .ana-ring-wrap { display: flex; align-items: center; gap: 6px; }
     .ana-ring { transform: rotate(-90deg); }
     .ana-ring-bg { stroke: var(--dim); fill: none; stroke-width: 3; }
@@ -138,11 +149,82 @@ function injectScopedStyles(rootEl) {
     .ana-mode-chip[data-mode="KITE"] { background: var(--accent); color: var(--bg); }
     .ana-mode-chip[data-mode="PUSH"] { background: var(--on);     color: var(--bg); }
     .ana-mode-chip[data-mode="HOLD"] { background: var(--dim);    color: var(--ink); }
+    .ana-policy-grid { display: grid;
+                       grid-template-columns: 70px repeat(4, 1fr);
+                       gap: 2px; }
+    .ana-policy-corner, .ana-policy-col-head, .ana-policy-row-head,
+    .ana-policy-cell { font-size: 10px; font-family: var(--mono);
+                       text-align: center; padding: 4px 0;
+                       color: var(--ink-muted); user-select: none; }
+    .ana-policy-row-head { text-align: right; padding-right: 6px; }
+    .ana-policy-col-head { text-transform: uppercase; letter-spacing: 0.08em; }
+    .ana-policy-cell { background: var(--on); color: var(--bg);
+                       cursor: pointer; border-radius: 1px;
+                       font-weight: 600; transition: background 100ms; }
+    .ana-policy-cell[data-state="deny"] { background: var(--dim);
+                                          color: var(--ink-muted); }
+    .ana-policy-cell:hover { outline: 1px solid var(--accent); }
+    .ana-policy-hint { font-size: 9px; color: var(--ink-muted);
+                       font-style: italic; margin-top: 2px; }
   `;
   const style = document.createElement("style");
   style.setAttribute("data-analytics", "");
   style.textContent = css;
   rootEl.appendChild(style);
+}
+
+// ---------------- panel: policy grid (authoring) ----------------
+
+// Authoring surface for the WTA policy. Rows = the 7 fixed weapon slots,
+// cols = threat tiers. Click toggles allow ↔ deny. The solver reads this
+// every tick; the assignment heatmap below shows whether the policy
+// actually held (a denied cell here should be black there, modulo the
+// "no permitted shooter" fallback in wta-solver.js:assign).
+function buildPolicyPanel(rootEl, controller) {
+  const grid = el("div", { class: "ana-policy-grid" });
+  // header row
+  grid.appendChild(el("div", { class: "ana-policy-corner" }));
+  for (const tier of TIER_KEYS) {
+    grid.appendChild(el("div", { class: "ana-policy-col-head" }, [tier]));
+  }
+  // weapon rows
+  const cellByKey = new Map();
+  for (const wid of WEAPON_ROW_IDS) {
+    grid.appendChild(el("div", { class: "ana-policy-row-head" }, [wid]));
+    for (const tier of TIER_KEYS) {
+      const key = `${wid}|${tier}`;
+      const cell = el("div", { class: "ana-policy-cell", "data-state": "allow" }, ["✓"]);
+      cell.addEventListener("click", () => {
+        const cur = cell.getAttribute("data-state");
+        const next = cur === "deny" ? "allow" : "deny";
+        controller.dispatch({ type: "SET_POLICY_CELL", weaponId: wid, tier, value: next });
+      });
+      cellByKey.set(key, cell);
+      grid.appendChild(cell);
+    }
+  }
+  const panel = el("div", { class: "ana-panel" }, [
+    el("div", { class: "ana-title" }, ["assignment policy (click to deny)"]),
+    grid,
+    el("div", { class: "ana-policy-hint" }, [
+      "denied = solver will skip this pair unless no permitted shooter exists.",
+    ]),
+  ]);
+  rootEl.appendChild(panel);
+  return { panel, cellByKey };
+}
+
+function updatePolicyPanel(state, getCfg) {
+  const policy = getCfg()?.solver?.policy ?? {};
+  for (const [key, cell] of state.cellByKey) {
+    const [wid, tier] = key.split("|");
+    const denied = policy[wid]?.[tier] === "deny";
+    const want = denied ? "deny" : "allow";
+    if (cell.getAttribute("data-state") !== want) {
+      cell.setAttribute("data-state", want);
+      cell.textContent = denied ? "✕" : "✓";
+    }
+  }
 }
 
 // ---------------- panel: heatmap ----------------
@@ -375,19 +457,36 @@ function updateScoreChart(svgSel, snapshot) {
 
 // ---------------- panel: loadout status (HTML) ----------------
 
-function buildLoadoutPanel(rootEl) {
+function buildLoadoutPanel(rootEl, controller = null) {
   const panel = el("div", { class: "ana-panel" }, [
     el("div", { class: "ana-title" }, ["loadout status"]),
   ]);
   const body = el("div", { class: "ana-loadout-body" });
   panel.appendChild(body);
   rootEl.appendChild(panel);
+  // Click-to-refresh on a loadout row dispatches a debug refresh: weapons get
+  // a free reload + reserve refill, stratagems clear their cooldown and uses.
+  // Useful for "what if this came back right now?" inspection without a full
+  // restart. Lane analytics passes no controller (no dispatch), so the click
+  // handler short-circuits there.
+  if (controller && typeof controller.dispatch === "function") {
+    body.addEventListener("click", (ev) => {
+      const row = ev.target.closest(".ana-loadout-row");
+      if (!row || row.dataset.id == null) return;
+      const kind = row.dataset.kind;
+      const id = row.dataset.id;
+      if (kind === "weapon") controller.dispatch({ type: "REFRESH_WEAPON", weaponId: id });
+      else if (kind === "strat") controller.dispatch({ type: "REFRESH_STRATAGEM", stratagemId: id });
+    });
+  }
   return { panel, body };
 }
 
 function updateLoadout(body, snapshot) {
   const weapons    = snapshot.weapons    || [];
   const stratagems = snapshot.stratagems || [];
+
+  paintDryBanner(body, weapons, stratagems);
 
   const sel = d3.select(body).selectAll("div.ana-loadout-row")
     .data([
@@ -397,7 +496,13 @@ function updateLoadout(body, snapshot) {
 
   sel.exit().remove();
 
-  const enter = sel.enter().append("div").attr("class", "ana-loadout-row");
+  const enter = sel.enter().append("div")
+    .attr("class", "ana-loadout-row")
+    .attr("data-id", (d) => d.id)
+    .attr("data-kind", (d) => d.kind)
+    .attr("title", (d) => d.kind === "weapon"
+      ? "click to refill mag + reserve"
+      : "click to clear cooldown + refill uses");
   const slotCell = enter.append("div").attr("class", "ana-slot-id");
   slotCell.append("div").attr("class", "ana-slot-name");
   slotCell.append("div").attr("class", "ana-slot-sub");
@@ -422,12 +527,17 @@ function updateLoadout(body, snapshot) {
       const magPct = w.magCap > 0 ? Math.max(0, Math.min(1, w.ammoInMag / w.magCap)) : 0;
       const reloadingNow = (w.reloadingPct ?? 1) < 1;
       const reloadPct = Math.max(0, Math.min(1, w.reloadingPct ?? 0));
+      const reserveOut = (w.ammoReserve ?? Infinity) <= 0;
+      const isDry = (w.ammoInMag ?? 0) <= 0 && reserveOut;
+      const fillClass = isDry ? "ana-bar-fill dry" : "ana-bar-fill";
       mid.innerHTML =
-        `<div class="ana-bar-wrap"><div class="ana-bar-fill" style="width:${(magPct * 100).toFixed(1)}%"></div></div>` +
+        `<div class="ana-bar-wrap"><div class="${fillClass}" style="width:${(magPct * 100).toFixed(1)}%"></div></div>` +
         (reloadingNow
           ? `<div class="ana-bar-wrap ana-bar-overlay"><div class="ana-bar-reload" style="width:${(reloadPct * 100).toFixed(1)}%"></div></div>`
           : "");
-      right.innerHTML = `<span class="ana-uses">${w.ammoInMag}/${w.ammoReserve ?? "∞"}</span>`;
+      right.innerHTML = isDry
+        ? `<span class="ana-uses dry">DRY</span>`
+        : `<span class="ana-uses">${w.ammoInMag}/${w.ammoReserve ?? "∞"}</span>`;
     } else {
       const s = d.item;
       // Use horizontal bars for stratagems too — rings render badly at small
@@ -461,6 +571,46 @@ function updateLoadout(body, snapshot) {
       right.innerHTML = `<span class="ana-uses">${stateText} · ${usesText}</span>`;
     }
   });
+}
+
+// Surface the "all guns dry" state at the top of the loadout panel, plus the
+// status of the resupply path (either the call-in stratagem or the supply
+// pack backpack). When every magazine-fed weapon is bone-dry, the diver can't
+// shoot until a supply lands; if no resupply path exists in the loadout at
+// all, the run is effectively stuck and the user should know.
+function paintDryBanner(body, weapons, stratagems) {
+  let banner = body.querySelector(":scope > .ana-dry-banner");
+  const magWeapons = weapons.filter((w) => (w.magCap ?? 0) > 0);
+  if (magWeapons.length === 0) {
+    if (banner) banner.remove();
+    return;
+  }
+  const dry = magWeapons.filter((w) => (w.ammoInMag ?? 0) <= 0 && (w.ammoReserve ?? Infinity) <= 0);
+  if (dry.length === 0) {
+    if (banner) banner.remove();
+    return;
+  }
+  const allDry = dry.length === magWeapons.length;
+  const resupply = stratagems.find((s) => s.defId === "resupply");
+  const supplyPack = stratagems.find((s) => s.defId === "supply-pack" || /supply.?pack/i.test(s.defId || ""));
+  let pathText;
+  if (resupply) {
+    if (resupply.callInPct != null && resupply.callInPct < 1) pathText = "resupply inbound";
+    else if ((resupply.cooldownPct ?? 1) < 1) pathText = `resupply ${Math.round((resupply.cooldownPct ?? 0) * 100)}%`;
+    else pathText = "resupply ready";
+  } else if (supplyPack) {
+    pathText = "supply pack equipped (manual)";
+  } else {
+    pathText = "no resupply in loadout";
+  }
+  const headline = allDry ? "diver is dry" : `${dry.length}/${magWeapons.length} weapon${dry.length === 1 ? "" : "s"} dry`;
+  const text = `${headline} · ${pathText}`;
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.className = "ana-dry-banner";
+    body.insertBefore(banner, body.firstChild);
+  }
+  if (banner.textContent !== text) banner.textContent = text;
 }
 
 // ---------------- panel: wave summary ----------------
@@ -523,6 +673,72 @@ function buildStackRow(label) {
   ]);
 }
 
+// ---------------- mount: per-lane (compare mode) ----------------
+
+/**
+ * Per-lane analytics mount.
+ *
+ * Same panel cluster as the global `mountAnalytics`, but driven by the
+ * caller (`render(snapshot)` each tick) since lane snapshots come from
+ * independent engines rather than a subscribable controller.
+ *
+ * Panel order is intentional and surfaces the questions the user asks
+ * during a compare run, top-down:
+ *   1. loadout status — "is anything dry / on cooldown / rooting?"
+ *   2. assignment heatmap (+ policy authoring grid embedded above) —
+ *      "where are my shots actually landing, and is the policy I set
+ *      respected?"
+ *   3. score over time — "is this run trending toward push or run?"
+ *   4. wave summary — "what's left alive, what's been killed?"
+ *
+ * The policy grid is shared across all lanes (one global policy applies
+ * to every solver). Editing it in one lane immediately affects all of
+ * them. We embed it in each lane anyway because (a) it's the only way
+ * to keep policy editable when the global analytics column is hidden in
+ * compare mode, and (b) it has to sit next to the heatmap for the
+ * deny→black-cell relationship to read.
+ *
+ * Pass `controller` to enable policy authoring (it dispatches
+ * SET_POLICY_CELL actions). Without a controller, the policy panel is
+ * skipped entirely.
+ *
+ * Returns `{ render, unmount }`.
+ */
+export function mountLaneAnalytics(rootEl, getCfg = () => ({}), controller = null) {
+  if (!rootEl) throw new Error("mountLaneAnalytics: rootEl is required");
+  injectScopedStyles(rootEl);
+  const stack = el("div", { class: "ana-stack ana-stack-lane" });
+  rootEl.appendChild(stack);
+
+  // Order is the user's reading order for a compare lane: loadout first
+  // (am I starving?), then heatmap+policy (what's hitting what?), then
+  // score chart (where's the trend?), then wave summary (what's left?).
+  const loadout = buildLoadoutPanel(stack);
+  const policyPanel = (controller && typeof controller.dispatch === "function")
+    ? buildPolicyPanel(stack, controller)
+    : null;
+  const heatmap = buildHeatmapPanel(stack);
+  const score   = buildScorePanel(stack);
+  const wave    = buildWavePanel(stack);
+
+  function render(snapshot) {
+    if (!snapshot) return;
+    updateLoadout(loadout.body, snapshot);
+    if (policyPanel) updatePolicyPanel(policyPanel, getCfg);
+    updateHeatmap(heatmap.svg, snapshot, heatmap);
+    updateScoreChart(score.svg, snapshot);
+    updateWaveTimer(score.timer, snapshot);
+    updateModeChip(score.modeRow, snapshot);
+    updateWaveSummary(wave.body, snapshot);
+  }
+
+  function unmount() {
+    if (stack.parentNode === rootEl) rootEl.removeChild(stack);
+  }
+
+  return { render, unmount };
+}
+
 // ---------------- mount ----------------
 
 /**
@@ -543,13 +759,20 @@ export function mountAnalytics(rootEl, controller) {
   const stack = el("div", { class: "ana-stack" });
   rootEl.appendChild(stack);
 
+  // Policy panel only renders if the controller can be dispatched to —
+  // tests that pass a stub controller without `dispatch` skip authoring.
+  const canAuthor = typeof controller.dispatch === "function";
+  const policyPanel = canAuthor ? buildPolicyPanel(stack, controller) : null;
   const heatmap = buildHeatmapPanel(stack);
   const score   = buildScorePanel(stack);
-  const loadout = buildLoadoutPanel(stack);
+  const loadout = buildLoadoutPanel(stack, canAuthor ? controller : null);
   const wave    = buildWavePanel(stack);
+
+  const getCfg = controller.getCfg ? () => controller.getCfg() : () => ({});
 
   const render = (snapshot) => {
     if (!snapshot) return;
+    if (policyPanel) updatePolicyPanel(policyPanel, getCfg);
     updateHeatmap(heatmap.svg, snapshot, heatmap);
     updateScoreChart(score.svg, snapshot);
     updateWaveTimer(score.timer, snapshot);

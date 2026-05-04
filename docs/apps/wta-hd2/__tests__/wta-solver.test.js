@@ -184,8 +184,10 @@ test("no double-assignment: weapon w/ shotsAvailableThisTick=5 fires once, ≤5 
 // ---------- dead target removal ----------
 
 test("dead target removal: w-A kills t1, w-B re-targets t2", () => {
+  // wA = held weapon, wB = stratagem — so both can fire in the same tick
+  // (stratagems aren't gated by the diver's one-pair-of-hands rule).
   const wA = makeWeapon({ id: "wA", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1 });
-  const wB = makeWeapon({ id: "wB", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1 });
+  const wB = makeWeapon({ id: "wB", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1, isStratagem: true });
   const t1 = makeTarget({ id: "t1", hp: 50, threatTier: "medium",
     parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }] });
   const t2 = makeTarget({ id: "t2", hp: 50, threatTier: "medium", position: { x: 5, y: 30 },
@@ -195,6 +197,33 @@ test("dead target removal: w-A kills t1, w-B re-targets t2", () => {
   assert.equal(out.length, 2);
   const targets = new Set(out.map(a => a.targetId));
   assert.equal(targets.size, 2, `targets should differ: ${[...targets]}`);
+});
+
+test("hands constraint: two held weapons → only one fires per tick", () => {
+  // Diver has one pair of hands: at most one non-stratagem weapon (primary,
+  // secondary, grenade) can fire per tick. Stratagems are throw-and-go and
+  // are exempt from this gate.
+  const wA = makeWeapon({ id: "wA", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1 });
+  const wB = makeWeapon({ id: "wB", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1 });
+  const t1 = makeTarget({ id: "t1", hp: 50, threatTier: "medium",
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }] });
+  const t2 = makeTarget({ id: "t2", hp: 50, threatTier: "medium", position: { x: 5, y: 30 },
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }] });
+  const out = assign({ weapons: [wA, wB], targets: [t1, t2], alpha: 0.5, reserves: {}, rng: RNG, tickMs: 100 });
+  assert.equal(out.length, 1, "only one held weapon may fire per tick");
+});
+
+test("hands constraint: held + stratagem can both fire in same tick", () => {
+  const held = makeWeapon({ id: "held", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1 });
+  const strat = makeWeapon({ id: "strat", damage: 1000, armorPen: 9, shotsAvailableThisTick: 1, isStratagem: true });
+  const t1 = makeTarget({ id: "t1", hp: 50, threatTier: "medium",
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }] });
+  const t2 = makeTarget({ id: "t2", hp: 50, threatTier: "medium", position: { x: 5, y: 30 },
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }] });
+  const out = assign({ weapons: [held, strat], targets: [t1, t2], alpha: 0.5, reserves: {}, rng: RNG, tickMs: 100 });
+  assert.equal(out.length, 2);
+  const ids = new Set(out.map(a => a.weaponId));
+  assert.ok(ids.has("held") && ids.has("strat"), "both held and stratagem must fire");
 });
 
 // ---------- determinism ----------
@@ -539,6 +568,30 @@ test("expectedDamagePerShot: occluded weakpoint never crits", () => {
   assert.ok(eVis > e, `visible butt should raise expected damage (${eVis} vs occluded ${e})`);
 });
 
+test("skill multiplier: higher skill tightens cone, raises hit probability", () => {
+  const lib = makeWeapon({ damage: 60, armorPen: 2, fireRateRpm: 600, shotsAvailableThisTick: 1 });
+  const hunter = makeTarget({
+    threatTier: "light", hp: 60,
+    parts: [{ ac: 1, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    distanceM: 40,
+  });
+  const eAvg    = expectedDamagePerShot(lib, hunter, 40, 1.0);
+  const eExpert = expectedDamagePerShot(lib, hunter, 40, 2.0);
+  const eShaky  = expectedDamagePerShot(lib, hunter, 40, 0.5);
+  assert.ok(eExpert > eAvg, `expert (${eExpert}) should beat average (${eAvg})`);
+  assert.ok(eAvg > eShaky,  `average (${eAvg}) should beat shaky (${eShaky})`);
+});
+
+test("skill multiplier: stratagems / AoE unaffected (deterministic aim)", () => {
+  const eagle = makeWeapon({ damage: 2000, armorPen: 6, aoeRadiusM: 12, fireRateRpm: 60 });
+  const t = makeTarget({
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+  });
+  const eShaky  = expectedDamagePerShot(eagle, t, 30, 0.5);
+  const eExpert = expectedDamagePerShot(eagle, t, 30, 2.0);
+  assert.equal(eShaky, eExpert);
+});
+
 test("expectedDamagePerShot: AoE/stratagem path bypasses dispersion (deterministic)", () => {
   // Stratagem with aoeRadiusM > 0 → defaultDispersionRad = 0 → deterministic.
   // Result must NOT depend on distanceM.
@@ -549,4 +602,83 @@ test("expectedDamagePerShot: AoE/stratagem path bypasses dispersion (determinist
   const eNear = expectedDamagePerShot(eagle, t, 1);
   const eFar  = expectedDamagePerShot(eagle, t, 100);
   assert.equal(eNear, eFar);
+});
+
+// ---------- ammo conservation (opt-in feature) ----------
+
+test("ammo conservation OFF: scarce weapon picks distant heavy target normally", () => {
+  // Recoilless-style: high damage, stratagem. Two heavies — one near, one far.
+  // Without conservation, the solver picks whichever scores higher in pair
+  // value (probably the farther one for clear-value reasons or AoE).
+  const recoilless = makeWeapon({
+    id: "strat-rr", damage: 1500, armorPen: 6, isStratagem: true,
+    callInSecs: 0, shotsAvailableThisTick: 1, maxRangeM: 100,
+  });
+  const close = makeTarget({
+    id: "close", threatTier: "heavy", hp: 1500,
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    position: { x: 0, y: 30 }, distanceM: 30, timeToReachPlayerSecs: 8,
+  });
+  const far = makeTarget({
+    id: "far", threatTier: "heavy", hp: 1500,
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    position: { x: 0, y: 90 }, distanceM: 90, timeToReachPlayerSecs: 25,
+  });
+  const out = assign({
+    weapons: [recoilless], targets: [close, far],
+    alpha: 0.5, gamma: 0.5, ammoConservation: false,
+    reserves: {}, rng: RNG, tickMs: 100,
+  });
+  // Without conservation, distance is just one factor among many — we don't
+  // assert on which target won, only that something fired.
+  assert.equal(out.length, 1);
+});
+
+test("ammo conservation ON: scarce weapon prefers the closer heavy target", () => {
+  // Same fixture as above, but with ammoConservation enabled. The far target
+  // (90m, 1.8× preferred) should get a ~0.31× discount; the close target
+  // (30m, inside preferred 50m) keeps full value.
+  const recoilless = makeWeapon({
+    id: "strat-rr", damage: 1500, armorPen: 6, isStratagem: true,
+    callInSecs: 0, shotsAvailableThisTick: 1, maxRangeM: 100,
+  });
+  const close = makeTarget({
+    id: "close", threatTier: "heavy", hp: 1500,
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    position: { x: 0, y: 30 }, distanceM: 30, timeToReachPlayerSecs: 8,
+  });
+  const far = makeTarget({
+    id: "far", threatTier: "heavy", hp: 1500,
+    parts: [{ ac: 4, frontalWidth: 1.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    position: { x: 0, y: 90 }, distanceM: 90, timeToReachPlayerSecs: 25,
+  });
+  const out = assign({
+    weapons: [recoilless], targets: [close, far],
+    alpha: 0.5, gamma: 0.5, ammoConservation: true,
+    reserves: {}, rng: RNG, tickMs: 100,
+  });
+  assert.equal(out.length, 1);
+  assert.equal(out[0].targetId, "close",
+    `with ammoConservation on, scarce weapon should prefer the closer heavy, got ${out[0].targetId}`);
+});
+
+test("ammo conservation ON: non-scarce weapon unaffected (still picks any)", () => {
+  // Liberator (full-auto, plenty of ammo) — conservation should not gate it.
+  const lib = makeWeapon({
+    id: "primary", damage: 60, armorPen: 2, fireRateRpm: 600,
+    magazine: 30, reloadSecs: 2, shotsAvailableThisTick: 8, maxRangeM: 80,
+  });
+  const close = makeTarget({
+    id: "close", threatTier: "light", hp: 60,
+    parts: [{ ac: 1, frontalWidth: 0.5, hpFraction: 1, isWeakPoint: false, weakPointMultiplier: 1 }],
+    position: { x: 0, y: 60 }, distanceM: 60, timeToReachPlayerSecs: 15,
+  });
+  const out = assign({
+    weapons: [lib], targets: [close],
+    alpha: 0.5, gamma: 0, ammoConservation: true,
+    reserves: {}, rng: RNG, tickMs: 100,
+  });
+  // Even though target is at 60m, Liberator is non-scarce and should fire.
+  assert.equal(out.length, 1);
+  assert.equal(out[0].targetId, "close");
 });
