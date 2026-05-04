@@ -1,5 +1,6 @@
 import { mulberry32, hashString } from "./rng.js";
 import { newScoreState, update as updateScore } from "./scoring.js";
+import { initHeatState, tickHeat, isHeatLocked } from "./features/heat-mgmt.js";
 
 const DEFAULT_CFG = {
   tickMs: 100,
@@ -52,6 +53,11 @@ export function tick(state, cfg = {}) {
   resolveImpacts(next, c);
   tickReloads(next, c);
   tickCooldowns(next, c);
+  // features/heat-mgmt.js — passive cooling each tick. Always active;
+  // sustained-fire weapons gain heat faster than they cool, so heat still
+  // builds during fire. After fire stops, heat decays.
+  const dtSecs = c.tickMs / 1000;
+  for (const w of next.weapons.values()) tickHeat(w, dtSecs);
   reapDead(next, c);
 
   next.scores = updateScore(state.scores, next);
@@ -80,6 +86,17 @@ export function visibleWeaponView(state, cfg = {}) {
   for (const s of state.stratagems.values()) {
     if (s.cooldownUntil > state.t) continue;
     if (s.usesRemaining !== null && s.usesRemaining <= 0) continue;
+    // features/support-weapons.js — skip the stratagem-throw entry when a
+    // deployed support weapon already occupies the same slot AND still has
+    // ammo. The solver should fire the held weapon's remaining rounds
+    // before throwing for a refresh. Without this skip, the stratagem
+    // entry would shadow the deployed weapon (same id "strat-N") in the
+    // solver's wState map.
+    const deployed = state.weapons?.get?.(s.id);
+    if (deployed?.isSupportWeapon) {
+      const remaining = (deployed.ammoInMag ?? 0) + (deployed.ammoReserve ?? 0);
+      if (remaining > 0) continue;
+    }
     out.push({
       id: s.id,
       slot: s.id,
@@ -200,6 +217,10 @@ function initWeapons(loadout = {}, data = {}) {
       aoeRadiusM: def.aoeRadiusM ?? 0,
       weakPointHitRateBase: def.weakPointHitRateBase ?? 0.3,
       maxRangeM: def.maxRangeM ?? 80,
+      // features/heat-mgmt.js — heat-bearing weapons (Sickle / Scythe /
+      // Las Cannon) get heatLevel + sinksRemaining via initHeatState. null
+      // for ammo-driven weapons, in which case the heat helpers no-op.
+      ...(initHeatState(def) ?? {}),
     });
   }
   return m;
@@ -249,11 +270,20 @@ function instantiateStratagem(slot, def) {
     armorPen: def.effects?.[0]?.ap ?? 0,
     aoeRadiusM: def.effects?.[0]?.aoeRadiusM ?? 0,
     effects: def.effects ?? [],
+    // Deployable support weapons carry a `supportWeapon` block on the data
+    // def. Keep it on the per-slot stratagem record so the engine's call-in
+    // handler can route to features/support-weapons.js without a separate
+    // data lookup. See features/support-weapons.js header.
+    supportWeapon: def.supportWeapon ?? null,
   };
 }
 
 function computeShotsThisTick(w, tickMs, _t) {
   if (w.reloadingUntil !== null && w.reloadingUntil > _t) return 0;
+  // features/heat-mgmt.js — heat-locked weapons can't fire even when the
+  // mag is "full" (Sickle's mag is 999, the constraint is heat). isHeatLocked
+  // is a no-op for non-heat weapons.
+  if (isHeatLocked(w, _t)) return 0;
   if (w.ammoInMag <= 0) return 0;
   const perSec = w.fireRateRpm / 60;
   const max = Math.floor(perSec * (tickMs / 1000));

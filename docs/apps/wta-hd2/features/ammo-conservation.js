@@ -48,8 +48,21 @@ export function isScarceAmmo(weapon) {
   const mag = weapon.magazine ?? weapon.ammoInMag ?? 0;
   const reload = weapon.reloadSecs ?? 0;
   // Small-mag, slow-reload direct-fire (Spear-shaped) — each shot is
-  // basically as costly as a stratagem use.
-  return mag > 0 && mag <= 5 && reload >= 3;
+  // basically as costly as a stratagem use. Catches recoilless (1/4.5s),
+  // AC (5/4.5s), eruptor (6/4s), crossbow (5/3.5s).
+  if (mag > 0 && mag <= 5 && reload >= 3) return true;
+  // Deployed support weapons with very small total backpack ammo — EAT
+  // (2 total rockets) needs to be conserved even though its 0s "reload"
+  // doesn't match the slow-reload rule. The `isSupportWeapon` flag is
+  // set by features/support-weapons.js on deploy. Note: this does NOT
+  // catch Stalwart (mag 250 + reserve 750 = 1000) or HMG (mag 75 +
+  // reserve 300 = 375) — those are chaff/medium clearers, not scarce.
+  if (weapon.isSupportWeapon === true) {
+    const reserveMax = weapon.ammoReserveMax ?? weapon.ammoReserve ?? 0;
+    const total = mag + reserveMax;
+    if (total <= 10) return true;
+  }
+  return false;
 }
 
 /**

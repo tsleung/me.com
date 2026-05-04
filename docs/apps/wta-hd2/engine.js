@@ -15,6 +15,15 @@ import { mulberry32, hashString } from "./rng.js";
 // are the only outward leak. See docs at the top of each feature file.
 import { updateMovement } from "./features/movement-policy.js";
 import { classifyOutcome } from "./features/verdict.js";
+import {
+  isDeployableSupport,
+  deploySupportWeapon,
+} from "./features/support-weapons.js";
+import {
+  addHeatForShots,
+  maybeTripSink,
+  refillSinks,
+} from "./features/heat-mgmt.js";
 
 const DEFAULT_CFG = {
   tickMs: 100,
@@ -162,6 +171,25 @@ function applyAssignments(state, assignments, cfg, skill = 1) {
       target.hp = Math.max(0, target.hp - totalDmg);
       const died = target.hp <= 0;
       if (died) target.alive = false;
+      // AoE splash for direct-fire weapons that have aoeRadiusM > 0
+      // (recoilless, autocannon, eruptor, scorcher, frag grenade, etc.).
+      // Splash uses the same expected-damage math as the primary hit but
+      // skips the dispersion model — at the impact point, the explosion
+      // covers everything in radius deterministically.
+      const splashR = weapon.aoeRadiusM ?? 0;
+      if (splashR > 0) {
+        const r2 = splashR * splashR;
+        for (const e of state.enemies.values()) {
+          if (!e.alive || e.id === target.id) continue;
+          const ex = e.position.x - target.position.x;
+          const ey = e.position.y - target.position.y;
+          if (ex * ex + ey * ey > r2) continue;
+          // Pass distanceM=0 to bypass dispersion (point-blank explosion).
+          const splashDmg = computeDamage(weapon, e, 0, skill) * a.shots;
+          e.hp = Math.max(0, e.hp - splashDmg);
+          if (e.hp <= 0) e.alive = false;
+        }
+      }
       // Heavy rocket weapons (RR/Spear/EAT/Quasar/etc.) get a three-stage
       // visual: back-blast smoke at the player → smoke-trail traveling to
       // the target → delayed explosion. Without this the rare-but-impactful
@@ -198,6 +226,10 @@ function applyAssignments(state, assignments, cfg, skill = 1) {
       if (weapon.ammoInMag === 0 && weapon.ammoReserve > 0) {
         weapon.reloadingUntil = state.t + (weapon.reloadSecs ?? 2) * 1000;
       }
+      // features/heat-mgmt.js — accumulate heat per shot fired and trip a
+      // sink swap if we just hit cap. No-ops for non-heat weapons.
+      addHeatForShots(weapon, a.shots);
+      maybeTripSink(weapon, state.t);
     } else if (state.stratagems.has(a.weaponId)) {
       // Stratagem: throw + call-in. Damage deferred until landing.
       const def = state.stratagems.get(a.weaponId);
@@ -284,21 +316,82 @@ function applyAssignments(state, assignments, cfg, skill = 1) {
           if (stratDef) stratDef.callInActive = null;
           if (!st._fxFlashes) st._fxFlashes = [];
 
+          // features/support-weapons.js — deployable support stratagems
+          // (recoilless / AC / EAT / Spear / Quasar / MG / HMG / etc.)
+          // install a held weapon record under the stratagem's slot. The
+          // solver picks it up on next tick as direct-fire.
+          if (stratDef?.supportWeapon && isDeployableSupport(stratDef)) {
+            deploySupportWeapon(st, a.weaponId, stratDef.supportWeapon, defId);
+            // Lightweight landing fx — the supply drop-pod hits next to the
+            // player. No instant AoE damage; the weapon now lives in
+            // state.weapons and the solver will fire it from there.
+            st._fxFlashes.push({
+              kind: "spark", x: state.player.x, y: state.player.y,
+              r: 3, bornT: st.t, durMs: 500, isKill: false,
+            });
+            return;
+          }
+
           if (isSentry) {
             // Install persistent sentry actor — fires at nearest enemy each tick.
+            // tickRate (shots per second from the data) drives fireRateRpm
+            // — was hardcoded to 600 RPM regardless of sentry type, which
+            // made every sentry fire identically (gatling fast, rocket slow,
+            // AC mid all collapsed to one rate). The data already has
+            // tickRate per sentry; we just read it now.
+            const eff0 = stratDef?.effects?.[0] ?? {};
+            const tickRate = eff0.tickRate ?? 8; // sentry data convention: shots/sec
+            const lifetimeSecs = eff0.durationSecs ?? 120;
             st.effects.push({
               kind: "sentry",
               defId: weapon.defId,
               x: beaconX, y: beaconY,
               radiusM: 1.5,
               bornT: st.t,
-              until: st.t + 120 * 1000, // 120s lifetime
-              weaponDef: { damage: weapon.damage ?? 80, armorPen: weapon.armorPen ?? 3, weakPointHitRateBase: 0.4, aoeRadiusM: 0 },
-              fireRateRpm: 600,
+              until: st.t + lifetimeSecs * 1000,
+              weaponDef: {
+                damage: eff0.damage ?? weapon.damage ?? 80,
+                armorPen: eff0.ap ?? weapon.armorPen ?? 3,
+                weakPointHitRateBase: 0.4,
+                aoeRadiusM: eff0.aoeRadiusM ?? 0,
+              },
+              fireRateRpm: tickRate * 60,
               lastShotT: 0,
               maxRangeM: 60,
             });
             st._fxFlashes.push({ kind: "spark", x: beaconX, y: beaconY, r: 4, bornT: st.t, durMs: 500, isKill: false });
+            return;
+          }
+
+          // Guard-dog backpack: orbits the player at small radius, auto-engages
+          // nearest enemy in arc. Until now, calling in a guard-dog did
+          // nothing — the dog spawned no actor and fired no shots. We model it
+          // as a sentry-shaped effect with `follow: "player"` so tickEffects
+          // can reposition it each tick to the diver's current location.
+          if (defId === "guard-dog" || /^guard-dog/.test(defId)) {
+            const eff0 = stratDef?.effects?.[0] ?? {};
+            const tickRate = eff0.tickRate ?? 6;
+            const lifetimeSecs = eff0.durationSecs ?? 999;
+            st.effects.push({
+              kind: "sentry",
+              follow: "player",     // tickEffects re-anchors x/y to the player
+              followOffsetM: 1.5,   // hovers slightly above the diver
+              defId: weapon.defId,
+              x: state.player.x, y: state.player.y + 1.5,
+              radiusM: 1,
+              bornT: st.t,
+              until: st.t + lifetimeSecs * 1000,
+              weaponDef: {
+                damage: eff0.damage ?? 50,
+                armorPen: eff0.ap ?? 2,
+                weakPointHitRateBase: 0.3,
+                aoeRadiusM: 0,
+              },
+              fireRateRpm: tickRate * 60,
+              lastShotT: 0,
+              maxRangeM: 35,        // dog's engagement is short-range
+            });
+            st._fxFlashes.push({ kind: "spark", x: state.player.x, y: state.player.y, r: 2, bornT: st.t, durMs: 400, isKill: false });
             return;
           }
           if (isPickup) {
@@ -537,6 +630,13 @@ function tickEffects(state, _cfg) {
   for (const eff of state.effects ?? []) {
     if (eff.until != null && state.t >= eff.until) continue;
     if (eff.kind === "sentry") {
+      // Following sentries (guard-dog) reposition to the diver each tick. A
+      // small forward offset keeps it visible alongside the player rather
+      // than overlapping the player glyph.
+      if (eff.follow === "player") {
+        eff.x = state.player.x ?? 0;
+        eff.y = (state.player.y ?? 0) + (eff.followOffsetM ?? 1.5);
+      }
       const fireIntervalMs = 60000 / Math.max(60, eff.fireRateRpm ?? 600);
       if ((state.t - (eff.lastShotT ?? 0)) >= fireIntervalMs) {
         let best = null, bestD = Infinity;
@@ -606,10 +706,11 @@ function maybeQueueNextWave(state, scenario, cadenceSecs) {
   if (state._waveQueued) return; // a wave already pending
   const queueTail = (state.scheduled?.length ?? 0);
   if (queueTail > 0) return; // current wave still firing/pending
-  // Wait until current wave is fully resolved (no alive enemies).
-  for (const e of state.enemies.values()) {
-    if (e.alive) return;
-  }
+  // The cadence is "time between waves," not "time after the wave is fully
+  // cleared" — so we queue the next wave as soon as the current wave's spawn
+  // intents are exhausted, regardless of whether enemies are still alive.
+  // This makes the next-wave countdown timer always show a useful value
+  // (otherwise it sits at "incoming" the entire time the diver is fighting).
   const startAt = state.t + cadenceSecs * 1000;
   pushWaveAtT(state, scenario, startAt);
   state._waveQueued = true;
@@ -803,6 +904,9 @@ function triggerResupply(state, resupply, cfg) {
         // Clear any in-flight reload so the freshly-stocked mag fires immediately.
         w.reloadingUntil = null;
       }
+      // features/heat-mgmt.js — resupply also refreshes heat sinks (Sickle
+      // gets all 6 sinks back). No-op for non-heat weapons.
+      refillSinks(st);
       // Marker effect on the supply box. HD2's resupply drops 4 pickups,
       // one per squadmate; in this single-player sim only the diver can
       // consume, and the refill above already happens on landing — so the

@@ -30,6 +30,33 @@ test("isScarceAmmo: medium mag (~10) doesn't qualify even with slow reload", () 
   assert.equal(isScarceAmmo(dmr), false);
 });
 
+test("isScarceAmmo: deployed EAT-shape (1 mag + 1 reserve, fast reload) IS scarce", () => {
+  // Post-deploy EAT: mag=1, reserve=1, reloadSecs=0. The mag-and-reload
+  // rule misses this, but the support-weapon-with-tiny-backpack rule
+  // catches it.
+  const eat = {
+    isSupportWeapon: true, magazine: 1, ammoInMag: 1,
+    ammoReserveMax: 1, ammoReserve: 1, reloadSecs: 0,
+  };
+  assert.equal(isScarceAmmo(eat), true);
+});
+
+test("isScarceAmmo: deployed Stalwart (huge backpack) is NOT scarce", () => {
+  const stalwart = {
+    isSupportWeapon: true, magazine: 250, ammoInMag: 250,
+    ammoReserveMax: 750, ammoReserve: 750, reloadSecs: 4,
+  };
+  assert.equal(isScarceAmmo(stalwart), false);
+});
+
+test("isScarceAmmo: deployed HMG (75 + 300) is NOT scarce", () => {
+  const hmg = {
+    isSupportWeapon: true, magazine: 75, ammoInMag: 75,
+    ammoReserveMax: 300, ammoReserve: 300, reloadSecs: 7,
+  };
+  assert.equal(isScarceAmmo(hmg), false);
+});
+
 // ---- preferredRangeM ----
 
 test("preferredRangeM: defaults to half maxRangeM", () => {

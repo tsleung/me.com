@@ -84,7 +84,7 @@
           </label>
         </div>
         <div class="field field-cadence">
-          <label class="field-label" for="wave-cadence" data-help="Seconds between auto-spawned waves (5–600). Leave blank or empty to fall back to the difficulty-based default.">wave interval (s) <span class="muted" id="wave-cadence-hint"></span></label>
+          <label class="field-label" for="wave-cadence" data-help="Seconds between consecutive wave-start events (5–600). The next wave is queued as soon as the current wave's spawns are emitted, so the countdown runs even while you're still engaging the previous wave. Leave blank for the difficulty-based default.">wave interval (s) <span class="muted" id="wave-cadence-hint"></span></label>
           <input type="number" id="wave-cadence" class="num-input" min="5" max="600" step="1" inputmode="numeric" placeholder="auto">
         </div>
         <div class="field field-grow field-wave-status">

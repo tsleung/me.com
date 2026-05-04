@@ -19,38 +19,38 @@
     "heavy": 1,
     "boss": 0
   },
-  "totalAssignments": 251,
-  "totalShots": 251,
+  "totalAssignments": 119,
+  "totalShots": 119,
   "modeHistogram": {
-    "HOLD": 279,
+    "HOLD": 129,
     "KITE": 0,
-    "PUSH": 21
+    "PUSH": 171
   },
   "heatmapTop3": [
     {
       "weapon": "primary",
-      "archetype": "terminid-charger",
-      "credit": 97
-    },
-    {
-      "weapon": "primary",
-      "archetype": "terminid-bile-spewer",
-      "credit": 65
+      "archetype": "terminid-warrior",
+      "credit": 46
     },
     {
       "weapon": "primary",
       "archetype": "terminid-hunter",
-      "credit": 28
+      "credit": 29
+    },
+    {
+      "weapon": "secondary",
+      "archetype": "terminid-warrior",
+      "credit": 15
     }
   ],
   "shotShare": {
-    "grenade": 0.0359,
-    "primary": 0.8048,
-    "secondary": 0.1394,
-    "strat-1": 0.004,
-    "strat-2": 0.008,
-    "strat-3": 0.004,
-    "strat-4": 0.004
+    "grenade": 0.0168,
+    "primary": 0.7731,
+    "secondary": 0.1429,
+    "strat-1": 0.0084,
+    "strat-2": 0.0168,
+    "strat-3": 0.0084,
+    "strat-4": 0.0336
   },
   "finalAlive": 0
 }
