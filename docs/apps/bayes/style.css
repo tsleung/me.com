@@ -1,0 +1,541 @@
+/* bayes — style
+   Tokens copied from apps/_shared/tokens.css: _shared does not ship with
+   the docs/ deploy slice, so this app stays self-contained. */
+
+:root {
+  --bg: #0e0e10;
+  --panel: #16161a;
+  --panel-2: #1d1d21;
+  --ink: #f2f2ee;
+  --ink-muted: #8a8a8a;
+  --ink-dim: #6a6a6a;
+  --line: #2a2a2e;
+  --edge: #3a3a40;
+  --accent: #ff3a3a;
+
+  /* data colors — CVD-validated as a set on this surface (all-pairs ΔE ≥ 25,
+     ≥ 3:1 contrast). Marks only; text never wears these. */
+  --data-blue: #3987e5;
+  --data-red: #e66767;
+  --data-amber: #c98500;
+  --data-dim: #2e2e33; /* recessive fill (true negatives, de-emphasis) */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ----- header ----- */
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.home {
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.home:hover {
+  color: var(--accent);
+}
+
+h1 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+/* ----- essay column ----- */
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 20px 80px;
+}
+
+.lede {
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin: 0 0 44px;
+}
+
+section {
+  margin: 0 0 64px;
+}
+
+.microlabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin: 0 0 6px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+}
+
+section p {
+  line-height: 1.55;
+  margin: 0 0 12px;
+}
+
+.aside {
+  color: var(--ink-muted);
+  font-size: 12px;
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+}
+
+section a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+}
+
+section a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* ----- demo panels ----- */
+
+.demo {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+/* ----- shared controls ----- */
+
+.btn {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 140ms,
+    border-color 140ms,
+    background 140ms;
+}
+
+.btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn.active {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  flex: 1;
+}
+
+.control-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.control-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+  width: 100%;
+  margin: 0;
+}
+
+/* ----- shared readouts ----- */
+
+.hero {
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0 2px;
+}
+
+.hero-caption {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  flex: none;
+}
+
+/* ----- tables (data twins + historical) ----- */
+
+table {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin: 12px 0;
+  width: 100%;
+}
+
+th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  font-weight: 400;
+  text-align: left;
+}
+
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+}
+
+td {
+  color: var(--ink);
+}
+
+/* ----- details / sources ----- */
+
+details {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::before {
+  content: "+ ";
+  color: var(--accent);
+}
+
+details[open] > summary::before {
+  content: "− ";
+}
+
+details ul {
+  line-height: 1.7;
+  padding-left: 18px;
+  margin: 8px 0 0;
+}
+
+.postscript ul {
+  line-height: 1.7;
+  padding-left: 18px;
+  margin: 0 0 12px;
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 24px 14px 60px;
+  }
+
+  .hero {
+    font-size: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ===== module styles (merged from the three demo builds) ===== */
+
+/* detector — demo 1: base-rate dot grid */
+.detector-split {
+  margin: 0 0 14px;
+}
+
+.detector-split .control-row {
+  margin: 10px 0 0;
+}
+
+.detector-readout {
+  margin: 4px 0 18px;
+}
+
+.detector-freq {
+  color: var(--ink-muted);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+
+.detector-grid-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.detector-bar-wrap {
+  margin: 18px 0 0;
+}
+
+.detector-bar {
+  display: flex;
+  gap: 2px;
+  height: 18px;
+  margin: 6px 0 0;
+}
+
+.detector-bar-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-basis: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.detector-bar-seg span {
+  font-size: 11px;
+  color: var(--bg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.detector-bar-empty {
+  color: var(--ink-muted);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+/* ---- wall (demo 2: gott / copernican) ---- */
+
+.wall-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wall-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.wall-age-input {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--ink);
+  color-scheme: dark;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 8px;
+  width: 130px;
+}
+
+.wall-age-input:disabled {
+  background: var(--panel);
+  color: var(--ink-dim);
+}
+
+.wall-age-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.wall-readout {
+  margin: 6px 0 16px;
+}
+
+.wall-readout p {
+  margin: 0;
+}
+
+.wall-readout .wall-hero {
+  font-size: 28px;
+}
+
+.wall-median {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.wall-readout .wall-median {
+  margin-top: 10px;
+}
+
+.wall-outcome {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.wall-svg {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.wall-svg text {
+  font-family: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wall-derivation {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.wall-swatch-wash {
+  background: color-mix(in srgb, var(--data-blue) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--data-blue) 40%, transparent);
+}
+
+/* --- tanks (demo 3: german tank problem) --- */
+
+.tanks-counters {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 10px;
+}
+
+.tanks-chart {
+  margin: 16px 0 0;
+}
+
+.tanks-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: inherit;
+}
+
+.tanks-chart text {
+  font-size: 11px;
+  fill: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tanks-reveal-line {
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+
+.tanks-hist {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.tanks-hist-caption {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin: 0 0 8px;
+}
+
+.tanks-swatch-blue {
+  background: var(--data-blue);
+}
+
+.tanks-swatch-amber {
+  background: var(--data-amber);
+}
+
+.tanks-swatch-red {
+  background: var(--data-red);
+}

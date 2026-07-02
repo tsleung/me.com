@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bayes / terranleung.com</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <a href="/" class="home" aria-label="back to home">←</a>
+      <h1>bayes</h1>
+      <span class="subtitle">what one observation actually tells you</span>
+    </header>
+    <main>
+      <p class="lede">
+        three demos about inference from almost nothing: a test result, a glance
+        at a wall, a serial number. in each one the honest answer is unintuitive
+        — and computable on one hand.
+      </p>
+
+      <section aria-labelledby="detector-title">
+        <p class="microlabel">01 · base rates</p>
+        <h2 id="detector-title">the test says you're guilty</h2>
+        <p>
+          an anti-cheat system catches 90% of cheaters. it wrongly flags an
+          honest player only 10% of the time. one player in ten cheats. you get
+          flagged.
+        </p>
+        <p>
+          how likely is it you're actually cheating? most people say 90%. the
+          answer is 50% — a coin flip.
+        </p>
+        <div id="detector-app" class="demo"></div>
+        <p>
+          the trap: the test runs on everyone, and honest players outnumber
+          cheaters nine to one. 90 cheaters get flagged — and so do 90
+          innocents. "90% accurate" describes the test, not the verdict.
+        </p>
+        <p class="aside">
+          this isn't a toy failure. given the same structure for breast-cancer
+          screening (1% prevalence, 79% sensitivity, 9.6% false-positive rate),
+          95 of 100 physicians put the answer at 70–80%. it's about 8% (eddy
+          1982). in a 2007 study only 21% of gynecologists got it right — until
+          the same numbers were rephrased as counts of people instead of
+          probabilities, after which 87% did (gigerenzer et al. 2007). the demo
+          above counts people for exactly that reason.
+        </p>
+      </section>
+
+      <section aria-labelledby="wall-title">
+        <p class="microlabel">02 · the copernican principle</p>
+        <h2 id="wall-title">how long will the wall stand?</h2>
+        <p>
+          in 1969 the astrophysicist j. richard gott stood at the berlin wall —
+          then 8 years old — and asked what he could predict from its age alone.
+        </p>
+        <p>
+          if the moment you look is nothing special, you are equally likely to
+          be anywhere in a thing's lifetime. even odds you're somewhere in the
+          middle half. from that alone: 50% confidence the wall would stand
+          between 2⅔ and 24 more years (as he later told it — the story reached
+          print in the new yorker in 1999). it fell 20 years later.
+        </p>
+        <div id="wall-app" class="demo"></div>
+        <p>
+          the median forecast is always the same move: double what you've seen.
+          gott published the method in nature in 1993 and scored it against the
+          wall, the ussr he'd visited in 1977 (gone 14 years later), and — the
+          day the paper appeared — all 44 broadway and off-broadway shows then
+          running. by 1999, 36 had closed, every one inside its predicted
+          window.
+        </p>
+        <p class="aside">
+          the fine print (caves 2000): the rule is licensed only when age is
+          genuinely all you know. a 90-year-old is not halfway through a life —
+          actuarial tables beat the copernican prior the moment you have them.
+          and your look must be unspecial: you can't apply it to a marriage
+          while attending the wedding.
+        </p>
+      </section>
+
+      <section aria-labelledby="tanks-title">
+        <p class="microlabel">03 · the german tank problem</p>
+        <h2 id="tanks-title">count the tanks</h2>
+        <p>
+          the allies wanted german monthly tank production. conventional
+          intelligence — informants, aerial photos, extrapolated factory
+          capacity — said about 1,400 a month. the statisticians ignored all of
+          it and read the serial numbers on captured tanks.
+        </p>
+        <p>
+          if serials run 1, 2, 3, … then the largest serial you've seen, plus
+          the average gap between the ones you hold, estimates the whole run: N
+          ≈ m + m/k − 1. their answer: 246 a month. german ministry records,
+          captured after the war: 245.
+        </p>
+        <div id="tanks-app" class="demo"></div>
+        <p>month by month, the same picture (ruggles &amp; brodie 1947):</p>
+        <table>
+          <caption class="microlabel">
+            german tank production, estimated three ways
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">month</th>
+              <th scope="col">serial-number estimate</th>
+              <th scope="col">intelligence estimate</th>
+              <th scope="col">german records</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>june 1940</td>
+              <td>169</td>
+              <td>1,000</td>
+              <td>122</td>
+            </tr>
+            <tr>
+              <td>june 1941</td>
+              <td>244</td>
+              <td>1,550</td>
+              <td>271</td>
+            </tr>
+            <tr>
+              <td>august 1942</td>
+              <td>327</td>
+              <td>1,550</td>
+              <td>342</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="aside">
+          with a single captured tank the formula collapses to 2m − 1: double
+          what you see. the same move as the wall — one observation, assumed
+          unspecial, doubled. the method was reused on panther road wheels
+          (february 1944: estimated 270 tanks, records say 276) and, most
+          successfully, on v-2 rockets.
+        </p>
+      </section>
+
+      <section class="postscript" aria-labelledby="postscript-title">
+        <p class="microlabel">postscript</p>
+        <h2 id="postscript-title">the same trick everywhere</h2>
+        <ul>
+          <li>
+            the lindy effect — for non-perishables (technologies, ideas), every
+            year survived is evidence of more to come. named for lindy's deli in
+            new york, 1964; formalized by mandelbrot.
+          </li>
+          <li>
+            laplace's rule of succession — after n sunrises and no failures,
+            p(sunrise tomorrow) = (n+1)/(n+2). the 18th-century version of the
+            same humility.
+          </li>
+          <li>
+            the doomsday argument — apply the wall logic to your own birth rank
+            among all humans ever born. gott's paper does exactly this;
+            uncomfortable reading.
+          </li>
+        </ul>
+        <details class="sources">
+          <summary>sources</summary>
+          <ul>
+            <li>
+              d. m. eddy, "probabilistic reasoning in clinical medicine", in
+              kahneman, slovic &amp; tversky (eds.),
+              <em>judgment under uncertainty</em>, 1982.
+            </li>
+            <li>
+              g. gigerenzer et al., "helping doctors and patients make sense of
+              health statistics",
+              <em>psychological science in the public interest</em> 8(2), 2007.
+            </li>
+            <li>
+              j. r. gott iii, "implications of the copernican principle for our
+              future prospects", <em>nature</em> 363, 315–319 (1993).
+            </li>
+            <li>
+              t. ferris, "how to predict everything",
+              <em>the new yorker</em>, july 12, 1999.
+            </li>
+            <li>
+              c. m. caves, "predicting future duration from present age: a
+              critical assessment", <em>contemporary physics</em> 41(3), 2000.
+            </li>
+            <li>
+              r. ruggles &amp; h. brodie, "an empirical approach to economic
+              intelligence in world war ii",
+              <em>journal of the american statistical association</em> 42(237),
+              1947.
+            </li>
+            <li>
+              g. davies, "how a statistical formula won the war",
+              <em>the guardian</em>, july 20, 2006.
+            </li>
+          </ul>
+        </details>
+      </section>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -135,6 +135,10 @@ const DICT = {
     "system.historyShared": "shared {n} messages with your partner",
     "system.imageTooLarge": "image too large \u2014 keep it under 2 MB",
     "system.imageFailed": "couldn't read that image \u2014 try a JPEG or PNG",
+    "system.errorRoomFull": "this room already has two people in it \u2014 pick a new room code in settings, or wait for the other session to end",
+    "system.errorServerError": "the signaling server rejected the connection \u2014 try again, and tell terran if this keeps happening",
+    "system.errorOffline": "you appear to be offline \u2014 check your wifi or mobile data",
+    "system.errorUnreachable": "couldn't reach the signaling server \u2014 it may be down, or a firewall is blocking websockets",
   },
   "zh-Hans": {
     "app.title": "\u7ffb\u8bd1",
@@ -266,6 +270,10 @@ const DICT = {
     "system.historyShared": "\u5df2\u5411\u4f34\u4fa3\u5206\u4eab {n} \u6761\u6d88\u606f",
     "system.imageTooLarge": "\u56fe\u7247\u8fc7\u5927 \u2014 \u8bf7\u63a7\u5236\u5728 2 MB \u4ee5\u5185",
     "system.imageFailed": "\u65e0\u6cd5\u8bfb\u53d6\u6b64\u56fe\u7247 \u2014 \u8bf7\u5c1d\u8bd5 JPEG \u6216 PNG",
+    "system.errorRoomFull": "\u8fd9\u4e2a\u623f\u95f4\u5df2\u7ecf\u6709\u4e24\u4e2a\u4eba \u2014 \u8bf7\u5728\u8bbe\u7f6e\u4e2d\u91cd\u65b0\u9009\u62e9\u623f\u95f4\u4ee3\u7801\uff0c\u6216\u7b49\u5f85\u53e6\u4e00\u4e2a\u4f1a\u8bdd\u7ed3\u675f",
+    "system.errorServerError": "\u4fe1\u4ee4\u670d\u52a1\u5668\u62d2\u7edd\u8fde\u63a5 \u2014 \u8bf7\u91cd\u8bd5\uff0c\u5982\u679c\u53cd\u590d\u51fa\u73b0\u8bf7\u544a\u77e5 terran",
+    "system.errorOffline": "\u60a8\u4f3c\u4e4e\u4e0d\u5728\u7ebf \u2014 \u8bf7\u68c0\u67e5 wifi \u6216\u79fb\u52a8\u6570\u636e",
+    "system.errorUnreachable": "\u65e0\u6cd5\u8054\u7cfb\u4fe1\u4ee4\u670d\u52a1\u5668 \u2014 \u53ef\u80fd\u670d\u52a1\u5668\u5df2\u4e0b\u7ebf\uff0c\u6216\u9632\u706b\u5899\u963b\u6321\u4e86 websocket",
   },
   "zh-Hant": {
     "app.title": "\u7ffb\u8b6f",

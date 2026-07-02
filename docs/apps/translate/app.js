@@ -10,8 +10,10 @@
 
 import * as vault from "./vault.js";
 import { t, applyI18n, setUiLang, getUiLang, detectDefaultUiLang, SUPPORTED_UI_LANGS } from "./i18n.js";
+import { mergeShareIntoCfg, shareLinkOverridesRoom } from "./share-merge.js";
+import { classifyFailure, TERMINAL_CATEGORIES } from "./transport-classify.js";
 
-const GEMINI_MODEL = "gemini-3-flash-preview";
+const GEMINI_MODEL = "gemini-3.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const DEFAULT_SIGNALING_URL = "wss://translate-signaling.tsleung.workers.dev";
@@ -366,16 +368,22 @@ class WorkerTransport {
     this.dc = null;
     this.onMessage = () => {};
     this.onStateChange = () => {};
+    this.onError = () => {};   // (category) => void; category ∈ ERROR_CATEGORIES
     this._closed = false;
+    this._terminal = false;    // true after a non-retryable error (room-full, server-error)
     this._reconnectDelay = 0;
     this._reconnectTimer = null;
     this._tiebreaker = 0;
+    this._everOpened = false;       // did the WS ever reach `open` on this attempt?
+    this._serverErrorCode = null;   // last `{type:"error", code}` from server, if any
   }
 
   async connect() {
-    if (this._closed) return;
+    if (this._closed || this._terminal) return;
     clearTimeout(this._reconnectTimer);
     this._reconnectTimer = null;
+    this._everOpened = false;
+    this._serverErrorCode = null;
     const url = new URL(this.cfg.sigUrl);
     url.searchParams.set("room", this.cfg.roomCode);
     // Capture the specific WS instance in closures below. A late close/
@@ -385,12 +393,13 @@ class WorkerTransport {
     this.ws = ws;
     ws.addEventListener("open",    () => { if (this.ws === ws) this._onWsOpen(); });
     ws.addEventListener("message", (e) => { if (this.ws === ws) this._onWsMessage(e); });
-    ws.addEventListener("close",   () => { if (this.ws === ws) this._onWsDown(); });
+    ws.addEventListener("close",   (e) => { if (this.ws === ws) this._onWsDown(e); });
     ws.addEventListener("error",   () => { if (this.ws === ws) this._onWsDown(); });
   }
 
   _onWsOpen() {
     this._reconnectDelay = 0;
+    this._everOpened = true;
     this._setupPc();
     this._sendHello();
     this.onStateChange("wait");
@@ -432,6 +441,13 @@ class WorkerTransport {
   async _onWsMessage(e) {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
+    // Server-side rejection frame (e.g. room-full). The server follows up
+    // with a close frame carrying a matching 4xxx code; we just stash the
+    // reason so _onWsDown can give the user a specific error message.
+    if (msg.type === "error" && typeof msg.code === "string") {
+      this._serverErrorCode = msg.code;
+      return;
+    }
     switch (msg.type) {
       case "hello":
         if (!this.dc && this.pc) {
@@ -508,17 +524,31 @@ class WorkerTransport {
     }
   }
 
-  _onWsDown() {
+  _onWsDown(closeEvent) {
     // close + error can both fire on the same disconnect. Second call
     // would schedule a duplicate timer and unnecessarily double the
     // backoff, so dedupe: if a timer is already pending, skip.
     if (this._reconnectTimer) return;
+    const category = classifyFailure({
+      everOpened: this._everOpened,
+      closeCode: closeEvent?.code,
+      serverErrorCode: this._serverErrorCode,
+      online: typeof navigator !== "undefined" ? navigator.onLine : true,
+    });
     this.onStateChange("off");
+    this.onError(category);
     try { this.dc?.close(); } catch {}
     try { this.pc?.close(); } catch {}
     this.dc = null;
     this.pc = null;
     if (this._closed) return;
+    // Non-retryable: don't hammer reconnects when the room is full or the
+    // server is rejecting us — the user has to take action (change room,
+    // wait, retry manually via settings save).
+    if (TERMINAL_CATEGORIES.has(category)) {
+      this._terminal = true;
+      return;
+    }
     // Backoff: 1s, 2s, 4s, 8s, 16s, capped at 30s.
     const delay = Math.min(30000, Math.max(1000, this._reconnectDelay * 2 || 1000));
     this._reconnectDelay = delay;
@@ -725,29 +755,24 @@ async function decryptFromWire(wire) {
 
 function openSettings(initial = false) {
   const dlg = $("settings");
-  if (cfg) {
-    $("cfg-apikey").value      = cfg.apiKey || "";
-    $("cfg-mylang").value      = cfg.myLang || "";
-    $("cfg-partnerlang").value = cfg.partnerLang || "";
-    $("cfg-room").value        = cfg.roomCode || "";
-    $("cfg-name").value        = cfg.displayName || "";
-    $("cfg-partnername").value = cfg.partnerName || "";
-    $("cfg-sigmode").value     = cfg.sigMode || "worker";
-    $("cfg-sigurl").value      = cfg.sigUrl || DEFAULT_SIGNALING_URL;
-    $("cfg-history").checked   = !!cfg.historyOn;
-    $("cfg-psk").value         = cfg.psk || "";
-    $("cfg-uilang").value      = cfg.uiLang || getUiLang();
-    $("cfg-dictation-lang").value = cfg.dictationLang || "auto";
-  } else if (shareParams) {
-    // Arrived from a share link. Pre-fill everything except the API key.
-    $("cfg-room").value        = shareParams.roomCode;
-    $("cfg-mylang").value      = shareParams.myLang      || "english";
-    $("cfg-partnerlang").value = shareParams.partnerLang || "mandarin";
-    $("cfg-name").value        = shareParams.displayName || "";
-    $("cfg-partnername").value = shareParams.partnerName || "";
-    $("cfg-sigmode").value     = shareParams.sigMode     || "worker";
-    $("cfg-sigurl").value      = shareParams.sigUrl      || DEFAULT_SIGNALING_URL;
-    $("cfg-uilang").value      = shareParams.uiLang      || getUiLang();
+  if (cfg || shareParams) {
+    // mergeShareIntoCfg lets an incoming share link override room-shape
+    // fields (room, langs, names, signaling endpoint) while keeping
+    // personal fields (apiKey, historyOn, psk, dictationLang) from cfg.
+    // Either side may be null — merge tolerates both shapes.
+    const view = mergeShareIntoCfg(cfg, shareParams);
+    $("cfg-apikey").value         = view.apiKey || "";
+    $("cfg-mylang").value         = view.myLang || (shareParams ? "english"  : "");
+    $("cfg-partnerlang").value    = view.partnerLang || (shareParams ? "mandarin" : "");
+    $("cfg-room").value           = view.roomCode || "";
+    $("cfg-name").value           = view.displayName || "";
+    $("cfg-partnername").value    = view.partnerName || "";
+    $("cfg-sigmode").value        = view.sigMode || "worker";
+    $("cfg-sigurl").value         = view.sigUrl || DEFAULT_SIGNALING_URL;
+    $("cfg-history").checked      = !!view.historyOn;
+    $("cfg-psk").value             = view.psk || "";
+    $("cfg-uilang").value         = view.uiLang || getUiLang();
+    $("cfg-dictation-lang").value = view.dictationLang || "auto";
   } else {
     $("cfg-room").value    = genRoomCode();
     $("cfg-sigurl").value  = DEFAULT_SIGNALING_URL;
@@ -829,6 +854,20 @@ async function restartTransport() {
   if (!cfg) return;
   transport = cfg.sigMode === "peerjs" ? new PeerJsTransport(cfg) : new WorkerTransport(cfg);
   transport.onStateChange = setPresence;
+  transport.onError = (category) => {
+    // "dropped" (mid-session disconnect after we'd been connected) is
+    // already covered by setPresence rendering `system.sigDown` on the
+    // on→off transition. Skip it here to avoid double-messaging. Other
+    // categories transition null/wait→off, which setPresence is silent on.
+    console.warn("[translate] signaling failure:", category);
+    const key = {
+      "room-full":              "system.errorRoomFull",
+      "server-error":           "system.errorServerError",
+      "offline":                "system.errorOffline",
+      "signaling-unreachable":  "system.errorUnreachable",
+    }[category];
+    if (key) renderSystem(t(key));
+  };
   transport.onMessage = async (wire) => {
     const result = await decryptFromWire(wire);
     if (!result.ok) { renderSystem(result.reason); return; }
@@ -1433,10 +1472,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   renderRoomChip();
   refreshSetupUI();
-  // If we arrived via a share link and already have cfg with a different
-  // room, the URL hash is carrying a new invitation. Reopen settings so
-  // the user can review before overwriting.
-  if (cfg && shareParams && cfg.roomCode !== shareParams.roomCode) {
+  // If we arrived via a share link carrying a different room than what
+  // we've saved, the URL hash is a new invitation. Reopen settings so
+  // the user can review the merged view before overwriting cfg.
+  if (shareLinkOverridesRoom(cfg, shareParams)) {
     openSettings(false);
   }
   if (!cfg) {
