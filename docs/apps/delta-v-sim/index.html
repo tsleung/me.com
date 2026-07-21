@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>delta-v-sim / terranleung.com</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title">
+        <a href="/" class="home" aria-label="home">←</a>
+        <h1>delta-v-sim</h1>
+        <span class="subtitle"
+          >2D orbital sandbox — Keplerian, frame-switchable, no game</span
+        >
+      </div>
+      <span id="selftest-badge" class="selftest-badge" hidden></span>
+    </header>
+
+    <div class="toolbar">
+      <div class="tb-group" role="group" aria-label="reference frame">
+        <span class="tb-label">frame</span>
+        <button type="button" class="ctrl active" data-frame="helio">
+          heliocentric
+        </button>
+        <button type="button" class="ctrl" data-frame="geo">geocentric</button>
+        <button type="button" class="ctrl" data-frame="areo">
+          areocentric
+        </button>
+        <button type="button" class="ctrl" data-frame="em-syn">
+          Earth–Moon syn
+        </button>
+        <button type="button" class="ctrl" data-frame="se-syn">
+          Sun–Earth syn
+        </button>
+        <button type="button" class="ctrl" data-frame="earth-mars">
+          Earth–Mars compare
+        </button>
+      </div>
+
+      <div class="tb-group" role="group" aria-label="time">
+        <span class="tb-label">time</span>
+        <button type="button" class="ctrl" id="btn-step-back" title="−1 day">
+          ⟨
+        </button>
+        <button type="button" class="ctrl" id="btn-play">❚❚ pause</button>
+        <button type="button" class="ctrl" id="btn-step-fwd" title="+1 day">
+          ⟩
+        </button>
+        <label class="tb-field">
+          rate
+          <input
+            type="range"
+            id="rate"
+            min="0"
+            max="1000"
+            value="725"
+            aria-label="time rate"
+          />
+        </label>
+        <button type="button" class="ctrl" id="btn-reset-time" title="t = 0">
+          reset t
+        </button>
+      </div>
+
+      <div class="tb-group" role="group" aria-label="camera">
+        <span class="tb-label">view</span>
+        <button type="button" class="ctrl" id="btn-fit">fit frame</button>
+      </div>
+    </div>
+
+    <div class="toolbar toolbar-2">
+      <div class="tb-group" role="group" aria-label="mission">
+        <span class="tb-label">mission</span>
+        <button type="button" class="ctrl primary" id="btn-mission">
+          Define ▸
+        </button>
+        <button type="button" class="ctrl" id="btn-fleet">Fleet</button>
+      </div>
+
+      <details class="tb-sandbox">
+        <summary>sandbox</summary>
+        <div class="tb-group" role="group" aria-label="manual craft">
+          <button type="button" class="ctrl" id="btn-add-craft">
+            + place (click orbit)
+          </button>
+          <button type="button" class="ctrl" id="dv-pro-plus">
+            Δv prograde +
+          </button>
+          <button type="button" class="ctrl" id="dv-pro-minus">−</button>
+          <button type="button" class="ctrl" id="dv-rad-plus">radial +</button>
+          <button type="button" class="ctrl" id="dv-rad-minus">−</button>
+          <label class="tb-field">
+            step km/s
+            <input
+              type="number"
+              id="dv-step"
+              value="0.25"
+              step="0.05"
+              min="0"
+            />
+          </label>
+          <button type="button" class="ctrl" id="btn-clear-craft">clear</button>
+        </div>
+      </details>
+    </div>
+
+    <main class="stage">
+      <canvas id="view"></canvas>
+      <pre id="hud" class="hud" aria-live="off"></pre>
+
+      <div id="mission-panel" class="mission-panel" hidden>
+        <div class="mp-title">define mission</div>
+
+        <div class="mp-row">
+          <span class="mp-lbl">library</span>
+          <select id="def-select"></select>
+          <button
+            type="button"
+            class="ctrl wp-btn"
+            id="btn-def-new"
+            title="new definition"
+          >
+            + new
+          </button>
+          <button
+            type="button"
+            class="ctrl wp-btn"
+            id="btn-def-dup"
+            title="duplicate this definition"
+          >
+            dup
+          </button>
+        </div>
+        <div class="mp-row">
+          <span class="mp-lbl">name</span>
+          <input
+            type="text"
+            id="def-name"
+            class="mp-name"
+            aria-label="definition name"
+          />
+        </div>
+
+        <div class="mp-row">
+          <span class="mp-lbl">objective</span>
+          <button
+            type="button"
+            class="ctrl mode-mini active"
+            data-objective="efficient"
+          >
+            efficient
+          </button>
+          <button type="button" class="ctrl mode-mini" data-objective="fast">
+            fast
+          </button>
+          <label class="mp-opt">
+            timing
+            <select id="course-timing">
+              <option value="wait-for-window">at window</option>
+              <option value="leave-now">now</option>
+            </select>
+          </label>
+        </div>
+        <div class="mp-row">
+          <span class="mp-lbl">craft</span>
+          <select id="mission-craft"></select>
+          <label class="mp-opt"
+            >Isp <input type="number" id="mission-isp" min="1" step="10"
+          /></label>
+          <label class="mp-opt">
+            prop
+            <input
+              type="number"
+              id="mission-prop"
+              min="0.01"
+              max="0.99"
+              step="0.05"
+            />
+          </label>
+          <span id="mission-budget" class="tb-readout">budget —</span>
+        </div>
+        <div class="mp-section">
+          waypoints (order · mode · departure launch)
+        </div>
+        <div id="course-waypoints"></div>
+        <div class="mp-row">
+          <button type="button" class="ctrl" id="btn-add-wp">+ waypoint</button>
+          <label class="mp-opt">
+            <input type="checkbox" id="course-refuel" checked /> refuel in orbit
+          </label>
+        </div>
+        <div class="mp-row" id="return-row" hidden>
+          <span class="mp-lbl">return</span>
+          <select id="return-mode">
+            <option value="window">next window</option>
+            <option value="fixed">after N days</option>
+          </select>
+          <label class="mp-opt">
+            days
+            <input
+              type="number"
+              id="return-days"
+              min="0"
+              step="10"
+              value="300"
+            />
+          </label>
+        </div>
+        <div class="mp-section">launch infrastructure — surface structures</div>
+        <div class="mp-row">
+          <button type="button" class="ctrl" id="btn-elevator">
+            lunar elevator
+          </button>
+          <label class="mp-opt">
+            release
+            <input
+              type="range"
+              id="elev-d"
+              min="5000"
+              max="120000"
+              value="58000"
+              step="1000"
+              aria-label="elevator release radius"
+            />
+          </label>
+          <span id="elev-d-label" class="tb-readout">58,000 km</span>
+          <button type="button" class="ctrl" id="btn-release">release ▸</button>
+        </div>
+        <div class="mp-row">
+          <button type="button" class="ctrl primary" id="btn-launch">
+            Launch this mission ▸
+          </button>
+        </div>
+        <pre id="mission-readout" class="mp-readout"></pre>
+
+        <div class="mp-section">analysis — the first leg's Δv windows</div>
+        <canvas
+          id="dv-chart"
+          class="dv-chart"
+          aria-label="departure delta-v over time for this mission's first leg"
+        ></canvas>
+        <div class="mp-row">
+          <button type="button" class="ctrl wp-btn" id="btn-porkchop">
+            porkchop
+          </button>
+          <button type="button" class="ctrl wp-btn" id="btn-plan">
+            Δv budget
+          </button>
+        </div>
+        <canvas
+          id="porkchop"
+          class="porkchop"
+          aria-label="porkchop plot of the first leg's departure/arrival windows"
+          hidden
+        ></canvas>
+        <pre id="plan-card" class="plan-card" hidden></pre>
+      </div>
+
+      <div id="fleet-panel" class="fleet-panel" hidden>
+        <div class="mp-title">active missions</div>
+        <div id="fleet-list"></div>
+        <div class="mp-row fleet-footer">
+          <button type="button" class="ctrl" id="btn-fleet-clear">
+            clear all
+          </button>
+        </div>
+      </div>
+
+      <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+      <div class="stage-note">
+        distances to scale · body dots sized by role, <b>not to scale</b> ·
+        coplanar 2D · illustrative phase · <code>?selftest=1</code> for the
+        physics checks
+      </div>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

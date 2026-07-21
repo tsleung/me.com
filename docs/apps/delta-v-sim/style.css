@@ -1,0 +1,508 @@
+:root {
+  --bg: #05060a;
+  --panel: #101218;
+  --panel-2: #0b0d13;
+  --ink: #f2f2ee;
+  --ink-muted: #8b8f9a;
+  --dim: #23262f;
+  --edge: #333743;
+  --accent: #49d0ff;
+  --lagrange: #b48ef5;
+  --transfer: #3ddc84;
+  --elevator: #ffd25a;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  height: 100%;
+}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- header ---- */
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--dim);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.home {
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 18px;
+}
+.home:hover {
+  color: var(--accent);
+}
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.subtitle {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+/* ---- toolbars ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--dim);
+  background: var(--panel-2);
+  flex-wrap: wrap;
+}
+.toolbar-2 {
+  background: transparent;
+}
+.tb-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tb-label {
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-right: 2px;
+}
+.tb-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.tb-field input[type="number"] {
+  width: 60px;
+}
+.tb-readout {
+  color: var(--elevator);
+  font-size: 11px;
+  min-width: 72px;
+}
+
+.ctrl {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    color 0.12s,
+    background 0.12s;
+}
+.ctrl:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ctrl.active {
+  border-color: var(--accent);
+  color: var(--bg);
+  background: var(--accent);
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
+input[type="number"] {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-family: var(--mono);
+}
+
+/* ---- stage ---- */
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+#view {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+#view.arming {
+  cursor: crosshair;
+}
+#view:active {
+  cursor: grabbing;
+}
+
+.hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 11px 14px;
+  background: rgba(10, 12, 18, 0.82);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre;
+  pointer-events: none;
+  max-width: 46ch;
+  backdrop-filter: blur(2px);
+}
+.tb-modes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mode-mini {
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+/* analysis widgets now live IN-FLOW inside the Define panel (views of the
+   selected definition's first leg), not as free-floating stage overlays */
+.dv-chart {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  height: 90px;
+  margin: 4px 0 6px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: rgba(10, 12, 18, 0.9);
+}
+
+.porkchop {
+  display: block;
+  width: 300px;
+  max-width: 100%;
+  height: 220px;
+  margin: 4px 0 6px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: rgba(10, 12, 18, 0.94);
+}
+
+.plan-card {
+  margin: 6px 0 0;
+  padding: 9px 11px;
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid var(--transfer);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 10.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+/* ---- toolbar declutter: the primary button + the sandbox drawer ---- */
+.ctrl.primary {
+  border-color: var(--transfer);
+  color: var(--transfer);
+}
+.ctrl.primary:hover {
+  background: var(--transfer);
+  color: var(--bg);
+}
+.tb-sandbox {
+  color: var(--ink-muted);
+}
+.tb-sandbox > summary {
+  cursor: pointer;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  list-style: none;
+  padding: 5px 2px;
+}
+.tb-sandbox > summary::-webkit-details-marker {
+  display: none;
+}
+.tb-sandbox[open] > summary::before {
+  content: "▾ ";
+}
+.tb-sandbox:not([open]) > summary::before {
+  content: "▸ ";
+}
+
+/* ---- the mission panel (config + committed craft) ---- */
+.mission-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 16;
+  width: 360px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  padding: 11px 13px;
+  background: rgba(10, 12, 18, 0.95);
+  border: 1px solid var(--transfer);
+  border-radius: 6px;
+  font-size: 11px;
+  backdrop-filter: blur(2px);
+}
+.mp-title {
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.mp-section {
+  color: var(--ink-muted);
+  font-size: 10px;
+  margin: 10px 0 5px;
+  border-top: 1px solid var(--dim);
+  padding-top: 7px;
+}
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.mp-lbl {
+  color: var(--ink-muted);
+  min-width: 62px;
+}
+.mp-opt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-muted);
+}
+.mp-opt input[type="number"] {
+  width: 56px;
+}
+.mp-name {
+  flex: 1;
+  min-width: 120px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.mp-row select,
+.mp-opt select {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.mp-readout {
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--dim);
+  white-space: pre-wrap;
+  color: var(--ink);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+/* ---- the fleet panel (active-missions monitor) ---- */
+.fleet-panel {
+  position: absolute;
+  top: 12px;
+  left: 384px;
+  z-index: 15;
+  width: 300px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  padding: 11px 13px;
+  background: rgba(10, 12, 18, 0.95);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-size: 11px;
+  backdrop-filter: blur(2px);
+}
+.fleet-empty {
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+.fleet-row {
+  padding: 7px 0;
+  border-top: 1px solid var(--dim);
+}
+.fleet-row:first-child {
+  border-top: none;
+}
+.fleet-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.fleet-sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.fleet-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.fleet-status {
+  color: var(--ink-muted);
+  margin-top: 3px;
+}
+.fleet-time {
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.fleet-dv {
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.fleet-dv.infeasible {
+  color: #ff7a6a;
+}
+.fleet-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+.fleet-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.fleet-footer {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--dim);
+}
+
+/* ---- waypoint rows (in the mission panel) ---- */
+.wp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.wp-idx {
+  color: var(--ink-muted);
+  width: 16px;
+}
+.wp-origin {
+  color: var(--ink-muted);
+  flex: 1;
+}
+.wp-row select {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.wp-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: 34ch;
+  padding: 5px 8px;
+  background: rgba(10, 12, 18, 0.96);
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.stage-note {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  pointer-events: none;
+  text-align: right;
+}
+.stage-note b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.stage-note code {
+  color: var(--accent);
+}
+
+/* ---- selftest badge ---- */
+.selftest-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--edge);
+}
+.selftest-badge.pass {
+  color: var(--transfer);
+  border-color: var(--transfer);
+}
+.selftest-badge.fail {
+  color: #ff5a4a;
+  border-color: #ff5a4a;
+}
+
+@media (max-width: 720px) {
+  .hud {
+    font-size: 10.5px;
+    max-width: 38ch;
+  }
+  .fleet-panel {
+    left: 12px;
+    top: auto;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    max-width: 340px;
+  }
+}
