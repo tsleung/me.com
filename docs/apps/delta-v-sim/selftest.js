@@ -72,6 +72,7 @@ import {
   HYST_PX,
 } from "./visibility.js";
 import { Camera, desiredCamera, desiredCameraAt, bboxInFrame } from "./camera.js";
+import { INITIAL, reduce, FRAME_IDS, CAMERA_KINDS, WORKSPACES } from "./uiState.js";
 
 const rel = (a, b, frac = 1e-3) => Math.abs(a - b) <= frac * Math.abs(b || 1);
 const fmt = (x) => (typeof x === "number" ? (Math.abs(x) >= 1e4 ? x.toExponential(3) : x.toFixed(4)) : String(x));
@@ -1328,6 +1329,123 @@ export function runSelftest() {
       check("defensive: junk inputs do not throw", false, String(err));
     }
     if (survived) check("defensive: unknown frames / degenerate states do not throw", true, "");
+  }
+
+  // ===== 60. UI state model: the reducer is TOTAL and every transition lands in
+  //           a KNOWN state; the named invariants hold (incl. the Sun-fix) =======
+  // This is what makes "known states, not bespoke buggy experiences" machine-checked
+  // rather than aspirational: the combination-bug class is provably closed here.
+  {
+    const validUi = (u) =>
+      !!u &&
+      FRAME_IDS.includes(u.frame) &&
+      !!u.camera &&
+      CAMERA_KINDS.includes(u.camera.kind) &&
+      WORKSPACES.includes(u.workspace) &&
+      !!u.playback &&
+      typeof u.playback.playing === "boolean" &&
+      u.playback.rate > 0;
+
+    const emThr = CASCADE_EFFSCALE["earth-mars"];
+    const emState = reduce(INITIAL, { type: "SELECT_FRAME", frame: "earth-mars" });
+    const followEM = reduce(emState, { type: "FOLLOW_CRAFT", id: "m1" });
+    const geoState = reduce(INITIAL, { type: "SELECT_FRAME", frame: "geo" });
+    const followGeo = reduce(geoState, { type: "FOLLOW_CRAFT", id: "m1" });
+    const defineState = reduce(INITIAL, { type: "OPEN_WORKSPACE", workspace: "define" });
+    const startStates = [INITIAL, emState, followEM, geoState, followGeo, defineState];
+    const ACTIONS = [
+      { type: "SELECT_FRAME", frame: "earth-mars" },
+      { type: "SELECT_FRAME", frame: "geo" },
+      { type: "SELECT_FRAME", frame: "nonsense" }, // rejected → identity
+      { type: "ZOOM", effScale: emThr * 0.99 }, // deep zoom-out
+      { type: "ZOOM", effScale: 1e3 }, // zoom-in
+      { type: "PAN" },
+      { type: "FIT" },
+      { type: "FOCUS_BODY", key: "mars" },
+      { type: "FOLLOW_CRAFT", id: "m1" },
+      { type: "UNFOLLOW" },
+      { type: "OPEN_WORKSPACE", workspace: "define" },
+      { type: "OPEN_WORKSPACE", workspace: "fleet" },
+      { type: "CLOSE_WORKSPACE" },
+      { type: "TOGGLE_WORKSPACE", workspace: "sandbox" },
+      { type: "PLAY" },
+      { type: "PAUSE" },
+      { type: "SET_RATE", rate: 12345 },
+      { type: "RESET_T" },
+      { type: "__unknown__" },
+      {},
+      null,
+    ];
+    let swept = 0;
+    let allValid = true;
+    for (const s of startStates) {
+      for (const a of ACTIONS) {
+        let r;
+        try {
+          r = reduce(s, a);
+        } catch {
+          allValid = false;
+          continue;
+        }
+        swept++;
+        if (!validUi(r)) allValid = false;
+      }
+    }
+    check(
+      "ui-model: reducer is total — every (state × action) lands in a KNOWN valid state",
+      allValid && swept === startStates.length * ACTIONS.length,
+      `swept ${swept} transitions`,
+    );
+
+    // THE SUN FIX, asserted directly: a pinned frame zoomed OUT past its threshold
+    // cascades to the heliocentric container (where the Sun is a disc), so the
+    // "stranded Sun in zoomed-out compare" state is now UNREACHABLE.
+    check(
+      "ui-model: ZOOM-out in the pinned compare frame cascades to heliocentric (Sun-stranded state unreachable)",
+      reduce(emState, { type: "ZOOM", effScale: emThr * 0.99 }).frame === "helio",
+      `earth-mars @ ${(emThr * 0.99).toExponential(2)} → helio`,
+    );
+    {
+      const z = reduce(geoState, { type: "ZOOM", effScale: 1e-12 });
+      check(
+        "ui-model: a translation frame (geo) never cascades on zoom-out — stays in-frame, camera → manual",
+        z.frame === "geo" && z.camera.kind === "manual",
+        `geo → ${z.frame} / ${z.camera.kind}`,
+      );
+    }
+    check(
+      "ui-model: SELECT_FRAME reframes — releases any follow/focus back to fit",
+      reduce(followEM, { type: "SELECT_FRAME", frame: "geo" }).camera.kind === "fit",
+      "",
+    );
+    check(
+      "ui-model: at most one workspace open (OPEN switches; TOGGLE same closes)",
+      reduce(defineState, { type: "OPEN_WORKSPACE", workspace: "fleet" }).workspace === "fleet" &&
+        reduce(defineState, { type: "TOGGLE_WORKSPACE", workspace: "define" }).workspace === "none",
+      "",
+    );
+    check(
+      "ui-model: a craft-follow survives an ordinary zoom AND a cascade; only PAN drops it",
+      reduce(followGeo, { type: "ZOOM", effScale: 1e-12 }).camera.kind === "follow" &&
+        reduce(followEM, { type: "ZOOM", effScale: emThr * 0.99 }).camera.kind === "follow" &&
+        reduce(followEM, { type: "PAN" }).camera.kind === "manual",
+      "",
+    );
+    check(
+      "ui-model: unknown & malformed actions are identity (no accidental state change)",
+      reduce(INITIAL, { type: "nope" }) === INITIAL &&
+        reduce(INITIAL, {}) === INITIAL &&
+        reduce(INITIAL, null) === INITIAL,
+      "",
+    );
+    check(
+      "ui-model: PLAY/PAUSE toggle playback MODE; SET_RATE takes only a positive rate",
+      reduce(reduce(INITIAL, { type: "PAUSE" }), { type: "PLAY" }).playback.playing === true &&
+        reduce(INITIAL, { type: "PAUSE" }).playback.playing === false &&
+        reduce(INITIAL, { type: "SET_RATE", rate: 999 }).playback.rate === 999 &&
+        reduce(INITIAL, { type: "SET_RATE", rate: -5 }) === INITIAL,
+      "",
+    );
   }
 
   const pass = results.every((r) => r.ok);
