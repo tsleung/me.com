@@ -1160,22 +1160,25 @@ export function runSelftest() {
     );
   }
 
-  // ===== 54. definition library: presets exist + resolve to missions =======
+  // ===== 54. definition library: presets resolve; round-trip is the DEFAULT ====
   {
-    const oneWay = MISSION_PRESETS[0];
-    const round = MISSION_PRESETS[1];
-    const m1 = resolveDefinition(oneWay, 0, worldAt);
-    const m2 = resolveDefinition(round, 0, worldAt);
+    const round = MISSION_PRESETS.find((p) => p.waypoints.length === 3);
+    const oneWay = MISSION_PRESETS.find((p) => p.waypoints.length === 2);
+    const mR = round && resolveDefinition(round, 0, worldAt);
+    const mO = oneWay && resolveDefinition(oneWay, 0, worldAt);
     check(
-      "define: two presets (Earth→Mars one-way + round-trip) resolve to missions with the right legs",
+      "define: presets resolve (one-way 1 leg, round-trip 2 legs); the round-trip is the DEFAULT (first)",
       MISSION_PRESETS.length >= 2 &&
-        oneWay.waypoints.length === 2 &&
-        m1.legs.length === 1 &&
-        m1.legs[0].fromKey === "earth" &&
-        m1.legs[0].toKey === "mars" &&
-        round.waypoints.length === 3 &&
-        m2.legs.length === 2,
-      `presets=[${MISSION_PRESETS.map((p) => p.name).join(", ")}] · legs ${m1.legs.length}/${m2.legs.length}`,
+        MISSION_PRESETS[0].waypoints.length === 3 && // round-trip defaults first
+        !!mO &&
+        mO.legs.length === 1 &&
+        mO.legs[0].fromKey === "earth" &&
+        mO.legs[0].toKey === "mars" &&
+        !!mR &&
+        mR.legs.length === 2 &&
+        mR.legs[0].fromKey === "earth" &&
+        mR.legs[0].toKey === "mars",
+      `presets=[${MISSION_PRESETS.map((p) => p.name).join(", ")}] · default=${MISSION_PRESETS[0].name}`,
     );
   }
 
@@ -1445,6 +1448,20 @@ export function runSelftest() {
         reduce(INITIAL, { type: "SET_RATE", rate: 999 }).playback.rate === 999 &&
         reduce(INITIAL, { type: "SET_RATE", rate: -5 }) === INITIAL,
       "",
+    );
+  }
+
+  // ===== 61. the mission readout SURFACES the pre-launch wait (why the delay) ==
+  // With wait-for-window the vehicle loiters until the window — the readout must
+  // say so, so the delay reads as intentional, not a hang.
+  {
+    const round = MISSION_PRESETS.find((p) => p.waypoints.length === 3);
+    const m = resolveDefinition(round, 0, worldAt);
+    const txt = formatMission(m);
+    check(
+      "mission: the readout explains the wait-for-window delay (loiters until the launch window)",
+      m.course.preLaunchWaitDays > 0.5 && /launch window in \d+ d/.test(txt) && /parking orbit/.test(txt),
+      `preLaunchWait ${m.course.preLaunchWaitDays.toFixed(0)} d`,
     );
   }
 

@@ -759,8 +759,17 @@ function refreshFleetStatuses() {
     if (!row) continue;
     const m = fm.mission;
     const st = missionStateAt(m, state.t);
-    const eta = fleetEtaDays(m, state.t);
-    const etaStr = eta != null ? ` · arr in ${eta.toFixed(0)} d` : " · —";
+    // countdown to the NEXT departure while parked (prelaunch = the first launch
+    // window; waiting = the next leg after a stay), else the arrival ETA.
+    let etaStr;
+    if (st.phase === "prelaunch" && m.legs[0]) {
+      etaStr = ` · launch in ${Math.max(0, (m.legs[0].tDepart - state.t) / DAY_S).toFixed(0)} d`;
+    } else if (st.phase === "waiting" && m.legs[st.legIndex]) {
+      etaStr = ` · departs in ${Math.max(0, (m.legs[st.legIndex].tDepart - state.t) / DAY_S).toFixed(0)} d`;
+    } else {
+      const eta = fleetEtaDays(m, state.t);
+      etaStr = eta != null ? ` · arr in ${eta.toFixed(0)} d` : " · —";
+    }
     const s = row.querySelector(".fleet-status");
     if (s) s.textContent = fleetStatusText(m, st) + etaStr;
     const time = row.querySelector(".fleet-time");
@@ -873,14 +882,25 @@ function frame(now) {
   }
 
   // Each committed mission's active leg (the one its craft is currently flying).
-  const fleetScene = state.missions.map((fm) => ({
-    mission: fm.mission,
-    legs: fm.legs,
-    color: fm.color,
-    name: fm.name,
-    activeLeg: missionStateAt(fm.mission, state.t).legIndex,
-    selected: isFollowing(fm.id),
-  }));
+  const fleetScene = state.missions.map((fm) => {
+    const st = missionStateAt(fm.mission, state.t);
+    // days to the next departure while parked — the on-canvas launch countdown
+    let countdown = null;
+    if (st.phase === "prelaunch" && fm.mission.legs[0]) {
+      countdown = (fm.mission.legs[0].tDepart - state.t) / DAY_S;
+    } else if (st.phase === "waiting" && fm.mission.legs[st.legIndex]) {
+      countdown = (fm.mission.legs[st.legIndex].tDepart - state.t) / DAY_S;
+    }
+    return {
+      mission: fm.mission,
+      legs: fm.legs,
+      color: fm.color,
+      name: fm.name,
+      activeLeg: st.legIndex,
+      countdown,
+      selected: isFollowing(fm.id),
+    };
+  });
 
   // Camera convergence on the LIVE target — recomputed every frame (never a
   // snapshot), so it can't ease toward a stale point or need a terminal jump. The

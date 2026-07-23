@@ -146,8 +146,18 @@ export function formatMission(mission) {
     `MISSION  ${mission.waypoints.map((w) => nm(w.body)).join(" → ")}`,
     `  craft ${c.label || "custom"} · Isp ${c.isp} s · prop ${Math.round((c.propFraction || 0) * 100)}% · budget ${mission.budget.toFixed(1)} km/s${ion}`,
     `  objective ${mission.objective} · timing ${mission.timing}`,
-    "",
   ];
+  // WHY the delay: with wait-for-window the vehicle loiters in its parking orbit
+  // until the transfer geometry lines up — often most of a synodic period (~2 trips
+  // around the Sun). Make that explicit so the wait doesn't read as a hang.
+  if (mission.course && mission.course.preLaunchWaitDays > 0.5) {
+    const w = mission.course.preLaunchWaitDays;
+    const orb = w / 365.25;
+    lines.push(
+      `  ⏱ launch window in ${w.toFixed(0)} d${orb >= 0.5 ? ` (~${orb.toFixed(1)}× around the Sun)` : ""} — loiters in ${nm(mission.waypoints[0].body)} parking orbit until the geometry lines up; leaving now costs far more Δv`,
+    );
+  }
+  lines.push("");
   mission.legs.forEach((l, i) => {
     lines.push(`  leg ${i + 1}  ${nm(l.fromKey)} → ${nm(l.toKey)}  [${l.mode}]`);
     lines.push(

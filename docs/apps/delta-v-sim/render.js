@@ -347,7 +347,8 @@ function drawFleetMission(ctx, m, t, project) {
   ctx.stroke();
   ctx.fillStyle = m.color;
   ctx.font = "11px ui-monospace, Menlo, monospace";
-  ctx.fillText(`▸ ${m.name || st.phase}`, s[0] + 11, s[1] - 9);
+  const cd = m.countdown != null && m.countdown > 0.5 ? `  T−${m.countdown.toFixed(0)}d` : "";
+  ctx.fillText(`▸ ${m.name || st.phase}${cd}`, s[0] + 11, s[1] - 9);
   ctx.restore();
 }
 

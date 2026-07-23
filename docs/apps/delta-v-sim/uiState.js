@@ -51,7 +51,7 @@ export const INITIAL = {
   // 'define'; the analysis overlays are DERIVED from workspace === 'define'.)
   workspace: "none",
   // playback axis — the MODE (playing/rate); the clock VALUE `t` is domain data.
-  playback: { playing: true, rate: 30 * DAY_S },
+  playback: { playing: true, rate: 20 * DAY_S }, // effective default comes from the rate slider (index.html value=680)
 };
 
 const cam = (kind, target = null) => ({ kind, target });

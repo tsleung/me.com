@@ -83,11 +83,9 @@ export function definitionFrom({
   };
 }
 
+// The round-trip is the DEFAULT (first) — a conjunction-class Earth→Mars→Earth is
+// the headline mission; the one-way is the simpler second option.
 export const MISSION_PRESETS = [
-  definitionFrom({
-    name: "Earth → Mars",
-    waypoints: [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }],
-  }),
   definitionFrom({
     name: "Earth → Mars → Earth",
     waypoints: [
@@ -95,6 +93,10 @@ export const MISSION_PRESETS = [
       { body: "mars", mode: "orbit" },
       { body: "earth", mode: "orbit" },
     ],
+  }),
+  definitionFrom({
+    name: "Earth → Mars",
+    waypoints: [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }],
   }),
 ];
 
