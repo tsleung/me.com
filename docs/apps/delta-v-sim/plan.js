@@ -8,6 +8,7 @@ import { wrapPi } from "./vec.js";
 import { DAY_S, BODIES, MU_EARTH, MU_MOON, MU_MARS, worldAt } from "./sim.js";
 import { porkchop, bestTransferNow, transferDvs, TOF_FLOOR, TOF_MIN, TOF_MAX } from "./transfer.js";
 import { surfaceToOrbitWith } from "./infra.js";
+import { courseDvAccounting } from "./budget.js";
 
 // Shared porkchop resolution so a single-leg course is IDENTICAL to the part-2
 // single plan (same grid → same min).
@@ -351,7 +352,11 @@ export function planCourse({ waypoints, startTime, assumptions = {} }) {
       isReturnLeg && A.returnStayDays != null
         ? legAtEpoch(from, to, notBefore + A.returnStayDays * DAY_S, at, A.objective)
         : selectLeg(from, to, notBefore, at, A.returnTiming, A.objective);
-    // apply the DEPARTURE waypoint's launch method (default chemical → no-op).
+    // Surface→orbit is paid ONCE, on the FIRST departure (the craft leaves the
+    // origin body). Every LATER leg departs the ORBIT the craft captured into at the
+    // previous waypoint, so it launches from orbit (0 surface→orbit) regardless of
+    // the origin's method — otherwise a return would spuriously re-pay the well.
+    const launchMethod = i === 1 ? waypoints[i - 1].launchMethod || "chemical" : "from-orbit";
     const leg = applyLaunchMethod(
       {
         from,
@@ -361,7 +366,7 @@ export function planCourse({ waypoints, startTime, assumptions = {} }) {
         waypointDv: waypointDv(to, mode, base.heliocentricArrDv),
         phaseAngleDeg: phaseAngleDeg(at(base.depTime), from, to),
       },
-      waypoints[i - 1].launchMethod || "chemical",
+      launchMethod,
     );
     legs.push(leg);
     notBefore = base.arrTime; // the next leg departs at its window after arrival
@@ -381,9 +386,14 @@ export function planCourse({ waypoints, startTime, assumptions = {} }) {
   // rocket-equation accounting: refuel-ON carries only one leg's propellant (the
   // worst leg's mass ratio); refuel-OFF carries all, ratios COMPOUND (e^Σ > max).
   const ve = A.exhaustVelocity;
-  const legDvs = legs.map((l) => l.transferDv + l.waypointDv);
-  const massRatioRefuelOff = Math.exp(legDvs.reduce((a, b) => a + b, 0) / ve);
-  const massRatioRefuelOn = legDvs.length ? Math.max(...legDvs.map((dv) => Math.exp(dv / ve))) : 1;
+  // mass ratios via the shared accounting (budget.js) — the SAME refuel model as
+  // mission feasibility, so the two can't drift. captureDv = the leg's waypointDv;
+  // launchCost is excluded from the mass ratio (a separate launch-vehicle line).
+  const { massRatioRefuelOn, massRatioRefuelOff } = courseDvAccounting({
+    legs: legs.map((l) => ({ transferDv: l.transferDv, captureDv: l.waypointDv })),
+    refuelInOrbit: A.refuelInOrbit,
+    ve,
+  });
   return {
     waypoints,
     legs,

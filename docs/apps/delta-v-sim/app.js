@@ -425,10 +425,11 @@ function buildWaypointEditor() {
       row.appendChild(origin);
     }
 
-    // Launch method for the leg DEPARTING this waypoint (all but the last).
-    // Unavailable methods are DISABLED with the reason as a tooltip (the workbench
-    // disabled-with-reason pattern) — the body-asymmetry as a UI constraint.
-    if (i < def.waypoints.length - 1) {
+    // Launch method for the FIRST departure only (the origin). Surface→orbit is
+    // paid once leaving the origin; later legs depart the orbit the craft is already
+    // in, so their launch method is fixed at from-orbit (0) — shown per-body with the
+    // body-asymmetric availability, unavailable methods DISABLED with the reason.
+    if (i === 0) {
       const launchSel = document.createElement("select");
       launchSel.className = "wp-launch";
       launchSel.title = "departure launch method (availability is body-asymmetric)";

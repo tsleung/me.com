@@ -178,9 +178,21 @@ export function formatMission(mission) {
   lines.push(
     `  travel  transit ${transitDays.toFixed(0)} d + stays ${stayDays.toFixed(0)} d = ${totalDays.toFixed(0)} d (${(totalDays / 365.25).toFixed(2)} yr)`,
   );
-  lines.push(
-    `  Δv  launch ${mission.launchCost.toFixed(2)} + in-space ${mission.inSpaceDv.toFixed(2)} = REQUIRED ${mission.requiredDv.toFixed(2)}  vs  BUDGET ${mission.budget.toFixed(2)} km/s`,
-  );
+  // Refuel-aware Δv summary. With refuel-in-orbit the tank resets each stop, so the
+  // craft only carries the WORST single leg (REQUIRED = max leg), not the carry-all
+  // sum; without refuel it must carry the whole course at once.
+  if (mission.refuelInOrbit) {
+    lines.push(
+      `  Δv  in-space ${mission.inSpaceDv.toFixed(2)} + launch ${mission.launchCost.toFixed(2)} = ${(mission.carryAllDv ?? mission.requiredDv).toFixed(2)} carry-all`,
+    );
+    lines.push(
+      `  ▸ refuel in orbit → tank resets each stop, so REQUIRED = worst leg ${mission.requiredDv.toFixed(2)}  vs  BUDGET ${mission.budget.toFixed(2)} km/s`,
+    );
+  } else {
+    lines.push(
+      `  Δv  carry-all REQUIRED ${mission.requiredDv.toFixed(2)} (launch ${mission.launchCost.toFixed(2)} + in-space ${mission.inSpaceDv.toFixed(2)})  vs  BUDGET ${mission.budget.toFixed(2)} km/s`,
+    );
+  }
   lines.push(
     mission.feasible
       ? "  ✓ FEASIBLE — the craft flies the whole course"

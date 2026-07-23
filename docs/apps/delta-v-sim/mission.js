@@ -8,15 +8,13 @@ import { worldAt } from "./sim.js";
 import { craftStateAt } from "./spacecraft.js";
 import { transferConic } from "./transfer.js";
 import { planCourse } from "./plan.js";
+import { courseDvAccounting, craftBudget, G0 } from "./budget.js";
 
-// ---- craft characteristics → Δv budget (rocket equation) --------------------
-// Impulsive sim, so the only characteristic that bites is the Δv the craft can
-// carry: budget = Isp · g0 · ln(1/(1−propFraction)). g0 in km/s².
-export const G0 = 9.80665e-3; // km/s²
-export function craftBudget(isp, propFraction) {
-  if (!(isp > 0) || !(propFraction > 0) || propFraction >= 1) return 0;
-  return isp * G0 * Math.log(1 / (1 - propFraction));
-}
+// The Δv budget (rocket equation) + the whole course Δv accounting live in
+// budget.js — the ONE source this module's feasibility and plan.js's mass ratios
+// both derive from. Re-exported so existing importers (app.js, selftest) are
+// unchanged.
+export { craftBudget, G0 };
 
 // Named archetypes (editable Isp + propFraction — the user "picks the
 // characteristics"). Isp ranges cited in process.md.
@@ -162,19 +160,13 @@ export function makeMission({
     launchCost: l.launch ? l.launch.surfaceToOrbit : 0, // surface→orbit AFTER infra
   }));
 
-  const inSpaceDv = legs.reduce((s, l) => s + l.transferDv + l.captureDv, 0);
-  const launchCost = legs.reduce((s, l) => s + l.launchCost, 0);
-  const requiredDv = inSpaceDv + launchCost;
   const budget = craft ? craftBudget(craft.isp, craft.propFraction) : 0;
-  const feasible = budget >= requiredDv;
-
-  // where the tank runs dry: first leg whose cumulative required Δv exceeds budget
-  let cum = 0;
-  let runsDryLeg = -1;
-  for (let i = 0; i < legs.length; i++) {
-    cum += legs[i].launchCost + legs[i].transferDv + legs[i].captureDv;
-    if (cum > budget && runsDryLeg < 0) runsDryLeg = i;
-  }
+  // ONE source of truth for the Δv accounting (budget.js): refuel-aware, so mission
+  // feasibility AGREES with plan.js's propellant mass ratios (which already credit
+  // refuel-in-orbit). requiredDv = refuel ? worst-leg : carry-all sum.
+  const refuelInOrbit = assumptions.refuelInOrbit !== false; // default ON
+  const acc = courseDvAccounting({ legs, refuelInOrbit, budget, ve: course.ve });
+  const { inSpaceDv, launchCost, requiredDv, feasible, runsDryLeg } = acc;
 
   return {
     waypoints,
@@ -185,9 +177,12 @@ export function makeMission({
     bodyAt,
     course,
     legs,
+    refuelInOrbit,
     inSpaceDv,
     launchCost,
-    requiredDv,
+    requiredDv, // refuel ? worst single leg : carry-all sum (= inSpaceDv + launchCost)
+    carryAllDv: acc.sumTotal, // the no-refuel sum, kept for the readout comparison
+    perLegTotal: acc.perLegTotal,
     budget,
     feasible,
     runsDryLeg,

@@ -73,6 +73,7 @@ import {
 } from "./visibility.js";
 import { Camera, desiredCamera, desiredCameraAt, bboxInFrame } from "./camera.js";
 import { INITIAL, reduce, FRAME_IDS, CAMERA_KINDS, WORKSPACES } from "./uiState.js";
+import { courseDvAccounting, G0 } from "./budget.js";
 
 const rel = (a, b, frac = 1e-3) => Math.abs(a - b) <= frac * Math.abs(b || 1);
 const fmt = (x) => (typeof x === "number" ? (Math.abs(x) >= 1e4 ? x.toExponential(3) : x.toFixed(4)) : String(x));
@@ -1025,27 +1026,32 @@ export function runSelftest() {
     );
   }
 
-  // ===== 48. feasibility: infra reduces requiredDv and can flip it =========
+  // ===== 48. feasibility: infra + refuel-in-orbit EACH flip a mission =========
   {
     const craft = CRAFT_ARCHETYPES["chemical-tug"]; // ~7.9 km/s
-    const rt = makeMission({
-      waypoints: [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }, { body: "earth", mode: "orbit" }],
-      objective: "efficient",
-      craft,
-      bodyAt: worldAt,
-    });
+    // from-orbit infra flips the ONE-WAY: chemical-from-surface pays the 9.4 Earth
+    // well and busts it; from-orbit (a launch vehicle lifts it) flips it — the gap
+    // is exactly Earth surface→orbit.
     const surf = makeMission({ waypoints: [{ body: "earth", launchMethod: "chemical" }, { body: "mars", mode: "orbit" }], craft, bodyAt: worldAt });
     const orbit = makeMission({ waypoints: [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }], craft, bodyAt: worldAt });
+    // refuel-in-orbit flips the ROUND-TRIP: carry-all (refuel OFF) busts the tug;
+    // refuel ON (tank up at Mars → one leg at a time) makes it feasible. Departures
+    // after the first launch from ORBIT (the craft is in the orbit it captured into).
+    const rtWps = [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }, { body: "earth", mode: "orbit" }];
+    const rtOff = makeMission({ waypoints: rtWps, objective: "efficient", craft, assumptions: { refuelInOrbit: false }, bodyAt: worldAt });
+    const rtOn = makeMission({ waypoints: rtWps, objective: "efficient", craft, assumptions: { refuelInOrbit: true }, bodyAt: worldAt });
     check(
-      "mission: chemical tug BUSTS the efficient round-trip (runs dry); from-orbit infra cuts requiredDv and flips one-way feasible",
-      !rt.feasible &&
-        rt.runsDryLeg >= 0 &&
-        Math.abs(rt.requiredDv - rt.budget - 0) > 0 &&
-        !surf.feasible &&
+      "mission: from-orbit infra flips the one-way (surface→orbit tax); refuel-in-orbit flips the round-trip (carry-all vs worst-leg); returns launch from orbit",
+      !surf.feasible &&
         orbit.feasible &&
         orbit.requiredDv < surf.requiredDv &&
-        Math.abs(surf.requiredDv - orbit.requiredDv - SURFACE_TO_ORBIT.earth) < 1e-9,
-      `round-trip req ${rt.requiredDv.toFixed(1)}>budget ${rt.budget.toFixed(1)} (dry@${rt.runsDryLeg}) · surf ${surf.requiredDv.toFixed(1)} infeasible → orbit ${orbit.requiredDv.toFixed(1)} feasible`,
+        Math.abs(surf.requiredDv - orbit.requiredDv - SURFACE_TO_ORBIT.earth) < 1e-9 &&
+        !rtOff.feasible &&
+        rtOff.runsDryLeg >= 0 &&
+        rtOn.feasible &&
+        rtOn.requiredDv < rtOff.requiredDv &&
+        rtOn.legs[1].launchCost === 0, // the return departs Mars ORBIT, not the surface
+      `one-way surf ${surf.requiredDv.toFixed(1)}✗ → orbit ${orbit.requiredDv.toFixed(1)}✓ · round-trip carry-all ${rtOff.requiredDv.toFixed(1)}✗ → refuel ${rtOn.requiredDv.toFixed(1)}✓`,
     );
   }
 
@@ -1462,6 +1468,94 @@ export function runSelftest() {
       "mission: the readout explains the wait-for-window delay (loiters until the launch window)",
       m.course.preLaunchWaitDays > 0.5 && /launch window in \d+ d/.test(txt) && /parking orbit/.test(txt),
       `preLaunchWait ${m.course.preLaunchWaitDays.toFixed(0)} d`,
+    );
+  }
+
+  // ===== 62. budget.js: the SINGLE Δv-accounting model (refuel-aware) ==========
+  // The composed utility both mission feasibility AND plan mass ratios derive from
+  // — pinned here so the two can never drift again (the drift they had — mass-ratio
+  // credited refuel, feasibility didn't — was the whole reason to extract it), and
+  // so the refuel-aware feasibility can't silently regress.
+  {
+    // rocket equation + guards
+    const b = craftBudget(900, 0.7);
+    check(
+      "budget: craftBudget = Isp·g0·ln(1/(1−f)); junk inputs → 0 (never throws)",
+      Math.abs(b - 900 * G0 * Math.log(1 / 0.3)) < 1e-9 &&
+        craftBudget(0, 0.5) === 0 &&
+        craftBudget(300, 1) === 0 &&
+        craftBudget(300, 0) === 0,
+      `nuclear ${b.toFixed(2)} km/s`,
+    );
+
+    // a 2-leg course with a launch cost on leg 0
+    const legs = [
+      { transferDv: 4, captureDv: 1, launchCost: 2 }, // in-space 5, total 7
+      { transferDv: 5, captureDv: 3, launchCost: 0 }, // in-space 8, total 8
+    ];
+    const ve = 3.5;
+    const on = courseDvAccounting({ legs, refuelInOrbit: true, budget: 7.5, ve });
+    const off = courseDvAccounting({ legs, refuelInOrbit: false, budget: 7.5, ve });
+    check(
+      "budget: refuel ON ⇒ REQUIRED = worst leg; OFF ⇒ carry-all sum; runsDry per-mode",
+      Math.abs(on.inSpaceDv - 13) < 1e-9 &&
+        Math.abs(on.launchCost - 2) < 1e-9 &&
+        Math.abs(on.sumTotal - 15) < 1e-9 &&
+        Math.abs(on.requiredDv - 8) < 1e-9 && // worst leg total
+        on.feasible === false &&
+        on.runsDryLeg === 1 &&
+        Math.abs(off.requiredDv - 15) < 1e-9 && // carry-all
+        off.feasible === false &&
+        off.runsDryLeg === 1,
+      `on req ${on.requiredDv} dry@${on.runsDryLeg} · off req ${off.requiredDv} dry@${off.runsDryLeg}`,
+    );
+
+    // launchCost lives in FEASIBILITY (perLegTotal) but NOT the mass ratio (in-space)
+    check(
+      "budget: mass ratio uses IN-SPACE per-leg (launch excluded); feasibility uses TOTAL (launch included)",
+      Math.abs(on.massRatioRefuelOn - Math.max(Math.exp(5 / ve), Math.exp(8 / ve))) < 1e-9 &&
+        Math.abs(off.massRatioRefuelOff - Math.exp(13 / ve)) < 1e-9 &&
+        Math.abs(on.perLegTotal[0] - 7) < 1e-9 &&
+        Math.abs(on.perLegInSpace[0] - 5) < 1e-9,
+      `mrOn ${on.massRatioRefuelOn.toFixed(3)} mrOff ${off.massRatioRefuelOff.toFixed(3)}`,
+    );
+
+    // single leg ⇒ max == sum (refuel irrelevant); empty ⇒ 0 / feasible / ratio 1
+    const one = courseDvAccounting({ legs: [{ transferDv: 6, captureDv: 1 }], refuelInOrbit: true, budget: 10, ve });
+    const oneOff = courseDvAccounting({ legs: [{ transferDv: 6, captureDv: 1 }], refuelInOrbit: false, budget: 10, ve });
+    const empty = courseDvAccounting({ legs: [], budget: 5, ve });
+    check(
+      "budget: single leg ⇒ refuel-irrelevant (max=sum); empty course ⇒ 0 / feasible / ratio 1",
+      Math.abs(one.requiredDv - oneOff.requiredDv) < 1e-9 &&
+        one.requiredDv === 7 &&
+        empty.requiredDv === 0 &&
+        empty.feasible === true &&
+        empty.massRatioRefuelOn === 1 &&
+        empty.runsDryLeg === -1,
+      "",
+    );
+
+    // CONSISTENCY + REGRESSION: mission feasibility AND plan mass ratios both flow
+    // through budget.js; the default nuclear round-trip is now FEASIBLE per-leg while
+    // chemical still busts it — pinned so neither can drift.
+    const round = MISSION_PRESETS.find((p) => p.waypoints.length === 3);
+    const rt = resolveDefinition(round, 0, worldAt); // nuclear, refuel ON
+    const rtAcc = courseDvAccounting({ legs: rt.legs, refuelInOrbit: true, budget: rt.budget, ve: rt.course.ve });
+    const chemOff = resolveDefinition(
+      { ...round, craftId: "chemical-tug", isp: 350, propFraction: 0.9, refuelInOrbit: false },
+      0,
+      worldAt,
+    );
+    const planMrOn = Math.max(...rt.legs.map((l) => Math.exp((l.transferDv + l.captureDv) / rt.course.ve)));
+    check(
+      "budget: mission feasibility + plan mass ratios share ONE model; round-trip feasible per-leg (refuel), carry-all busts a chemical tug",
+      Math.abs(rt.requiredDv - rtAcc.requiredDv) < 1e-9 && // mission ← budget.js
+        rt.feasible === true &&
+        rt.requiredDv < rt.carryAllDv && // refuel per-leg beats carry-all
+        Math.abs(rt.course.massRatioRefuelOn - planMrOn) < 1e-9 && // plan ← budget.js
+        chemOff.feasible === false && // carry-all (refuel OFF) exceeds the 7.9 chemical budget
+        chemOff.runsDryLeg >= 0,
+      `nuclear req ${rt.requiredDv.toFixed(2)}≤${rt.budget.toFixed(2)} (carry-all ${rt.carryAllDv.toFixed(2)}) · chemical carry-all ${chemOff.requiredDv.toFixed(2)} dry@${chemOff.runsDryLeg}`,
     );
   }
 
