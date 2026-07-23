@@ -314,6 +314,28 @@ input[type="number"] {
 .mp-opt input[type="number"] {
   width: 56px;
 }
+/* the "ⓘ" info affordance next to Define-panel controls */
+.info {
+  color: var(--ink-muted);
+  cursor: help;
+  font-size: 11px;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.info:hover {
+  color: var(--accent);
+}
+/* the live next-window countdown next to the timing control */
+.window-ind {
+  color: var(--elevator);
+  font-size: 11px;
+}
+/* marks the lunar-elevator control as separate from the mission planner */
+.demo-label {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-style: italic;
+}
 .mp-name {
   flex: 1;
   min-width: 120px;

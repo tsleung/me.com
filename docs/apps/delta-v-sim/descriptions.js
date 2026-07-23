@@ -41,3 +41,33 @@ export const DESCRIPTIONS = {
 export function describe(id) {
   return DESCRIPTIONS[id] || { label: id, blurb: "" };
 }
+
+// UI-CONCEPT blurbs — the "ⓘ" affordances next to Define-panel controls, so the app
+// explains itself. Same data-driven pattern as DESCRIPTIONS (one row per concept),
+// surfaced through the SAME hover-tooltip DOM. Keep each a single tight line.
+export const UI_BLURBS = {
+  isp: "specific impulse: engine efficiency (seconds). Higher = more Δv per kg of propellant.",
+  prop: "propellant mass fraction (0–1): the share of the craft that's fuel. Higher = more Δv (structurally harder).",
+  budget:
+    "the total Δv a full tank delivers: Isp·g₀·ln(1/(1−prop)) — the rocket equation. The mission is feasible if budget ≥ required Δv.",
+  craft:
+    "presets for Isp + prop: chemical tug (~7.9), nuclear shuttle (~10.6), ion freighter (~27 km/s). Sets the Δv budget.",
+  objective:
+    "efficient = minimum Δv (waits for the launch window); fast = minimum time (higher Δv, shorter trip).",
+  timing:
+    "at-window: loiter until the min-Δv departure window; now: leave immediately — costs far more Δv.",
+  window:
+    "found by the porkchop: scan departure × arrival dates over the next synodic period (~780 d for Earth–Mars) and take the minimum-Δv cell.",
+  refuel:
+    "tank up at each stop, so the craft carries only ONE leg's Δv at a time (feasibility = worst leg). Off = carry all propellant at once (feasibility = the sum).",
+  "launch-method":
+    "surface→orbit cost leaving the ORIGIN, after infrastructure (elevator / mass-driver cut it). Later legs launch from the orbit the craft is already in (0).",
+  feasibility:
+    "feasible if the craft's Δv budget ≥ the mission's required Δv (with refuel, the worst single leg).",
+  elevator:
+    "standalone demo — let a payload go from the lunar elevator; the Moon's orbital motion + the elevator's rotation give it velocity with NO propellant, and the sim draws the resulting orbit. It illustrates 'elevator as a launch system' — it does NOT feed the mission planner (the space-elevator LAUNCH METHOD in a mission is separate).",
+};
+
+export function uiBlurb(id) {
+  return UI_BLURBS[id] || "";
+}

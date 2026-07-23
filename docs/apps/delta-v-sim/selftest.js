@@ -1296,6 +1296,51 @@ export function runSelftest() {
     );
   }
 
+  // ===== WYSIWYG: the live preview == what Launch commits =================
+  {
+    const def = definitionFrom({
+      name: "wysiwyg",
+      waypoints: [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }],
+    });
+    // resolveDefinition is a pure function of (def, t): the preview shown at t and the
+    // craft Launch commits at t are the SAME resolution → what you see is what you get.
+    const t = 40 * DAY_S;
+    const a = resolveDefinition(def, t, worldAt);
+    const b = resolveDefinition(def, t, worldAt);
+    const sameAtT =
+      a.legs[0].tDepart === b.legs[0].tDepart &&
+      a.legs[0].tArrive === b.legs[0].tArrive &&
+      a.requiredDv === b.requiredDv;
+    // …and it MOVES with the clock — which is WHY the preview must refresh live: a
+    // later t rolls past this window to the next, so a stale readout would mislead.
+    const c = resolveDefinition(def, t + 200 * DAY_S, worldAt);
+    const movesWithClock = c.legs[0].tDepart !== a.legs[0].tDepart;
+    check(
+      "wysiwyg: the preview == what Launch commits (resolveDefinition pure in (def,t)); it moves with the clock",
+      sameAtT && movesWithClock,
+      `same@t=${sameAtT} · dep ${(a.legs[0].tDepart / DAY_S).toFixed(0)}d → t+200 ${(c.legs[0].tDepart / DAY_S).toFixed(0)}d`,
+    );
+  }
+
+  // ===== the next-window indicator = course.preLaunchWaitDays =============
+  {
+    const wp = [{ body: "earth", launchMethod: "from-orbit" }, { body: "mars", mode: "orbit" }];
+    const t = 30 * DAY_S;
+    const eff = resolveDefinition(definitionFrom({ name: "eff", waypoints: wp }), t, worldAt);
+    const wait = eff.course.preLaunchWaitDays; // the "next window in N d" figure
+    const expect = (eff.legs[0].tDepart - t) / DAY_S; // = first departure − now
+    const now = resolveDefinition(
+      definitionFrom({ name: "now", timing: "leave-now", objective: "fast", waypoints: wp }),
+      t,
+      worldAt,
+    );
+    check(
+      "wysiwyg: the next-window indicator = course.preLaunchWaitDays (efficient waits; leave-now ≈ 0)",
+      Math.abs(wait - expect) < 1e-6 && wait > 30 && now.course.preLaunchWaitDays < 1,
+      `efficient wait ${wait.toFixed(0)} d (= dep−now ${expect.toFixed(0)}) · leave-now ${now.course.preLaunchWaitDays.toFixed(1)} d`,
+    );
+  }
+
   // ===== 10. defensive: junk inputs must not throw ======================
   {
     let survived = true;

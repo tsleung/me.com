@@ -156,20 +156,52 @@
           <button type="button" class="ctrl mode-mini" data-objective="fast">
             fast
           </button>
-          <label class="mp-opt">
-            timing
-            <select id="course-timing">
-              <option value="wait-for-window">at window</option>
-              <option value="leave-now">now</option>
-            </select>
-          </label>
+          <span
+            class="info"
+            data-info="objective"
+            role="img"
+            aria-label="what is objective"
+            >ⓘ</span
+          >
+        </div>
+        <div class="mp-row">
+          <span class="mp-lbl">timing</span>
+          <select id="course-timing">
+            <option value="wait-for-window">at window</option>
+            <option value="leave-now">now</option>
+          </select>
+          <span
+            class="info"
+            data-info="timing"
+            role="img"
+            aria-label="what is timing"
+            >ⓘ</span
+          >
+          <span id="window-indicator" class="window-ind">—</span>
+          <span
+            class="info"
+            data-info="window"
+            role="img"
+            aria-label="how the window is found"
+            >ⓘ</span
+          >
         </div>
         <div class="mp-row">
           <span class="mp-lbl">craft</span>
           <select id="mission-craft"></select>
+          <span
+            class="info"
+            data-info="craft"
+            role="img"
+            aria-label="what is the craft archetype"
+            >ⓘ</span
+          >
           <label class="mp-opt"
             >Isp <input type="number" id="mission-isp" min="1" step="10"
           /></label>
+          <span class="info" data-info="isp" role="img" aria-label="what is Isp"
+            >ⓘ</span
+          >
           <label class="mp-opt">
             prop
             <input
@@ -180,10 +212,31 @@
               step="0.05"
             />
           </label>
+          <span
+            class="info"
+            data-info="prop"
+            role="img"
+            aria-label="what is prop"
+            >ⓘ</span
+          >
           <span id="mission-budget" class="tb-readout">budget —</span>
+          <span
+            class="info"
+            data-info="budget"
+            role="img"
+            aria-label="what is budget"
+            >ⓘ</span
+          >
         </div>
         <div class="mp-section">
           waypoints (order · mode · departure launch)
+          <span
+            class="info"
+            data-info="launch-method"
+            role="img"
+            aria-label="what is the departure launch method"
+            >ⓘ</span
+          >
         </div>
         <div id="course-waypoints"></div>
         <div class="mp-row">
@@ -191,6 +244,13 @@
           <label class="mp-opt">
             <input type="checkbox" id="course-refuel" checked /> refuel in orbit
           </label>
+          <span
+            class="info"
+            data-info="refuel"
+            role="img"
+            aria-label="what is refuel in orbit"
+            >ⓘ</span
+          >
         </div>
         <div class="mp-row" id="return-row" hidden>
           <span class="mp-lbl">return</span>
@@ -214,6 +274,16 @@
           <button type="button" class="ctrl" id="btn-elevator">
             lunar elevator
           </button>
+          <span class="demo-label">(standalone demo)</span>
+          <span
+            class="info"
+            data-info="elevator"
+            role="img"
+            aria-label="what does the lunar elevator release do"
+            >ⓘ</span
+          >
+        </div>
+        <div class="mp-row">
           <label class="mp-opt">
             release
             <input
@@ -233,6 +303,13 @@
           <button type="button" class="ctrl primary" id="btn-launch">
             Launch this mission ▸
           </button>
+          <span
+            class="info"
+            data-info="feasibility"
+            role="img"
+            aria-label="what is feasibility"
+            >ⓘ</span
+          >
         </div>
         <pre id="mission-readout" class="mp-readout"></pre>
 

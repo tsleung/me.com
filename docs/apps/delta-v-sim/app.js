@@ -38,7 +38,7 @@ import { render, pickMark, COURSE_PALETTE } from "./render.js";
 import { formatHud, formatPlan, formatMission } from "./hud.js";
 import { drawDvChart } from "./chart.js";
 import { drawPorkchop } from "./porkchop.js";
-import { describe } from "./descriptions.js";
+import { describe, uiBlurb } from "./descriptions.js";
 import { runSelftest } from "./selftest.js";
 import { INITIAL, reduce, frameDesc, analysisVisible } from "./uiState.js";
 
@@ -63,6 +63,7 @@ const state = {
   selectedDefId: null,
   defSeq: 0,
   previewRender: null, // { legs:[{pts,...}] } — the SELECTED def resolved "if I launch now"
+  previewAtReal: 0, // throttle for the LIVE preview refresh (WYSIWYG as t advances)
   // analysis sub-state — SUBORDINATE to workspace 'define' (reset on leave; render
   // + recompute gated by analysisVisible(ui)). The chart is fully derived (shown iff
   // define is open); porkchop/plan are collapsible sub-toggles under define.
@@ -545,7 +546,10 @@ function missionLegs(mission) {
 }
 
 // The live preview of the SELECTED definition "if I launch now": readout + ghost
-// arcs. Reflects the def's objective/timing (not a standalone Δv scan).
+// arcs + the next-window indicator. Reflects the def's objective/timing at the
+// CURRENT clock, so "what you see" == "what Launch resolves" (both call
+// resolveDefinition(def, state.t)). Called on config changes AND live from the RAF
+// loop (throttled) so dates / window / countdown never go stale under a running clock.
 function refreshPreview() {
   const def = analysisVisible(state.ui) ? selectedDef() : null;
   if (!def) {
@@ -556,6 +560,19 @@ function refreshPreview() {
   state.previewRender = { legs: missionLegs(preview) };
   const ro = $("mission-readout");
   if (ro) ro.textContent = formatMission(preview);
+  updateWindowIndicator(preview);
+}
+
+// The efficient-window distance: how far the min-Δv departure is from now
+// (course.preLaunchWaitDays). For leave-now timing the craft departs immediately.
+function updateWindowIndicator(preview) {
+  const el = $("window-indicator");
+  if (!el) return;
+  const wait = preview.course ? preview.course.preLaunchWaitDays : 0;
+  el.textContent =
+    preview.timing === "leave-now"
+      ? "departs now"
+      : `⏱ next window in ${Math.max(0, wait).toFixed(0)} d`;
 }
 
 // Launch: resolve the SELECTED definition to an IMMUTABLE snapshot and APPEND it to
@@ -876,6 +893,12 @@ function frame(now) {
   // analysis views of the selected definition (throttled recompute)
   refreshChart(now);
   refreshPorkchop(now, false);
+  // LIVE preview (WYSIWYG): keep the readout/arcs/countdown current as t advances,
+  // throttled, so Launch (which resolves at state.t) matches what's on screen.
+  if (analysisVisible(state.ui) && now - state.previewAtReal > 350) {
+    refreshPreview();
+    state.previewAtReal = now;
+  }
 
   // a followed craft that no longer exists → drop the follow (defined transition)
   if (state.ui.camera.kind === "follow" && !state.missions.some((m) => m.id === state.ui.camera.target)) {
@@ -1018,20 +1041,38 @@ function wireCanvas() {
   );
 }
 
-// Hover tooltip: shows an entity's one-line blurb (from the registry) at the
-// cursor. Called with the id render reported for the mark under the pointer.
-function showTooltip(id, clientX, clientY) {
+// The shared hover-tooltip DOM: show `text` at the cursor, or hide on empty. Used
+// for BOTH the canvas entity blurbs (pickMark) and the Define-panel "ⓘ" concept
+// blurbs — one tooltip element, data-driven text.
+function showTip(text, clientX, clientY) {
   const tip = $("tooltip");
   if (!tip) return;
-  const blurb = id ? describe(id).blurb : "";
-  if (!blurb) {
+  if (!text) {
     tip.hidden = true;
     return;
   }
-  tip.textContent = blurb;
+  tip.textContent = text;
   tip.style.left = clientX + 14 + "px";
   tip.style.top = clientY + 14 + "px";
   tip.hidden = false;
+}
+// Canvas hover: the entity blurb for the mark under the pointer (id from pickMark).
+function showTooltip(id, clientX, clientY) {
+  showTip(id ? describe(id).blurb : "", clientX, clientY);
+}
+
+// The "ⓘ" affordances: hover (or tap) a control's info icon → its UI-concept blurb.
+function wireInfoTips() {
+  for (const el of document.querySelectorAll("[data-info]")) {
+    const show = (ev) => showTip(uiBlurb(el.dataset.info), ev.clientX, ev.clientY);
+    el.addEventListener("mouseenter", show);
+    el.addEventListener("mousemove", show);
+    el.addEventListener("mouseleave", () => showTip(null));
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      show(ev);
+    });
+  }
 }
 
 function pickBodyAt(sx, sy) {
@@ -1230,6 +1271,7 @@ function boot() {
   syncFrameButtons();
   wireCanvas();
   wireControls();
+  wireInfoTips();
   maybeSelftest();
   updateHud();
   requestAnimationFrame(frame);
