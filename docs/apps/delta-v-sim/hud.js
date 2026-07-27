@@ -76,8 +76,14 @@ export function formatPlan(plan) {
     `  depart ${fmtDate(leg.depTime)}   arrive ${fmtDate(leg.arrTime)}   travel time ${(leg.tof / DAY_S).toFixed(0)} d`,
     `  departure phase ${leg.phaseAngleDeg.toFixed(1)}°   heliocentric total ${plan.heliocentricTotalDv.toFixed(2)} km/s (dep ${leg.heliocentricDepDv.toFixed(2)} + arr ${leg.heliocentricArrDv.toFixed(2)})`,
     "",
-    `  Δv budget  (surface → ${leg.budget.target}):`,
   ];
+  // HONEST empty state: a pair with no cited per-leg breakout shows the note, NOT a
+  // fake "TOTAL 0.0" (and never indexes rows[0], which used to throw here).
+  if (!leg.budget.rows.length) {
+    lines.push(`  ▸ ${leg.budget.infraNote}`);
+    return lines.join("\n");
+  }
+  lines.push(`  Δv budget  (surface → ${leg.budget.target}):`);
   for (const r of leg.budget.rows) {
     lines.push(`    ${r.label.padEnd(32)} ${r.dv.toFixed(1).padStart(5)}   ${r.note}`);
   }
@@ -88,50 +94,6 @@ export function formatPlan(plan) {
   return lines.join("\n");
 }
 
-// The multi-leg COURSE itinerary card: per-leg dates/TOF/Δv, per-waypoint
-// mode + capture Δv, stays, and the totals (Δv, duration, refuel-on/off mass
-// ratios). The single-leg case is consistent with the part-2 plan.
-export function formatCourse(course) {
-  if (!course || !course.legs || !course.legs.length) return "";
-  const A = course.assumptions;
-  const nm = (k) => (BODIES[k] ? BODIES[k].name : k);
-  const lines = [
-    `COURSE   ${course.waypoints.map((w) => nm(w.body)).join(" → ")}`,
-    `  refuel-in-orbit ${A.refuelInOrbit ? "ON" : "OFF"} · timing ${A.returnTiming} · vₑ ${course.ve} km/s`,
-  ];
-  if (course.preLaunchWaitDays > 0.5) {
-    lines.push(`  (waits ${course.preLaunchWaitDays.toFixed(0)} d for the first window)`);
-  }
-  lines.push("");
-  course.legs.forEach((l, i) => {
-    lines.push(`  leg ${i + 1}  ${nm(l.from)} → ${nm(l.to)}  [${l.mode}]`);
-    lines.push(
-      `    depart ${fmtDate(l.depTime)}  arrive ${fmtDate(l.arrTime)}  TOF ${(l.tof / DAY_S).toFixed(0)} d`,
-    );
-    if (l.launch) {
-      const rm = l.launch.dvRemoved > 0.05 ? ` (−${l.launch.dvRemoved.toFixed(1)})` : "";
-      const cav = l.launch.caveat ? ` ${l.launch.caveat}` : "";
-      lines.push(
-        `    launch  ${l.launch.label} · ${nm(l.from)} surface→orbit ${l.launch.surfaceToOrbit.toFixed(1)}${rm} km/s${cav}`,
-      );
-    }
-    lines.push(
-      `    transfer Δv ${l.transferDv.toFixed(2)}  ·  ${l.mode} capture Δv ${l.waypointDv.toFixed(2)} km/s`,
-    );
-    if (i < course.stays.length) {
-      lines.push(`    ↳ stay ${course.stays[i].toFixed(0)} d (${A.returnTiming})`);
-    }
-  });
-  lines.push("");
-  lines.push(
-    `  TOTAL Δv ${course.totalDv.toFixed(2)} km/s  ·  mission ${(course.totalDurationDays / 365.25).toFixed(2)} yr`,
-  );
-  lines.push(
-    `  propellant mass ratio (vₑ ${course.ve}): refuel-ON ${course.massRatioRefuelOn.toFixed(1)}× · refuel-OFF ${course.massRatioRefuelOff.toFixed(1)}× (carry-all compounds)`,
-  );
-  lines.push(`  Δv from the porkchop minima; capture Δv = Oberth (windows-and-transfers.md).`);
-  return lines.join("\n");
-}
 
 // The committed MISSION readout: craft characteristics + budget, the itinerary
 // (per-leg dates/TOF/launch/transfer/capture + stays), and the three-total
@@ -147,6 +109,17 @@ export function formatMission(mission) {
     `  craft ${c.label || "custom"} · Isp ${c.isp} s · prop ${Math.round((c.propFraction || 0) * 100)}% · budget ${mission.budget.toFixed(1)} km/s${ion}`,
     `  objective ${mission.objective} · timing ${mission.timing}`,
   ];
+  // Historical mission: a real-mission header (year/agency/kind + what it did). The
+  // sim flies the ITINERARY at the current clock, not the real date (illustrative
+  // phasing) — the metadata is legibility, not a simulation input.
+  const h = mission.historical;
+  if (h) {
+    lines.push(
+      `  ▸ ${h.agency} · ${h.year} · ${h.kind}${h.target ? ` → ${h.target}` : ""}`,
+      `    ${h.note}`,
+      `    (flown at a real transfer window in-sim; the date is illustrative, the itinerary is real)`,
+    );
+  }
   // WHY the delay: with wait-for-window the vehicle loiters in its parking orbit
   // until the transfer geometry lines up — often most of a synodic period (~2 trips
   // around the Sun). Make that explicit so the wait doesn't read as a hang.
@@ -166,6 +139,14 @@ export function formatMission(mission) {
     lines.push(
       `    launch ${l.launchMethod} (surface→orbit ${l.launchCost.toFixed(1)}) · transfer ${l.transferDv.toFixed(2)} · ${l.mode} capture ${l.captureDv.toFixed(2)} km/s`,
     );
+    // Gravity-assist legibility: on a flyby, show what gravity bent for free vs.
+    // the residual burn — so the flyby cost reads as an assist, not a mystery.
+    if (l.assist) {
+      const d = (r) => ((r * 180) / Math.PI).toFixed(0);
+      lines.push(
+        `    ↳ gravity assist: bent ${d(l.assist.freeTurn)}° of ${d(l.assist.requiredTurn)}° for free · residual burn ${l.assist.residualDv.toFixed(2)} km/s`,
+      );
+    }
     if (i < mission.course.stays.length) {
       lines.push(`    ↳ stay ${mission.course.stays[i].toFixed(0)} d`);
     }

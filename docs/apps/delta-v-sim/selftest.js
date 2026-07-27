@@ -17,7 +17,7 @@ import {
   trueFromEccentric,
   eccentricFromTrue,
 } from "./kepler.js";
-import { worldAt, elementState, orbitTrace, BODIES, BODY_KEYS, MU_SUN, MU_EARTH, DAY_S, AU_KM, EARTH_MOON_MU } from "./sim.js";
+import { worldAt, elementState, orbitTrace, BODIES, BODY_KEYS, MU_SUN, MU_EARTH, MU_MARS, DAY_S, AU_KM, EARTH_MOON_MU } from "./sim.js";
 import { orbitFromState, makeCraft, craftStateAt, craftFromCircular } from "./spacecraft.js";
 import { hohmannEarthMars } from "./hohmann.js";
 import {
@@ -30,8 +30,12 @@ import {
   seriesMinima,
   porkchop,
 } from "./transfer.js";
-import { planEfficientLaunch, planCourse, waypointDv, synodicPeriod, applyLaunchMethod } from "./plan.js";
-import { availableMethods, surfaceToOrbitWith, SURFACE_TO_ORBIT } from "./infra.js";
+import { planEfficientLaunch, planCourse, waypointDv, synodicPeriod, applyLaunchMethod, legBudget } from "./plan.js";
+import { availableMethods, surfaceToOrbitWith, SURFACE_TO_ORBIT, LAUNCH_METHODS } from "./infra.js";
+import { STRUCTURES, STRUCTURE_IDS, dvRemovedByStructure } from "./structures.js";
+import { isTier } from "./tiers.js";
+import { gravityAssist, maxDeflection } from "./gravity-assist.js";
+import { HISTORICAL_MISSIONS, historicalDefinition, historicalDefinitions } from "./historical.js";
 import {
   makeMission,
   missionStateAt,
@@ -59,6 +63,7 @@ import {
   frameForZoom,
   CASCADE_EFFSCALE,
   FRAME_ORDER,
+  FRAMES,
 } from "./frames.js";
 import { elevatorPayloadCraft } from "./elevator.js";
 import {
@@ -72,7 +77,7 @@ import {
   HYST_PX,
 } from "./visibility.js";
 import { Camera, desiredCamera, desiredCameraAt, bboxInFrame } from "./camera.js";
-import { INITIAL, reduce, FRAME_IDS, CAMERA_KINDS, WORKSPACES } from "./uiState.js";
+import { INITIAL, reduce, FRAME_IDS, CAMERA_KINDS, WORKSPACES, frameDesc } from "./uiState.js";
 import { courseDvAccounting, G0 } from "./budget.js";
 
 const rel = (a, b, frac = 1e-3) => Math.abs(a - b) <= frac * Math.abs(b || 1);
@@ -866,6 +871,48 @@ export function runSelftest() {
     );
   }
 
+  // ===== 37b. frame-facts merge: EVERY frame in FRAMES carries its own render
+  // facts (center/sunAs/pinned) and frameDesc reads them from the ONE catalog — no
+  // silent helio fallback for a frame that exists. (design R1, 2026-07-24.)
+  {
+    let ok = true;
+    const bad = [];
+    for (const id of FRAME_ORDER) {
+      const d = frameDesc(id);
+      const facts =
+        d &&
+        d.id === id && // NOT the helio fallback for a real frame
+        BODY_KEYS.includes(d.center) &&
+        (d.sunAs === "disc" || d.sunAs === "arrow") &&
+        typeof d.pinned === "boolean";
+      if (!facts) {
+        ok = false;
+        bad.push(id);
+      }
+    }
+    // FRAME_ORDER and the FRAMES catalog must list the same frames (no drift).
+    const sameSet =
+      FRAME_ORDER.length === Object.keys(FRAMES).length && FRAME_ORDER.every((id) => FRAMES[id]);
+    check(
+      "ui-model: every frame in FRAMES carries its own render facts (center/sunAs/pinned); no silent helio fallback; FRAME_ORDER matches the catalog",
+      ok && sameSet,
+      ok && sameSet ? `${FRAME_ORDER.length} frames, facts complete` : `bad=[${bad.join(",")}] sameSet=${sameSet}`,
+    );
+  }
+
+  // ===== 37c. camera ceiling reaches the LOW-ORBIT tier: a 100 km feature (a
+  // skyhook-tether-scale extent) resolves to a viewable span at max zoom. (R2.)
+  {
+    const cam = new Camera(1000, 700);
+    const tetherKm = 100;
+    const spanPx = tetherKm * cam.maxScale; // px a 100 km feature spans fully zoomed in
+    check(
+      "navigation: the camera ceiling reaches the low-orbit tier — a 100 km feature spans ≥ 30 px at max zoom",
+      spanPx >= 30,
+      `100 km → ${spanPx.toFixed(0)} px at maxScale=${cam.maxScale.toExponential(1)} px/km`,
+    );
+  }
+
   // ===== 38. default Earth→Mars→Earth course = a conjunction-class mission =
   {
     const c = planCourse({
@@ -937,6 +984,32 @@ export function runSelftest() {
     );
   }
 
+  // ===== 41b. gravity assist is REAL: a within-budget turn is free; a flyby is
+  // priced at the patched-conic residual (not the v1 flat 0). (2026-07-24)
+  {
+    // pure: a modest turn at matched |v∞| costs ~0 (gravity did it); δ_max shrinks
+    // as v∞ grows.
+    const vIn = [3, 0];
+    const turn = (20 * Math.PI) / 180;
+    const free = gravityAssist(vIn, [3 * Math.cos(turn), 3 * Math.sin(turn)], MU_MARS, 3790);
+    const mismatch = gravityAssist([3, 0], [2, 0], MU_MARS, 3790); // |v∞| gap → costs 1
+    const dMaxFalls = maxDeflection(6, MU_MARS, 3790) < maxDeflection(2, MU_MARS, 3790);
+    // course-level: a Mars flyby now carries an assist + a finite, honest cost
+    const fc = planCourse({
+      waypoints: [{ body: "earth" }, { body: "mars", mode: "flyby" }, { body: "earth", mode: "orbit" }],
+      startTime: 0,
+      assumptions: { bodyAt: worldAt },
+    });
+    const fly = fc.legs[0];
+    const priced =
+      fly.assist && fly.assist.freeTurn > 0 && isFinite(fly.waypointDv) && fly.waypointDv === fly.assist.residualDv;
+    check(
+      "gravity assist: a within-budget flyby turn is free; a |v∞| mismatch costs the gap; planCourse prices a flyby at the real residual (no more flat 0)",
+      free.residualDv < 1e-6 && Math.abs(mismatch.residualDv - 1) < 1e-9 && dMaxFalls && priced,
+      `free=${free.residualDv.toExponential(1)} mismatch=${mismatch.residualDv.toFixed(2)} flybyResidual=${fly.waypointDv.toFixed(2)} freeTurn=${((fly.assist ? fly.assist.freeTurn : 0) * 180 / Math.PI).toFixed(0)}°`,
+    );
+  }
+
   // ===== 42. leave-now vs wait-for-window: costlier but faster =============
   {
     const wp = [{ body: "earth" }, { body: "mars", mode: "orbit" }, { body: "earth", mode: "orbit" }];
@@ -998,6 +1071,62 @@ export function runSelftest() {
       "infra: applying a method drops surface→orbit + the total by the table amount; chemical is byte-identical",
       dropOk && chemIdentical,
       `base=${base} from-orbit total ${leg.budgetTotal}→${fromOrbit.budgetTotal} · mass-driver surf ${surfRow(massDriver).dv.toFixed(1)} · chemical unchanged=${chemIdentical}`,
+    );
+  }
+
+  // ===== 45b. structures ↔ infra: dvRemoved DERIVES from the catalog (no drift);
+  // skyhook credits MXER's 2.4 (the untraceable 3.2 is gone); tiers declared. (W2)
+  {
+    const idsAreMethods = STRUCTURE_IDS.every((id) => LAUNCH_METHODS[id]);
+    const skyDerives =
+      dvRemovedByStructure("skyhook", 9.4) === 2.4 && // MXER, not 3.2
+      Math.abs(surfaceToOrbitWith("earth", "skyhook").dvRemoved - 2.4) < 1e-9;
+    const elevatorRidesAll =
+      dvRemovedByStructure("space-elevator", SURFACE_TO_ORBIT.moon) === SURFACE_TO_ORBIT.moon;
+    const tiersOk = STRUCTURE_IDS.every((id) => isTier(STRUCTURES[id].tier) && /\.md §/.test(STRUCTURES[id].cite));
+    check(
+      "structures: infra.dvRemoved derives from the catalog (skyhook = MXER 2.4, not 3.2); elevator rides to the balance point; every structure declares a tier + cite",
+      idsAreMethods && skyDerives && elevatorRidesAll && tiersOk,
+      `skyhook@Earth=${dvRemovedByStructure("skyhook", 9.4)} · idsAreMethods=${idsAreMethods} · tiers=${tiersOk}`,
+    );
+  }
+
+  // ===== 45c. honest budget: a pair with no cited breakout is an HONEST empty
+  // state (flagged + noted), never a fake authoritative TOTAL 0. (W2c)
+  {
+    const em = legBudget("earth", "mars"); // has rows
+    const me = legBudget("mars", "earth"); // no cited breakout
+    const honest =
+      em.rows.length > 0 &&
+      me.rows.length === 0 &&
+      me.unavailable === true &&
+      me.infraNote.length > 0;
+    check(
+      "budget: Earth→Mars has a cited per-leg breakout; a pair without one returns an HONEST empty state (unavailable + note), never a fake TOTAL 0",
+      honest,
+      `earth→mars rows=${em.rows.length} · mars→earth rows=${me.rows.length} unavailable=${me.unavailable}`,
+    );
+  }
+
+  // ===== 45d. body fidelity: real radii (measured) + Venus routes through the
+  // Earth→Venus→Mars slingshot; the flyby periapsis grounds in radius. (2026-07-24)
+  {
+    const radiiReal =
+      BODIES.earth.radius === 6371 &&
+      BODIES.mars.radius === 3389.5 &&
+      BODIES.venus.radius === 6051.8 &&
+      BODY_KEYS.every((k) => BODIES[k].radius > 0 && BODIES[k].radius !== BODIES[k].radiusPx);
+    const venusPlaced = !!worldAt(0).venus && BODY_KEYS.includes("venus");
+    const vc = planCourse({
+      waypoints: [{ body: "earth" }, { body: "venus", mode: "flyby" }, { body: "mars", mode: "orbit" }],
+      startTime: 0,
+      assumptions: { bodyAt: worldAt },
+    });
+    const venusAssist = vc.legs.length === 2 && vc.legs[0].assist && vc.legs[0].assist.freeTurn > 0;
+    check(
+      "bodies: real radii (measured, ≠ glyph) + Venus placed + a course slingshots through Venus (Earth→Venus→Mars), the flyby periapsis grounded in radius",
+      radiiReal && venusPlaced && venusAssist,
+      `radiiReal=${radiiReal} venusPlaced=${venusPlaced} venusBendDeg=${venusAssist ? (vc.legs[0].assist.freeTurn * 180 / Math.PI).toFixed(0) : "—"}`,
     );
   }
 
@@ -1185,6 +1314,29 @@ export function runSelftest() {
         mR.legs[0].fromKey === "earth" &&
         mR.legs[0].toKey === "mars",
       `presets=[${MISSION_PRESETS.map((p) => p.name).join(", ")}] · default=${MISSION_PRESETS[0].name}`,
+    );
+  }
+
+  // ===== 54b. historical missions: the real-mission catalog resolves, and its
+  // metadata flows to the mission (the itinerary is real; the date is not). (07-26)
+  {
+    const defs = historicalDefinitions();
+    let allResolve = defs.length >= 12;
+    let carriesMeta = false;
+    for (const d of defs) {
+      const m = resolveDefinition(d, 0, worldAt);
+      if (!m.legs.length || !m.legs.every((l) => isFinite(l.transferDv) && isFinite(l.captureDv))) allResolve = false;
+      if (m.historical && m.historical.agency && m.historical.year) carriesMeta = true;
+    }
+    // a Mars-moon mission is a REAL moon waypoint (Phobos) with a rendezvous cost
+    const mmx = HISTORICAL_MISSIONS.find((m) => m.id === "mmx");
+    const mmxMission = mmx && resolveDefinition(historicalDefinition(mmx), 0, worldAt);
+    const moonLeg = mmxMission && mmxMission.legs.find((l) => l.toKey === "phobos");
+    const realMoon = mmx && mmx.waypoints.some((w) => w.body === "phobos") && moonLeg && moonLeg.captureDv > 1.0;
+    check(
+      "history: the historical Mars-mission catalog (≥12) all resolve to finite missions; metadata flows through; a Mars-moon mission is a REAL moon waypoint with a rendezvous cost (> Mars capture)",
+      allResolve && carriesMeta && realMoon,
+      `missions=${defs.length} allResolve=${allResolve} carriesMeta=${carriesMeta} phobosRendezvous=${moonLeg ? moonLeg.captureDv.toFixed(2) : "—"}`,
     );
   }
 

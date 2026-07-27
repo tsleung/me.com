@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Radio telescope dish receiving a signal">
+  <title>Deep Space</title>
+  <!-- Full-bleed dark field: the icon is declared purpose "any maskable",
+       so all of the mark sits inside the central 80% safe circle
+       (centre 256,256 radius ~205). -->
+  <rect width="512" height="512" fill="#06090c" />
+
+  <!-- Mount: pedestal + base bar, drawn unrotated under the dish vertex. -->
+  <g fill="#1f6f56">
+    <path d="M244 296 h24 l10 96 h-44 z" />
+    <rect x="188" y="386" width="136" height="22" rx="11" />
+  </g>
+
+  <!-- Dish. Local origin is the parabola vertex; the aperture is the
+       chord at y=-105. Tilted 22 degrees so it faces up and to the right,
+       toward the incoming signal. -->
+  <g transform="translate(236 300) rotate(22)">
+    <path d="M-120 -105 L120 -105 Q0 105 -120 -105 Z" fill="#3fe0a0" />
+    <ellipse cx="0" cy="-105" rx="120" ry="22" fill="#0a2b21" />
+    <ellipse cx="0" cy="-105" rx="120" ry="22" fill="none" stroke="#8ff5cc" stroke-width="7" />
+    <!-- Feed horn at the focus, on three struts from the rim. -->
+    <g stroke="#8ff5cc" stroke-width="8" stroke-linecap="round" fill="none">
+      <path d="M-96 -113 L0 -200" />
+      <path d="M96 -113 L0 -200" />
+      <path d="M0 -127 L0 -200" />
+    </g>
+    <circle cx="0" cy="-200" r="17" fill="#8ff5cc" />
+  </g>
+
+  <!-- Incoming transmission: three arcs centred up and to the right,
+       opening back along the dish axis. -->
+  <g fill="none" stroke="#f5b942" stroke-width="14" stroke-linecap="round">
+    <path d="M406.9 138.0 A26 26 0 0 1 383.3 120.0" />
+    <path d="M405.8 162.0 A50 50 0 0 1 360.5 127.5" />
+    <path d="M404.8 185.9 A74 74 0 0 1 337.6 134.9" />
+  </g>
+</svg>

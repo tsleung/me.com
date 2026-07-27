@@ -22,6 +22,7 @@ export const MU_SUN = 1.32712440018e11; // km^3/s^2 (JPL DE)
 export const MU_EARTH = 3.986004418e5; // km^3/s^2
 export const MU_MOON = 4.9028695e3; // km^3/s^2
 export const MU_MARS = 4.282837e4; // km^3/s^2 (JPL) — governs Phobos/Deimos
+export const MU_VENUS = 3.24859e5; // km^3/s^2 (JPL)
 export const DAY_S = 86400;
 export const YEAR_S = 365.25 * DAY_S;
 
@@ -70,6 +71,7 @@ export const BODIES = {
     color: "#ffd25a",
     glow: "#ffb638",
     radiusPx: 15,
+    radius: 695700, // km, mean (measured) — the PHYSICAL radius (radiusPx is a glyph)
     mu: MU_SUN,
   },
   earth: {
@@ -80,6 +82,7 @@ export const BODIES = {
     color: "#5aa9ff",
     glow: "#2f7fe0",
     radiusPx: 7,
+    radius: 6371.0, // km, mean (measured)
     mu: MU_EARTH,
     elem: {
       a: 1.00000261 * AU_KM,
@@ -98,6 +101,7 @@ export const BODIES = {
     color: "#ff6a4a",
     glow: "#d8452a",
     radiusPx: 5.5,
+    radius: 3389.5, // km, mean (measured)
     mu: MU_MARS,
     elem: {
       a: 1.52371034 * AU_KM,
@@ -120,6 +124,7 @@ export const BODIES = {
     color: "#b8a898",
     glow: "#7a6f60",
     radiusPx: 2.4,
+    radius: 11.27, // km, mean (measured) — irregular body
     mu: 7.11e-4, // GM_Phobos (tiny; only used if a craft ever orbits it)
     elem: {
       a: 9376,
@@ -138,6 +143,7 @@ export const BODIES = {
     color: "#a9a096",
     glow: "#6f685e",
     radiusPx: 2.2,
+    radius: 6.2, // km, mean (measured) — irregular body
     mu: 9.6e-5, // GM_Deimos
     elem: {
       a: 23463,
@@ -156,6 +162,7 @@ export const BODIES = {
     color: "#c8c8cf",
     glow: "#8a8a94",
     radiusPx: 3.5,
+    radius: 1737.4, // km, mean (measured)
     mu: MU_MOON,
     elem: {
       a: 384400,
@@ -166,14 +173,39 @@ export const BODIES = {
       mu: MU_EARTH,
     },
   },
+  // Venus — the inner planet, added for gravity-assist courses (the real
+  // Earth→Venus→Mars slingshot geometry). VERIFIED elements (JPL): a=0.72333 AU,
+  // e=0.00677, T=224.701 d. argp/M0 illustrative (a legible spread, not an
+  // ephemeris). Governs no moons.
+  venus: {
+    key: "venus",
+    name: "Venus",
+    primary: "sun",
+    role: "planet",
+    color: "#e6cf9c",
+    glow: "#c9ad72",
+    radiusPx: 6,
+    radius: 6051.8, // km, mean (measured)
+    mu: MU_VENUS,
+    elem: {
+      a: 0.72333 * AU_KM,
+      e: 0.00677,
+      argp: (131.5 * Math.PI) / 180,
+      M0: (50.0 * Math.PI) / 180,
+      period: 224.701 * DAY_S,
+      mu: MU_SUN,
+    },
+  },
 };
 
-export const BODY_KEYS = ["sun", "earth", "moon", "mars", "phobos", "deimos"];
+export const BODY_KEYS = ["sun", "venus", "earth", "moon", "mars", "phobos", "deimos"];
 
 // Heliocentric state of every body at time t. Satellites = primary + relative.
 export function worldAt(t) {
   const out = {};
   out.sun = { pos: [0, 0], vel: [0, 0] };
+  const vn = elementState(BODIES.venus.elem, t);
+  out.venus = { pos: vn.pos, vel: vn.vel };
   const e = elementState(BODIES.earth.elem, t);
   out.earth = { pos: e.pos, vel: e.vel };
   const m = elementState(BODIES.mars.elem, t);

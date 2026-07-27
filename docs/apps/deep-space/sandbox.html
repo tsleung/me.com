@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>deep-space sandbox</title>
+  </head>
+  <body>
+    <!--
+      Guest half of the code-execution sandbox. Loaded by sandbox.js into an
+      <iframe sandbox="allow-scripts"> — WITHOUT allow-same-origin — so this
+      document runs on an opaque origin. It therefore cannot reach the app's
+      IndexedDB (API key, op log, screenshots), localStorage, cookies, or DOM.
+
+      Wire protocol (both directions use postMessage with targetOrigin "*",
+      which is required because an opaque origin has no nameable origin):
+
+        guest -> host   { channel:"ds-sandbox", type:"ready" }
+        host  -> guest  { channel:"ds-sandbox", type:"run", id, code, input }
+        guest -> host   { channel:"ds-sandbox", type:"result", id,
+                          ok, result, logs, error }
+
+      The contract for generated code is a FUNCTION BODY that receives an
+      `input` object and returns a value. `await` is allowed (the body is
+      compiled as an async function).
+    -->
+    <script>
+      (function () {
+        "use strict";
+
+        var CHANNEL = "ds-sandbox";
+        var AsyncFunction = Object.getPrototypeOf(
+          async function () {},
+        ).constructor;
+
+        // Identifiers shadowed as parameters of the compiled function. This is
+        // best-effort hardening, not the security boundary — the boundary is
+        // the opaque origin. It exists so that ordinary generated code has no
+        // network or storage handles lying around by accident.
+        var SHADOWED = [
+          "fetch",
+          "XMLHttpRequest",
+          "WebSocket",
+          "EventSource",
+          "navigator",
+          "indexedDB",
+          "localStorage",
+          "sessionStorage",
+          "document",
+          "window",
+          "self",
+          "globalThis",
+          "parent",
+          "top",
+          "opener",
+          "postMessage",
+          "importScripts",
+          "Worker",
+          "SharedWorker",
+          "close",
+        ];
+
+        function describe(value) {
+          if (typeof value === "string") return value;
+          if (value instanceof Error) return value.stack || String(value);
+          try {
+            return JSON.stringify(value);
+          } catch (err) {
+            return String(value);
+          }
+        }
+
+        function captureConsole(logs) {
+          var levels = ["log", "info", "warn", "error", "debug"];
+          var saved = {};
+          levels.forEach(function (level) {
+            saved[level] = console[level];
+            console[level] = function () {
+              var parts = Array.prototype.map.call(arguments, describe);
+              if (logs.length < 500) logs.push(level + ": " + parts.join(" "));
+            };
+          });
+          return function restore() {
+            levels.forEach(function (level) {
+              console[level] = saved[level];
+            });
+          };
+        }
+
+        // Results cross a postMessage boundary, so they must be cloneable.
+        // Degrade rather than fail: structured clone, then JSON, then string.
+        function makeTransferable(value) {
+          if (value === undefined) return null;
+          try {
+            structuredClone(value);
+            return value;
+          } catch (err) {
+            /* not cloneable — fall through */
+          }
+          try {
+            return JSON.parse(JSON.stringify(value));
+          } catch (err) {
+            return String(value);
+          }
+        }
+
+        function reply(payload) {
+          payload.channel = CHANNEL;
+          try {
+            parent.postMessage(payload, "*");
+          } catch (err) {
+            parent.postMessage(
+              {
+                channel: CHANNEL,
+                type: "result",
+                id: payload.id,
+                ok: false,
+                result: null,
+                logs: [],
+                error: "could not post result back: " + describe(err),
+              },
+              "*",
+            );
+          }
+        }
+
+        async function run(id, code, input) {
+          var logs = [];
+          var restore = captureConsole(logs);
+          try {
+            if (typeof code !== "string" || code.trim() === "") {
+              throw new Error("no code supplied");
+            }
+            var fn = AsyncFunction.apply(
+              null,
+              SHADOWED.concat(["input", code]),
+            );
+            var args = SHADOWED.map(function () {
+              return undefined;
+            });
+            args.push(input);
+            var result = await fn.apply(undefined, args);
+            restore();
+            reply({
+              type: "result",
+              id: id,
+              ok: true,
+              result: makeTransferable(result),
+              logs: logs,
+              error: null,
+            });
+          } catch (err) {
+            restore();
+            reply({
+              type: "result",
+              id: id,
+              ok: false,
+              result: null,
+              logs: logs,
+              error: describe(err),
+            });
+          }
+        }
+
+        window.addEventListener("message", function (event) {
+          var data = event.data;
+          if (!data || data.channel !== CHANNEL || data.type !== "run") return;
+          run(data.id, data.code, data.input);
+        });
+
+        parent.postMessage({ channel: CHANNEL, type: "ready" }, "*");
+      })();
+    </script>
+  </body>
+</html>

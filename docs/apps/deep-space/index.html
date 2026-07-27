@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>deep space / terranleung.com</title>
+    <meta
+      name="description"
+      content="A translator's console for the puzzle game The Message from Deep Space."
+    />
+    <meta name="theme-color" content="#06090c" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="/" class="home" aria-label="back to home">←</a>
+      <h1>deep space</h1>
+      <span class="subtitle">translator&rsquo;s console &middot; 1973</span>
+      <nav class="tabs" aria-label="sections">
+        <button type="button" class="tab" id="tab-level" aria-pressed="true">
+          Screen
+        </button>
+        <button type="button" class="tab" id="tab-kb" aria-pressed="false">
+          Knowledge <span class="pill" id="kb-count">0</span>
+        </button>
+        <button
+          type="button"
+          class="tab"
+          id="tab-settings"
+          aria-pressed="false"
+        >
+          Settings
+        </button>
+        <button type="button" class="tab" id="tab-help" aria-pressed="false">
+          Help
+        </button>
+      </nav>
+    </header>
+
+    <div class="banners" id="banners" aria-live="polite"></div>
+
+    <div class="busy" id="busy" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="busy-label" id="busy-label">Working&hellip;</span>
+      <button type="button" class="btn btn-quiet" id="busy-cancel">Stop</button>
+    </div>
+
+    <!-- ------------------------------------------- first-run key gate -->
+    <!-- Nothing in this app works without a Gemini key, so the console is
+         not rendered at all until there is one. No button to press, no
+         empty state to misread. -->
+    <section class="setup" id="setup-gate" hidden aria-label="first-time setup">
+      <h2>One thing first</h2>
+      <p class="setup-lead">
+        Deep Space reads your screenshots using Google&rsquo;s Gemini. None of
+        it works without a Gemini API key, so let&rsquo;s get that in place
+        before anything else. It takes about a minute and is free to start.
+      </p>
+      <ol class="setup-steps">
+        <li>
+          Open
+          <a
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Google AI Studio &rarr; API keys</a
+          >
+          and sign in with your Google account.
+        </li>
+        <li>Press <strong>Create API key</strong>, then copy the key.</li>
+        <li>Paste it below.</li>
+      </ol>
+
+      <label class="field-label" for="setup-key">Gemini API key</label>
+      <div class="row">
+        <input
+          type="password"
+          id="setup-key"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="AIza&hellip;"
+        />
+        <button type="button" class="btn btn-quiet" id="setup-reveal">
+          Show
+        </button>
+      </div>
+      <p class="hint">
+        The key stays on this computer. It is sent to Google when you press
+        Analyze, and nowhere else. It is never written into a backup file.
+      </p>
+
+      <div class="row">
+        <button type="button" class="btn btn-primary" id="setup-save">
+          Save key and start
+        </button>
+        <button type="button" class="btn btn-quiet" id="setup-anyway" hidden>
+          Use it anyway
+        </button>
+      </div>
+      <p class="hint" id="setup-report"></p>
+    </section>
+
+    <!-- Both the gate and the console start hidden: boot reveals exactly one
+         once it knows whether a key exists. Defaulting either to visible
+         flashes the wrong screen while IndexedDB opens. -->
+    <div class="shell" id="shell" hidden>
+      <aside class="levels">
+        <div class="levels-head">
+          <h2>Screens</h2>
+        </div>
+        <!-- Adding the next level must be visible at all times, not only in
+             the empty state — the way in is otherwise invisible once you
+             have one screen. -->
+        <label class="filebtn filebtn-primary" for="file-input" id="btn-new"
+          >+ New level</label
+        >
+        <input class="sr-file" type="file" id="file-input" accept="image/*" />
+        <p class="hint" id="level-empty"></p>
+        <ul class="level-list" id="level-list"></ul>
+        <div class="levels-foot">
+          <button type="button" class="btn btn-quiet" id="btn-capture">
+            Capture screen
+          </button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <!-- ---------------------------------------------- screen panel -->
+        <section class="panel" id="panel-level" aria-label="current screen">
+          <div class="empty" id="level-empty-state">
+            <h2>Paste a screenshot to begin</h2>
+            <p class="empty-lead">
+              Take a picture of the game window with your computer&rsquo;s
+              screenshot tool, then click anywhere on this page and press
+              <kbd>Ctrl</kbd>+<kbd>V</kbd> &mdash; or <kbd>&#8984;</kbd>+<kbd
+                >V</kbd
+              >
+              on a Mac. That is the quickest way in.
+            </p>
+            <p class="hint">
+              You can also drag an image file onto this window, choose a file
+              from the list on the left, or press &ldquo;Capture screen&rdquo;
+              to grab the game window directly.
+            </p>
+          </div>
+
+          <div id="level-body" hidden>
+            <div class="shot-head">
+              <h2 id="level-title">Screen</h2>
+              <div class="shot-head-controls">
+                <label for="level-number">Level</label>
+                <input type="number" id="level-number" min="0" step="1" />
+                <label class="check" for="level-solved">
+                  <input type="checkbox" id="level-solved" />
+                  <span>Solved</span>
+                </label>
+                <button
+                  type="button"
+                  class="btn btn-quiet danger"
+                  id="btn-delete-shot"
+                >
+                  Delete this screen
+                </button>
+              </div>
+            </div>
+
+            <figure class="shot">
+              <div class="stage" id="shot-stage"></div>
+              <figcaption class="hint">
+                Click anywhere on the picture to drop a numbered marker, then
+                type what you want explained about that spot.
+              </figcaption>
+            </figure>
+
+            <div class="marker-list" id="marker-list"></div>
+
+            <h3 class="field-head">
+              <label for="level-note">Your note about this screen</label>
+            </h3>
+            <textarea
+              id="level-note"
+              rows="4"
+              placeholder="e.g. the left dial changed the third symbol, and the send button lit up"
+            ></textarea>
+
+            <p class="hint">
+              <button type="button" class="btn btn-quiet" id="btn-promote-note">
+                Apply this note to every level
+              </button>
+              &nbsp;&mdash; for things you would otherwise retype each time.
+            </p>
+
+            <p class="stale-flag" id="reading-stale" hidden>
+              This picture was read using an older version of the prompts. The
+              screenshot is still the original — read it again to bring the
+              description up to date.
+            </p>
+
+            <div class="run-bar">
+              <button type="button" class="btn btn-primary" id="btn-analyze">
+                Analyze this screen
+              </button>
+              <button type="button" class="btn" id="btn-amend">
+                Answer again, same picture
+              </button>
+              <button type="button" class="btn btn-quiet" id="btn-reread">
+                Read the picture again
+              </button>
+            </div>
+            <p class="hint">
+              <strong>Analyze</strong> reads the picture if needed, then works
+              out an answer. <strong>Answer again</strong> reuses the existing
+              description &mdash; cheaper, and what you want after adding a
+              note. <strong>Read the picture again</strong> goes back to the
+              screenshot itself and describes it afresh, which is what you want
+              after the prompts have changed.
+            </p>
+
+            <div class="opt-bar">
+              <label class="check" for="opt-nokb">
+                <input type="checkbox" id="opt-nokb" />
+                <span>
+                  Run without the knowledge base
+                  <em
+                    >experiment &mdash; answers this screen with nothing
+                    remembered, so you can see whether what we have learned is
+                    actually helping</em
+                  >
+                </span>
+              </label>
+              <label class="check" for="opt-codeexec">
+                <input type="checkbox" id="opt-codeexec" />
+                <span>
+                  Let Gemini run its own code on Google&rsquo;s servers
+                  <em
+                    >otherwise any program it writes is shown here and run on
+                    this computer, safely walled off</em
+                  >
+                </span>
+              </label>
+            </div>
+
+            <!-- Live transcript: what Gemini is producing, as it produces it.
+                 Kept afterwards, collapsed, so an answer can be audited. -->
+            <div class="live" id="live" hidden>
+              <details id="live-thinking" hidden>
+                <summary>Thinking&hellip;</summary>
+                <pre class="stream" id="live-thoughts"></pre>
+              </details>
+              <details id="live-output" open>
+                <summary>Coming back from Gemini&hellip;</summary>
+                <pre class="stream" id="live-text"></pre>
+              </details>
+            </div>
+
+            <div class="answer" id="answer" hidden>
+              <p class="stale-flag" id="stale-flag" hidden>
+                The last attempt failed, so this is still the
+                <strong>previous</strong> answer — not a new one.
+              </p>
+
+              <p class="baseline-flag" id="baseline-flag" hidden>
+                This answer was produced <strong>without</strong> the knowledge
+                base.
+              </p>
+
+              <p class="hint" id="answer-provenance"></p>
+
+              <h3>What this screen is asking</h3>
+              <p class="summary" id="answer-summary"></p>
+
+              <h3>What to do next</h3>
+              <p class="move" id="answer-move"></p>
+
+              <h3>What to send back</h3>
+              <p class="reply" id="answer-reply"></p>
+
+              <h3>Hypotheses</h3>
+              <div id="answer-hypotheses"></div>
+
+              <h3>Proposed changes to the knowledge base</h3>
+              <div id="ops-review"></div>
+
+              <div id="code-panel" hidden>
+                <h3>Program</h3>
+                <p class="hint" id="code-purpose"></p>
+                <pre class="code"><code id="code-source"></code></pre>
+                <div class="run-bar">
+                  <button
+                    type="button"
+                    class="btn btn-quiet"
+                    id="btn-copy-code"
+                  >
+                    Copy
+                  </button>
+                  <button type="button" class="btn" id="btn-run-code">
+                    Run locally (sandboxed)
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-quiet"
+                    id="btn-toggle-exec"
+                  >
+                    Server-side execution: off
+                  </button>
+                </div>
+                <div id="code-result"></div>
+                <div id="server-exec"></div>
+              </div>
+
+              <!-- A wrong answer has to lead somewhere. -->
+              <div class="feedback">
+                <h3><label for="answer-feedback">Was this any use?</label></h3>
+                <p class="hint">
+                  If the answer was wrong or unhelpful, say what was wrong with
+                  it. It goes back to Gemini with the complaint attached, so it
+                  has to produce a different answer rather than reword this one.
+                </p>
+                <div id="complaint-list"></div>
+                <textarea
+                  id="answer-feedback"
+                  rows="3"
+                  placeholder="e.g. you told me which button to press instead of what to send"
+                ></textarea>
+                <div class="run-bar">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btn-retry-feedback"
+                  >
+                    Try again with this
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-quiet"
+                    id="btn-feedback-standing"
+                  >
+                    Apply to every level
+                  </button>
+                </div>
+
+                <div class="run-bar">
+                  <button type="button" class="btn btn-quiet" id="btn-debug">
+                    Save a debug report
+                  </button>
+                  <label class="check" for="debug-image">
+                    <input type="checkbox" id="debug-image" checked />
+                    <span>include the picture</span>
+                  </label>
+                </div>
+                <p class="hint">
+                  Writes a single file holding everything needed to work out why
+                  this answer came back the way it did: the exact prompts sent,
+                  the raw reply, the knowledge base as it stood, and what the
+                  checker made of the proposed entries. Your API key is never in
+                  it.
+                </p>
+              </div>
+
+              <details class="reading">
+                <summary>What the assistant saw on the screen</summary>
+                <div id="answer-reading"></div>
+              </details>
+
+              <details class="reading">
+                <summary>Exactly what was sent to Gemini</summary>
+                <p class="hint">
+                  The whole prompt, verbatim. If an answer is wrong, this is
+                  where to look first.
+                </p>
+                <h4 class="field-head">Reading the picture (no memory)</h4>
+                <pre class="stream" id="sent-map"></pre>
+                <h4 class="field-head">Working out the answer</h4>
+                <pre class="stream" id="sent-answer"></pre>
+              </details>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------- knowledge panel -->
+        <section class="panel" id="panel-kb" aria-label="knowledge base" hidden>
+          <h2>Knowledge base</h2>
+          <p class="hint" id="kb-summary"></p>
+
+          <div class="run-bar">
+            <button type="button" class="btn" id="btn-rereduce">
+              Rebuild from history
+            </button>
+            <button type="button" class="btn btn-quiet" id="btn-undo-op">
+              Undo the last change
+            </button>
+            <span class="hint" id="rereduce-report"></span>
+          </div>
+
+          <div class="contradictions" id="skipped-ops" hidden>
+            <h3>Recorded changes that could not be applied</h3>
+            <p class="hint">
+              These are in the history but do nothing &mdash; usually because
+              they point at an entry that is gone, or came in from a restored
+              backup. They are shown rather than dropped quietly.
+            </p>
+            <div id="skipped-list"></div>
+          </div>
+
+          <div class="contradictions" id="contradictions" hidden>
+            <h3>Disagreements to settle</h3>
+            <p class="hint">
+              These entries are about the same thing but say different things.
+              Left alone, both go into every future question. Pick the one to
+              keep.
+            </p>
+            <div id="contradiction-list"></div>
+          </div>
+
+          <h3>Everything we believe</h3>
+          <div class="kb-list" id="kb-list"></div>
+
+          <details class="retired">
+            <summary>Withdrawn entries</summary>
+            <div id="kb-retired"></div>
+          </details>
+        </section>
+
+        <!-- ------------------------------------------------ help panel -->
+        <section class="panel guide" id="panel-help" aria-label="help" hidden>
+          <h2>How to use this</h2>
+
+          <p class="guide-lead">
+            You play the game as usual. When you get stuck on a screen, you take
+            a picture of it, paste it in here, and press one button. The app
+            describes what it sees, works out what to send back, and remembers
+            what it learns so it can help more on the next screen.
+          </p>
+
+          <h3>Setting up, once</h3>
+          <ol>
+            <li>
+              You need a free Gemini API key from Google. The first screen you
+              saw explains where to get one; you can also find the link in
+              <strong>Settings</strong>.
+            </li>
+            <li>
+              In <strong>Settings</strong>, press
+              <strong>Make storage permanent</strong>. Without it a browser can
+              throw your screenshots away when the disk gets full.
+            </li>
+          </ol>
+
+          <h3>The loop, every level</h3>
+          <ol>
+            <li>
+              <strong>Take a screenshot of the game.</strong> On a Mac,
+              <kbd>&#8984;</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd> then drag; on
+              Windows, <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>.
+            </li>
+            <li>
+              <strong>Paste it here.</strong> Click anywhere on this page and
+              press <kbd>Ctrl</kbd>+<kbd>V</kbd> (or
+              <kbd>&#8984;</kbd>+<kbd>V</kbd>). That is all &mdash; it becomes
+              the next level automatically. You can also drag an image file in,
+              or use <strong>+ New level</strong>.
+            </li>
+            <li>
+              <strong>Say anything useful</strong> in the note box &mdash; what
+              you already tried, what changed when you clicked something. This
+              is often what makes the difference between a vague answer and a
+              good one.
+            </li>
+            <li>
+              <strong>Press Analyze.</strong> From the second level onward this
+              happens by itself as soon as you paste. Watch it think if you
+              like; press <strong>Stop</strong> if you change your mind.
+            </li>
+          </ol>
+
+          <h3>Reading the answer</h3>
+          <ul>
+            <li>
+              <strong>What to send back</strong> is the important part: the
+              actual content of your reply. It assumes you already know how to
+              send it.
+            </li>
+            <li>
+              <strong>What to do first</strong> appears only when something has
+              to be checked before the reply can be settled. Often it is empty,
+              which is good news.
+            </li>
+            <li>
+              <strong>Hypotheses</strong> are the competing explanations, each
+              marked high, medium or low. Two hypotheses with different answers
+              means it is genuinely unsure &mdash; treat it that way.
+            </li>
+          </ul>
+
+          <h3>Pointing at something specific</h3>
+          <p>
+            Click anywhere on the picture to drop a numbered marker, then type
+            what you want explained about that spot &mdash; &ldquo;what is this
+            dial for?&rdquo;. The numbers are drawn onto the picture the app
+            sends, so it can see exactly what you mean.
+          </p>
+
+          <h3>When the answer is wrong</h3>
+          <p>
+            Use the box under the answer to say what was wrong with it, then
+            press <strong>Try again with this</strong>. The complaint goes back
+            with the question, and it is kept &mdash; every complaint you have
+            made about this screen is sent with each retry, so it cannot fix one
+            and forget another.
+          </p>
+          <p>
+            If you find yourself typing the same correction on every level,
+            press <strong>Apply to every level</strong>. It becomes a standing
+            instruction sent with every question from then on. You can edit
+            those in Settings.
+          </p>
+
+          <h3>The three buttons, and what each costs</h3>
+          <ul>
+            <li>
+              <strong>Analyze this screen</strong> &mdash; looks at the picture
+              if needed, then works out an answer.
+            </li>
+            <li>
+              <strong>Answer again, same picture</strong> &mdash; thinks again
+              without looking at the picture afresh. Cheaper and faster. This is
+              what you want after adding a note.
+            </li>
+            <li>
+              <strong>Read the picture again</strong> &mdash; looks at the
+              screenshot from scratch and re-describes it, without answering.
+              Only needed if the description looks wrong, or after the app has
+              been updated.
+            </li>
+          </ul>
+
+          <h3>What it remembers</h3>
+          <p>
+            After each answer it proposes things to remember. Read them and
+            press <strong>Add</strong> or <strong>Discard</strong>. Be
+            reasonably strict: everything you keep is sent along with every
+            future question, so a wrong entry kept now makes later answers
+            worse.
+          </p>
+          <p>
+            The <strong>Knowledge</strong> tab shows everything remembered. If
+            two entries disagree, it says so at the top and asks you to pick.
+            You can withdraw any entry at any time.
+          </p>
+
+          <h3>If something goes wrong</h3>
+          <ul>
+            <li>
+              <strong>&ldquo;Google rejected the API key&rdquo;</strong> &mdash;
+              check it in Settings, and that the Generative Language API is
+              switched on for it.
+            </li>
+            <li>
+              <strong>&ldquo;Gemini got stuck repeating itself&rdquo;</strong>
+              &mdash; a fault at Google&rsquo;s end, not yours. Press Analyze
+              again; it rarely happens twice.
+            </li>
+            <li>
+              <strong>Answers seem to have forgotten things</strong> &mdash;
+              check the Knowledge tab for entries that contradict each other,
+              and raise the limit in Settings.
+            </li>
+            <li>
+              <strong>Anything else</strong> &mdash; press
+              <strong>Save a debug report</strong> under the answer and send the
+              file on. It contains everything needed to work out what happened,
+              and never contains your API key.
+            </li>
+          </ul>
+
+          <h3>Keeping your work</h3>
+          <p>
+            Everything lives in this browser on this computer. Nothing is
+            uploaded anywhere except the screenshot you are asking about, which
+            goes to Google. Use <strong>Save a backup</strong> in Settings now
+            and again &mdash; a browser is not a safe place to keep the only
+            copy of anything.
+          </p>
+        </section>
+
+        <!-- -------------------------------------------- settings panel -->
+        <section class="panel" id="panel-settings" aria-label="settings" hidden>
+          <h2>Settings</h2>
+
+          <h3>Gemini</h3>
+          <label class="field-label" for="api-key">API key</label>
+          <div class="row">
+            <input
+              type="password"
+              id="api-key"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="AIza&hellip;"
+            />
+            <button type="button" class="btn btn-quiet" id="btn-reveal">
+              Show
+            </button>
+          </div>
+          <p class="hint">
+            Kept on this computer only. It is sent to Google when you press
+            Analyze, and nowhere else. It is never included in a backup file.
+            Need one?
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Get a Gemini API key</a
+            >.
+          </p>
+
+          <label class="field-label" for="model-name">Model name</label>
+          <div class="row">
+            <input type="text" id="model-name" spellcheck="false" />
+            <button type="button" class="btn" id="btn-check-model">
+              Check model
+            </button>
+          </div>
+          <p class="hint" id="model-report"></p>
+
+          <label class="field-label" for="kb-max"
+            >How much of the knowledge base to send</label
+          >
+          <div class="row">
+            <input type="number" id="kb-max" min="0" step="10" />
+            <span class="hint">entries per question</span>
+          </div>
+          <p class="hint">
+            Everything learned is kept; this is only how many entries ride along
+            with each question. The highest-confidence and most recent ones go
+            first. Raise it if answers seem to forget things, lower it if the
+            model starts complaining about length.
+          </p>
+
+          <label class="field-label" for="standing-notes"
+            >Standing instructions &mdash; sent with every level</label
+          >
+          <textarea
+            id="standing-notes"
+            rows="5"
+            placeholder="e.g. I already know how to send a reply — tell me what to send, not which button to press."
+          ></textarea>
+          <p class="hint">
+            Anything you find yourself typing into the note on every level
+            belongs here instead. It rides along with every question from now
+            on, and it outranks the assistant&rsquo;s own habits.
+          </p>
+
+          <label class="check" for="auto-analyze">
+            <input type="checkbox" id="auto-analyze" />
+            <span>
+              Read a new screen as soon as I paste it
+              <em
+                >from the second level onward, pasting starts the analysis
+                straight away, so there is nothing to press. The first level
+                always waits for you, and so does any screen pasted before a key
+                is set. Add your notes afterwards and press &ldquo;Re-run with
+                my updated notes&rdquo;</em
+              >
+            </span>
+          </label>
+
+          <h3>Rebuilding</h3>
+          <p class="hint">
+            The screenshots are the only thing that cannot be regenerated.
+            Everything else &mdash; the descriptions, the answers, the knowledge
+            base &mdash; is derived from them, so it can all be rebuilt when the
+            prompts improve.
+          </p>
+          <div class="row wrap">
+            <button type="button" class="btn" id="btn-reread-all">
+              Read every screen again
+            </button>
+            <span class="hint" id="reread-report"></span>
+          </div>
+
+          <h3>Storage</h3>
+          <p class="hint" id="storage-report">Checking&hellip;</p>
+          <div class="row wrap">
+            <button type="button" class="btn" id="btn-persist">
+              Make storage permanent
+            </button>
+            <button type="button" class="btn" id="btn-export">
+              Save a backup file
+            </button>
+            <label class="filebtn" for="import-input"
+              >Restore from a backup</label
+            >
+            <input
+              class="sr-file"
+              type="file"
+              id="import-input"
+              accept="application/json,.json"
+            />
+          </div>
+          <p class="hint">
+            Screenshots are kept as lossless PNG so fine strokes in the alien
+            symbols survive. A browser can throw its storage away when the disk
+            gets full &mdash; make it permanent, and keep a backup.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-foot">
+      <p>
+        <strong>deep space</strong> &mdash; a translator&rsquo;s console for
+        <em>The Message from Deep Space</em>. Your screenshots, notes and
+        knowledge base never leave this computer; screens are sent to
+        Google&rsquo;s Gemini with your own API key, and nowhere else.
+      </p>
+      <p>
+        <a href="./deep-space-docs.zip" download
+          >Download the documentation (zip)</a
+        >
+        &mdash; how it works, how it was built, the wire formats, and an honest
+        record of what went wrong.
+      </p>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

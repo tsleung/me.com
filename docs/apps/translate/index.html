@@ -1,186 +1,466 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="translate">
-<title>translate</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="topbar">
-  <a class="back" href="/" data-i18n-aria="topbar.backAria" aria-label="home">=)</a>
-  <span class="title-group">
-    <span class="title" data-i18n="app.title">translate</span>
-    <button id="room-chip" class="room-chip" data-i18n-title="topbar.roomChipTitle" title="room code — click to copy and share with your partner" hidden>
-      <span class="room-chip-label" data-i18n="topbar.roomLabel">room</span>
-      <span id="room-chip-code"></span>
-    </button>
-    <span id="psk-chip" class="psk-chip" data-i18n-title="topbar.pskChipTitle" title="shared key is active — messages are end-to-end encrypted with your passphrase" hidden>e2e</span>
-  </span>
-  <span class="status">
-    <span id="presence" class="dot" data-state="off" title="disconnected"></span>
-    <button id="share-btn" class="icon-btn" data-i18n="topbar.share" data-i18n-aria="topbar.shareAria" data-i18n-title="topbar.shareTitle" aria-label="share this room" title="share this room with your partner" hidden>share</button>
-    <button id="copy-btn" class="icon-btn" data-i18n="topbar.copy" data-i18n-aria="topbar.copyAria" data-i18n-title="topbar.copyAria" aria-label="copy conversation" title="copy conversation">copy</button>
-    <button id="clear-btn" class="icon-btn" data-i18n="topbar.clear" data-i18n-aria="topbar.clearAria" data-i18n-title="topbar.clearAria" aria-label="clear conversation" title="clear conversation">clear</button>
-    <button id="settings-btn" class="icon-btn" data-i18n-aria="topbar.settingsAria" aria-label="settings">⚙</button>
-  </span>
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="translate" />
+    <title>translate</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a
+        class="back"
+        href="/"
+        data-i18n-aria="topbar.backAria"
+        aria-label="home"
+        >=)</a
+      >
+      <span class="title-group">
+        <span class="title" data-i18n="app.title">translate</span>
+        <button
+          id="room-chip"
+          class="room-chip"
+          data-i18n-title="topbar.roomChipTitle"
+          title="room code — click to copy and share with your partner"
+          hidden
+        >
+          <span class="room-chip-label" data-i18n="topbar.roomLabel">room</span>
+          <span id="room-chip-code"></span>
+        </button>
+        <span
+          id="psk-chip"
+          class="psk-chip"
+          data-i18n-title="topbar.pskChipTitle"
+          title="shared key is active — messages are end-to-end encrypted with your passphrase"
+          hidden
+          >e2e</span
+        >
+      </span>
+      <span class="status">
+        <span
+          id="presence"
+          class="dot"
+          data-state="off"
+          title="disconnected"
+        ></span>
+        <button
+          id="share-btn"
+          class="icon-btn"
+          data-i18n="topbar.share"
+          data-i18n-aria="topbar.shareAria"
+          data-i18n-title="topbar.shareTitle"
+          aria-label="share this room"
+          title="share this room with your partner"
+          hidden
+        >
+          share
+        </button>
+        <button
+          id="copy-btn"
+          class="icon-btn"
+          data-i18n="topbar.copy"
+          data-i18n-aria="topbar.copyAria"
+          data-i18n-title="topbar.copyAria"
+          aria-label="copy conversation"
+          title="copy conversation"
+        >
+          copy
+        </button>
+        <button
+          id="clear-btn"
+          class="icon-btn"
+          data-i18n="topbar.clear"
+          data-i18n-aria="topbar.clearAria"
+          data-i18n-title="topbar.clearAria"
+          aria-label="clear conversation"
+          title="clear conversation"
+        >
+          clear
+        </button>
+        <button
+          id="settings-btn"
+          class="icon-btn"
+          data-i18n-aria="topbar.settingsAria"
+          aria-label="settings"
+        >
+          ⚙
+        </button>
+      </span>
+    </header>
 
-<div id="request-key-banner" class="request-key-banner" hidden>
-  <p data-i18n="requestKey.banner">you don't have a Gemini API key yet. if your partner invited you, you can request theirs:</p>
-  <button id="request-key-btn" class="btn btn-primary btn-big" data-i18n="requestKey.button">request API key from your friend</button>
-  <p id="request-key-status" class="request-key-status"></p>
-</div>
-
-<main class="chat" id="chat" aria-live="polite" aria-label="messages"></main>
-
-<footer class="composer">
-  <div id="preview-box" class="preview" hidden>
-    <div class="preview-row"><span class="preview-label" data-i18n="preview.willSend">will send</span><span id="preview-forward"></span></div>
-    <div class="preview-row"><span class="preview-label" data-i18n="preview.readsBack">reads back</span><span id="preview-back"></span></div>
-  </div>
-  <div class="composer-row">
-    <textarea id="input" rows="2" data-i18n-placeholder="composer.placeholder" placeholder="write in your native language"></textarea>
-    <div class="composer-buttons">
-      <input id="image-input" type="file" accept="image/*" hidden>
-      <button id="mic-btn" class="btn" data-i18n="composer.mic" data-i18n-title="composer.micTitle" title="dictate into the input" hidden>mic</button>
-      <button id="image-btn" class="btn" data-i18n="composer.image" data-i18n-title="composer.imageTitle" title="send an image">image</button>
-      <button id="preview-btn" class="btn" data-i18n="composer.preview">preview</button>
-      <button id="send-btn" class="btn btn-primary" data-i18n="composer.send">send</button>
+    <div id="request-key-banner" class="request-key-banner" hidden>
+      <p data-i18n="requestKey.banner">
+        you don't have a Gemini API key yet. if your partner invited you, you
+        can request theirs:
+      </p>
+      <button
+        id="request-key-btn"
+        class="btn btn-primary btn-big"
+        data-i18n="requestKey.button"
+      >
+        request API key from your friend
+      </button>
+      <p id="request-key-status" class="request-key-status"></p>
     </div>
-  </div>
-</footer>
 
-<dialog id="settings" class="settings">
-  <form method="dialog" class="settings-form">
-    <h2 data-i18n="settings.title">settings</h2>
+    <main
+      class="chat"
+      id="chat"
+      aria-live="polite"
+      aria-label="messages"
+    ></main>
 
-    <fieldset>
-      <legend data-i18n="settings.uiLangLegend">interface language</legend>
-      <label><span data-i18n="settings.uiLangLabel">language</span>
-        <select id="cfg-uilang">
-          <option value="en" data-i18n="settings.uiLang.en">english</option>
-          <option value="zh-Hans" data-i18n="settings.uiLang.zh-Hans">简体中文</option>
-          <option value="zh-Hant" data-i18n="settings.uiLang.zh-Hant">繁體中文</option>
-          <option value="ja" data-i18n="settings.uiLang.ja">日本語</option>
-          <option value="fr" data-i18n="settings.uiLang.fr">français</option>
-          <option value="es" data-i18n="settings.uiLang.es">español</option>
-        </select>
-      </label>
-    </fieldset>
-
-    <fieldset>
-      <legend data-i18n="settings.langLegend">languages</legend>
-      <label><span data-i18n="settings.myLang">your native language</span>
-        <input id="cfg-mylang" type="text" value="english" data-i18n-placeholder="settings.myLangPlaceholder" placeholder="e.g. en, english" required>
-      </label>
-      <label><span data-i18n="settings.partnerLang">partner's native language</span>
-        <input id="cfg-partnerlang" type="text" value="mandarin" data-i18n-placeholder="settings.partnerLangPlaceholder" placeholder="e.g. zh, mandarin" required>
-      </label>
-      <button id="cfg-swap-lang" type="button" class="btn-small" data-i18n="settings.swapLang" data-i18n-title="settings.swapLangTitle" title="swap your language and partner's language">&#x21C5; swap</button>
-      <label><span data-i18n="settings.dictationLang">voice input language</span> <small data-i18n="settings.dictationLangHint">(used by the mic button)</small>
-        <select id="cfg-dictation-lang">
-          <option value="auto" data-i18n="settings.dictationAuto">auto (from your native language)</option>
-          <option value="en-US" data-i18n="settings.dictationEnUs">english</option>
-          <option value="zh-TW" data-i18n="settings.dictationZhTwTrad">mandarin (traditional)</option>
-          <option value="zh-TW-tw" data-i18n="settings.dictationZhTwMandarin">taiwanese mandarin</option>
-        </select>
-      </label>
-    </fieldset>
-
-    <fieldset>
-      <legend data-i18n="settings.roomLegend">room</legend>
-      <label><span data-i18n="settings.roomCode">room code</span> <small data-i18n="settings.roomCodeHint">(10+ chars, share out-of-band)</small>
-        <div class="row">
-          <input id="cfg-room" type="text" minlength="8" required>
-          <button id="cfg-room-gen" type="button" class="btn-small" data-i18n="settings.generate">generate</button>
+    <footer class="composer">
+      <div id="preview-box" class="preview" hidden>
+        <div class="preview-row">
+          <span class="preview-label" data-i18n="preview.willSend"
+            >will send</span
+          ><span id="preview-forward"></span>
         </div>
-      </label>
-      <label><span data-i18n="settings.myName">your display name</span> <small data-i18n="settings.myNameHint">(optional, defaults to "Me")</small>
-        <input id="cfg-name" type="text" data-i18n-placeholder="settings.myNamePlaceholder" placeholder="e.g. Lorem">
-      </label>
-      <label><span data-i18n="settings.partnerName">partner's display name</span> <small data-i18n="settings.partnerNameHint">(optional, defaults to "Partner")</small>
-        <input id="cfg-partnername" type="text" data-i18n-placeholder="settings.partnerNamePlaceholder" placeholder="e.g. Ipsum">
-      </label>
-    </fieldset>
+        <div class="preview-row">
+          <span class="preview-label" data-i18n="preview.readsBack"
+            >reads back</span
+          ><span id="preview-back"></span>
+        </div>
+      </div>
+      <div class="composer-row">
+        <textarea
+          id="input"
+          rows="2"
+          data-i18n-placeholder="composer.placeholder"
+          placeholder="write in your native language"
+        ></textarea>
+        <div class="composer-buttons">
+          <input id="image-input" type="file" accept="image/*" hidden />
+          <button
+            id="mic-btn"
+            class="btn"
+            data-i18n="composer.mic"
+            data-i18n-title="composer.micTitle"
+            title="dictate into the input"
+            hidden
+          >
+            mic
+          </button>
+          <button
+            id="image-btn"
+            class="btn"
+            data-i18n="composer.image"
+            data-i18n-title="composer.imageTitle"
+            title="send an image"
+          >
+            image
+          </button>
+          <button id="preview-btn" class="btn" data-i18n="composer.preview">
+            preview
+          </button>
+          <button
+            id="send-btn"
+            class="btn btn-primary"
+            data-i18n="composer.send"
+          >
+            send
+          </button>
+        </div>
+      </div>
+    </footer>
 
-    <fieldset>
-      <legend data-i18n="settings.signalingLegend">signaling</legend>
-      <label><span data-i18n="settings.signalingMode">mode</span>
-        <select id="cfg-sigmode">
-          <option value="worker" data-i18n="settings.signalingWorker">our cloudflare worker (recommended)</option>
-          <option value="peerjs" data-i18n="settings.signalingPeerjs">peerjs fallback (public broker)</option>
-        </select>
-      </label>
-      <label><span data-i18n="settings.signalingUrl">worker url</span>
-        <input id="cfg-sigurl" type="text" data-i18n-placeholder="settings.workerUrlPlaceholder" placeholder="wss://translate-signaling.example.workers.dev">
-      </label>
-    </fieldset>
+    <dialog id="settings" class="settings">
+      <form method="dialog" class="settings-form">
+        <h2 data-i18n="settings.title">settings</h2>
 
-    <fieldset>
-      <legend><span data-i18n="settings.pskLegend">shared key</span> <small data-i18n="settings.pskHint">(optional, defense-in-depth)</small></legend>
-      <label><span data-i18n="settings.passphrase">passphrase</span>
-        <input id="cfg-psk" type="text" autocomplete="off" data-i18n-placeholder="settings.pskPlaceholder" placeholder="e.g. a private word only you two know">
-      </label>
-      <small class="hint" data-i18n="settings.pskDesc">
-        if set, messages are AES-GCM encrypted in the browser with a key derived from this passphrase before being sent.
-        your partner must enter the same passphrase to read them.
-        share it over a different channel (not through this app).
-      </small>
-    </fieldset>
+        <fieldset>
+          <legend data-i18n="settings.uiLangLegend">interface language</legend>
+          <label
+            ><span data-i18n="settings.uiLangLabel">language</span>
+            <select id="cfg-uilang">
+              <option value="en" data-i18n="settings.uiLang.en">english</option>
+              <option value="zh-Hans" data-i18n="settings.uiLang.zh-Hans">
+                简体中文
+              </option>
+              <option value="zh-Hant" data-i18n="settings.uiLang.zh-Hant">
+                繁體中文
+              </option>
+              <option value="ja" data-i18n="settings.uiLang.ja">日本語</option>
+              <option value="fr" data-i18n="settings.uiLang.fr">
+                français
+              </option>
+              <option value="es" data-i18n="settings.uiLang.es">español</option>
+            </select>
+          </label>
+        </fieldset>
 
-    <fieldset>
-      <legend data-i18n="settings.geminiLegend">gemini</legend>
-      <label><span data-i18n="settings.geminiKey">api key</span> <small data-i18n="settings.geminiKeyHint">(stored only on this device)</small>
-        <input id="cfg-apikey" type="password" autocomplete="off">
-      </label>
-      <small class="hint">
-        <span data-i18n="settings.geminiGetKey">get one at</span>
-        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/app/apikey</a>
-      </small>
-    </fieldset>
+        <fieldset>
+          <legend data-i18n="settings.langLegend">languages</legend>
+          <label
+            ><span data-i18n="settings.myLang">your native language</span>
+            <input
+              id="cfg-mylang"
+              type="text"
+              value="english"
+              data-i18n-placeholder="settings.myLangPlaceholder"
+              placeholder="e.g. en, english"
+              required
+            />
+          </label>
+          <label
+            ><span data-i18n="settings.partnerLang"
+              >partner's native language</span
+            >
+            <input
+              id="cfg-partnerlang"
+              type="text"
+              value="mandarin"
+              data-i18n-placeholder="settings.partnerLangPlaceholder"
+              placeholder="e.g. zh, mandarin"
+              required
+            />
+          </label>
+          <button
+            id="cfg-swap-lang"
+            type="button"
+            class="btn-small"
+            data-i18n="settings.swapLang"
+            data-i18n-title="settings.swapLangTitle"
+            title="swap your language and partner's language"
+          >
+            &#x21C5; swap
+          </button>
+          <label
+            ><span data-i18n="settings.dictationLang"
+              >voice input language</span
+            >
+            <small data-i18n="settings.dictationLangHint"
+              >(used by the mic button)</small
+            >
+            <select id="cfg-dictation-lang">
+              <option value="auto" data-i18n="settings.dictationAuto">
+                auto (from your native language)
+              </option>
+              <option value="en-US" data-i18n="settings.dictationEnUs">
+                english
+              </option>
+              <option value="zh-TW" data-i18n="settings.dictationZhTwTrad">
+                mandarin (traditional)
+              </option>
+              <option
+                value="zh-TW-tw"
+                data-i18n="settings.dictationZhTwMandarin"
+              >
+                taiwanese mandarin
+              </option>
+            </select>
+          </label>
+        </fieldset>
 
-    <fieldset>
-      <legend><span data-i18n="settings.historyLegend">history</span> <small data-i18n="settings.historyLegendHint">(optional, encrypted at rest)</small></legend>
-      <label class="inline">
-        <input id="cfg-history" type="checkbox">
-        <span data-i18n="settings.historyEnable">save messages on this device</span>
-      </label>
-      <label><span data-i18n="settings.historyPassphrase">passphrase</span> <small data-i18n="settings.historyPassphraseHint">(required if history is on)</small>
-        <input id="cfg-passphrase" type="password" autocomplete="new-password">
-      </label>
-      <button id="cfg-clear-history" type="button" class="btn-small btn-danger" data-i18n="settings.clearHistory">clear history</button>
-    </fieldset>
+        <fieldset>
+          <legend data-i18n="settings.roomLegend">room</legend>
+          <label
+            ><span data-i18n="settings.roomCode">room code</span>
+            <small data-i18n="settings.roomCodeHint"
+              >(10+ chars, share out-of-band)</small
+            >
+            <div class="row">
+              <input id="cfg-room" type="text" minlength="8" required />
+              <button
+                id="cfg-room-gen"
+                type="button"
+                class="btn-small"
+                data-i18n="settings.generate"
+              >
+                generate
+              </button>
+            </div>
+          </label>
+          <label
+            ><span data-i18n="settings.myName">your display name</span>
+            <small data-i18n="settings.myNameHint"
+              >(optional, defaults to "Me")</small
+            >
+            <input
+              id="cfg-name"
+              type="text"
+              data-i18n-placeholder="settings.myNamePlaceholder"
+              placeholder="e.g. Lorem"
+            />
+          </label>
+          <label
+            ><span data-i18n="settings.partnerName"
+              >partner's display name</span
+            >
+            <small data-i18n="settings.partnerNameHint"
+              >(optional, defaults to "Partner")</small
+            >
+            <input
+              id="cfg-partnername"
+              type="text"
+              data-i18n-placeholder="settings.partnerNamePlaceholder"
+              placeholder="e.g. Ipsum"
+            />
+          </label>
+        </fieldset>
 
-    <div class="settings-actions">
-      <button value="cancel" class="btn" data-i18n="settings.cancel">cancel</button>
-      <button id="cfg-save" value="save" class="btn btn-primary" data-i18n="settings.save">save</button>
-    </div>
-  </form>
-</dialog>
+        <fieldset>
+          <legend data-i18n="settings.signalingLegend">signaling</legend>
+          <label
+            ><span data-i18n="settings.signalingMode">mode</span>
+            <select id="cfg-sigmode">
+              <option value="worker" data-i18n="settings.signalingWorker">
+                our cloudflare worker (recommended)
+              </option>
+              <option value="peerjs" data-i18n="settings.signalingPeerjs">
+                peerjs fallback (public broker)
+              </option>
+            </select>
+          </label>
+          <label
+            ><span data-i18n="settings.signalingUrl">worker url</span>
+            <input
+              id="cfg-sigurl"
+              type="text"
+              data-i18n-placeholder="settings.workerUrlPlaceholder"
+              placeholder="wss://translate-signaling.example.workers.dev"
+            />
+          </label>
+        </fieldset>
 
-<dialog id="share-dialog" class="settings">
-  <form method="dialog" class="settings-form">
-    <h2 data-i18n="share.title">share this room</h2>
-    <p class="hint" data-i18n="share.desc">Your friend can open this link to arrive with the room code, language pair, and display names pre-filled. Your Gemini API key is NOT included — they'll be asked to request it from you once they're in the room. Share this link over a channel you trust.</p>
-    <div class="row">
-      <input id="share-url" type="text" readonly>
-      <button id="share-copy-btn" type="button" class="btn-small" data-i18n="share.copy">copy link</button>
-    </div>
-    <div class="settings-actions">
-      <button value="close" class="btn" data-i18n="share.close">close</button>
-    </div>
-  </form>
-</dialog>
+        <fieldset>
+          <legend>
+            <span data-i18n="settings.pskLegend">shared key</span>
+            <small data-i18n="settings.pskHint"
+              >(optional, defense-in-depth)</small
+            >
+          </legend>
+          <label
+            ><span data-i18n="settings.passphrase">passphrase</span>
+            <input
+              id="cfg-psk"
+              type="text"
+              autocomplete="off"
+              data-i18n-placeholder="settings.pskPlaceholder"
+              placeholder="e.g. a private word only you two know"
+            />
+          </label>
+          <small class="hint" data-i18n="settings.pskDesc">
+            if set, messages are AES-GCM encrypted in the browser with a key
+            derived from this passphrase before being sent. your partner must
+            enter the same passphrase to read them. share it over a different
+            channel (not through this app).
+          </small>
+        </fieldset>
 
-<script type="module" src="vault.js"></script>
-<script type="module" src="app.js"></script>
-</body>
+        <fieldset>
+          <legend data-i18n="settings.geminiLegend">gemini</legend>
+          <label
+            ><span data-i18n="settings.geminiKey">api key</span>
+            <small data-i18n="settings.geminiKeyHint"
+              >(stored only on this device)</small
+            >
+            <input id="cfg-apikey" type="password" autocomplete="off" />
+          </label>
+          <small class="hint">
+            <span data-i18n="settings.geminiGetKey">get one at</span>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              >aistudio.google.com/app/apikey</a
+            >
+          </small>
+        </fieldset>
+
+        <fieldset>
+          <legend>
+            <span data-i18n="settings.historyLegend">history</span>
+            <small data-i18n="settings.historyLegendHint"
+              >(optional, encrypted at rest)</small
+            >
+          </legend>
+          <label class="inline">
+            <input id="cfg-history" type="checkbox" />
+            <span data-i18n="settings.historyEnable"
+              >save messages on this device</span
+            >
+          </label>
+          <label
+            ><span data-i18n="settings.historyPassphrase">passphrase</span>
+            <small data-i18n="settings.historyPassphraseHint"
+              >(required if history is on)</small
+            >
+            <input
+              id="cfg-passphrase"
+              type="password"
+              autocomplete="new-password"
+            />
+          </label>
+          <button
+            id="cfg-clear-history"
+            type="button"
+            class="btn-small btn-danger"
+            data-i18n="settings.clearHistory"
+          >
+            clear history
+          </button>
+        </fieldset>
+
+        <div class="settings-actions">
+          <button value="cancel" class="btn" data-i18n="settings.cancel">
+            cancel
+          </button>
+          <button
+            id="cfg-save"
+            value="save"
+            class="btn btn-primary"
+            data-i18n="settings.save"
+          >
+            save
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="share-dialog" class="settings">
+      <form method="dialog" class="settings-form">
+        <h2 data-i18n="share.title">share this room</h2>
+        <p class="hint" data-i18n="share.desc">
+          Your friend can open this link to arrive with the room code, language
+          pair, and display names pre-filled. Your Gemini API key is NOT
+          included — they'll be asked to request it from you once they're in the
+          room. Share this link over a channel you trust.
+        </p>
+        <div class="row">
+          <input id="share-url" type="text" readonly />
+          <button
+            id="share-copy-btn"
+            type="button"
+            class="btn-small"
+            data-i18n="share.copy"
+          >
+            copy link
+          </button>
+        </div>
+        <div class="settings-actions">
+          <button value="close" class="btn" data-i18n="share.close">
+            close
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="vault.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

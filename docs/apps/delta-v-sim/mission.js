@@ -33,7 +33,7 @@ export const CRAFT_ORDER = ["chemical-tug", "nuclear-shuttle", "ion-freighter"];
 // the point of the trip), not the last waypoint (which, on a round trip, is the
 // origin). "Reach" ranks how far out a body sits: the Moon is a short hop, Mars
 // the deep target — so Earth→Mars→Earth turns around at Mars ⇒ "MARS-n".
-export const DEST_REACH = { moon: 0.5, earth: 1, mars: 2 };
+export const DEST_REACH = { moon: 0.5, earth: 1, venus: 1.5, mars: 2 };
 export function turnaroundKey(waypoints) {
   if (!waypoints || !waypoints.length) return "earth";
   let best = waypoints[0].body;
@@ -66,6 +66,7 @@ export function definitionFrom({
   craftId = "nuclear-shuttle",
   refuelInOrbit = true,
   returnStayDays = null,
+  historical = null, // { year, agency, kind, note, target } for a real-mission preset
 }) {
   const a = CRAFT_ARCHETYPES[craftId] || CRAFT_ARCHETYPES["nuclear-shuttle"];
   return {
@@ -78,6 +79,7 @@ export function definitionFrom({
     propFraction: a.propFraction,
     refuelInOrbit,
     returnStayDays,
+    historical,
   };
 }
 
@@ -122,6 +124,7 @@ export function resolveDefinition(def, launchTime = 0, bodyAt = worldAt) {
     launchTime,
     assumptions: { refuelInOrbit: def.refuelInOrbit, returnStayDays: def.returnStayDays, bodyAt },
     bodyAt,
+    historical: def.historical || null,
   });
 }
 
@@ -138,6 +141,7 @@ export function makeMission({
   launchTime = 0,
   assumptions = {},
   bodyAt = worldAt,
+  historical = null,
 }) {
   const tmg = timing || (objective === "fast" ? "leave-now" : "wait-for-window");
   const course = planCourse({
@@ -156,6 +160,7 @@ export function makeMission({
     helioConic: transferConic(l.from, l.to, l.depTime, l.tof, bodyAt), // primary = Sun
     transferDv: l.transferDv,
     captureDv: l.waypointDv,
+    assist: l.assist || null, // gravity-assist diagnostics on a flyby leg (else null)
     launchMethod: l.launch ? l.launch.method : "chemical",
     launchCost: l.launch ? l.launch.surfaceToOrbit : 0, // surface→orbit AFTER infra
   }));
@@ -186,6 +191,7 @@ export function makeMission({
     budget,
     feasible,
     runsDryLeg,
+    historical, // real-mission metadata (or null) — surfaced by the readout
   };
 }
 

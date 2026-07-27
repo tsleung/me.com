@@ -114,11 +114,6 @@ export function transferDvs(fromKey, toKey, depTime, tof, bodyAt) {
   };
 }
 
-// Departure Δv only (the documented signature).
-export function departureDv(fromKey, toKey, depTime, tof, bodyAt) {
-  return transferDvs(fromKey, toKey, depTime, tof, bodyAt).dep;
-}
-
 // TOF search range for a departing-now min-Δv transfer (Earth→Mars-scale).
 export const TOF_MIN = 120 * DAY_S;
 export const TOF_MAX = 400 * DAY_S;

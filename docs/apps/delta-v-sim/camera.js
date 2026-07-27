@@ -21,9 +21,13 @@ export class Camera {
     this.scale = 1e-6; // px per km
     this.cx = 0;
     this.cy = 0;
-    // zoom limits spanning ~4 orders of magnitude (Earth–Moon ↔ Sun–Mars)
+    // zoom limits spanning ~5 orders of magnitude. The floor (1e-9 px/km) frames
+    // the whole Sun–Mars system; the ceiling (5e-1 px/km = 2 km/px) is set for the
+    // LOW-ORBIT tier — a 400 km LEO orbit spans ~200 px and a 100 km skyhook tether
+    // ~50 px, both viewable. (The old ceiling of 5e-2 = 20 km/px left a tether at
+    // 5 px, unviewable — see notes/2026_07_23_delta_v_sim_technical_design.md R2.)
     this.minScale = 1e-9;
-    this.maxScale = 5e-2;
+    this.maxScale = 5e-1;
   }
 
   resize(w, h) {
@@ -94,9 +98,6 @@ export class Camera {
     this.cy += (d.center[1] - this.cy) * a;
   }
 
-  snapshot() {
-    return { scale: this.scale, cx: this.cx, cy: this.cy };
-  }
 }
 
 // A "nice" round number ≤ x for scale-bar tick lengths (1/2/5 × 10^n).

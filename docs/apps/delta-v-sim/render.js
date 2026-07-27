@@ -17,18 +17,23 @@ import {
   resolveMarks,
   satelliteEntity,
 } from "./visibility.js";
-import { BODIES, orbitTrace, AU_KM } from "./sim.js";
+import { BODIES, BODY_KEYS, orbitTrace, AU_KM } from "./sim.js";
 import { sampleConic, craftStateAt } from "./spacecraft.js";
 import { scaleBar } from "./camera.js";
 import { describe } from "./descriptions.js";
-import { missionStateAt } from "./mission.js";
 import { frameDesc } from "./uiState.js";
 
 const OFF = 6e4; // px: treat |coord| beyond this as off-canvas (avoid huge strokes)
 
+// Body partitions derived from the ONE catalog (BODY_KEYS × role), so adding a
+// body needs no edit here: PRIMARIES are the drawn-disc bodies (Sun + planets),
+// SATELLITES the resolvability-gated moons. Order follows BODY_KEYS.
+const PRIMARY_KEYS = BODY_KEYS.filter((k) => BODIES[k].role !== "moon"); // sun, earth, mars
+const SATELLITE_KEYS = BODY_KEYS.filter((k) => BODIES[k].role === "moon"); // moon, phobos, deimos
+
 // Anti-flicker hysteresis: prior on-screen visibility per satellite. The one
 // allowed bit of state; makes resolvableHysteretic deterministic frame-to-frame.
-const satShown = { moon: false, phobos: false, deimos: false };
+const satShown = Object.fromEntries(SATELLITE_KEYS.map((k) => [k, false]));
 
 // Hover targets from the LAST render: every visible mark (id + screen pos + hit
 // radius), so app can hit-test for tooltips against exactly what's on screen. A
@@ -189,7 +194,7 @@ export function render(ctx, scene) {
   // each in the mission's colour (the followed/selected one highlighted).
   if (scene.fleet && scene.fleet.length) {
     try {
-      for (const m of scene.fleet) drawFleetMission(ctx, m, scene.t, project);
+      for (const m of scene.fleet) drawFleetMission(ctx, m, project);
     } catch {
       /* ignore */
     }
@@ -214,7 +219,7 @@ export function render(ctx, scene) {
   // --- primary bodies (always drawn) ---
   // The Sun is a drawn disc wherever the descriptor says `sunAs:'disc'`; in the
   // pinned compare frame (`sunAs:'arrow'`) it is off-screen and an arrow stands in.
-  const bodyKeys = sunAsDisc ? ["sun", "earth", "mars"] : ["earth", "mars"];
+  const bodyKeys = sunAsDisc ? PRIMARY_KEYS : PRIMARY_KEYS.filter((k) => k !== "sun");
   for (const key of bodyKeys) {
     const b = BODIES[key];
     const st = world[key];
@@ -245,7 +250,7 @@ export function render(ctx, scene) {
 // A hidden satellite draws no dot, no ring, and pushes no label — label inherits.
 function drawSatellites(ctx, scene, project, effScale, pushLabel) {
   const { world } = scene;
-  for (const key of ["moon", "phobos", "deimos"]) {
+  for (const key of SATELLITE_KEYS) {
     const b = BODIES[key];
     const st = world[key];
     const entity = satelliteEntity(key);
@@ -320,9 +325,10 @@ function drawPreview(ctx, preview, project) {
 // One committed mission: its multi-leg course (frame-aware arcs in the mission's
 // colour, the active leg solid+wide, the rest dashed) plus its flying craft — a
 // PHASE-AWARE dot (parked grey / coasting gold / arrived green) inside a
-// mission-colour ring, labelled with the mission name. `missionStateAt` is the
-// pure piecewise position; a followed/selected mission draws bigger + brighter.
-function drawFleetMission(ctx, m, t, project) {
+// mission-colour ring, labelled with the mission name. The live craft state
+// (`m.craftState`) is resolved upstream in scene.js — render computes no physics;
+// a followed/selected mission draws bigger + brighter.
+function drawFleetMission(ctx, m, project) {
   const legs = m.legs || [];
   const active = m.activeLeg;
   legs.forEach((leg, i) => {
@@ -332,7 +338,7 @@ function drawFleetMission(ctx, m, t, project) {
     strokePath(ctx, leg.pts, project, m.color, width, isActive ? null : [4, 4]);
     glowDot(ctx, project(leg.pts[leg.pts.length - 1]), 3, m.color, m.color);
   });
-  const st = missionStateAt(m.mission, t);
+  const st = m.craftState;
   if (!st || !st.pos) return;
   const s = project(st.pos);
   if (!inRange(s)) return;
@@ -348,7 +354,12 @@ function drawFleetMission(ctx, m, t, project) {
   ctx.fillStyle = m.color;
   ctx.font = "11px ui-monospace, Menlo, monospace";
   const cd = m.countdown != null && m.countdown > 0.5 ? `  T−${m.countdown.toFixed(0)}d` : "";
-  ctx.fillText(`▸ ${m.name || st.phase}${cd}`, s[0] + 11, s[1] - 9);
+  // Launch legibility: while the craft is departing its origin on a STRUCTURE
+  // (prelaunch or the first leg), name it — "⚡ mass driver" — so a surface launch /
+  // skyhook throw is unmistakable. Drops once it captures and moves to later legs.
+  const launching = m.launch && (st.phase === "prelaunch" || m.activeLeg === 0);
+  const badge = launching ? `  ${m.launch.glyph} ${m.launch.label}` : "";
+  ctx.fillText(`▸ ${m.name || st.phase}${cd}${badge}`, s[0] + 11, s[1] - 9);
   ctx.restore();
 }
 

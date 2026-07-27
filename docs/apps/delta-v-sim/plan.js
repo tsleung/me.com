@@ -4,10 +4,11 @@
 // invented). Pure/DOM-free. Structured as an ARRAY of legs so the multi-leg
 // course planner (part 3) is a natural extension — part 2 fills exactly one leg.
 
-import { wrapPi } from "./vec.js";
-import { DAY_S, BODIES, MU_EARTH, MU_MOON, MU_MARS, worldAt } from "./sim.js";
-import { porkchop, bestTransferNow, transferDvs, TOF_FLOOR, TOF_MIN, TOF_MAX } from "./transfer.js";
+import { wrapPi, sub } from "./vec.js";
+import { DAY_S, BODIES, MU_SUN, worldAt } from "./sim.js";
+import { porkchop, bestTransferNow, transferDvs, lambert, TOF_FLOOR, TOF_MIN, TOF_MAX } from "./transfer.js";
 import { surfaceToOrbitWith } from "./infra.js";
+import { gravityAssist } from "./gravity-assist.js";
 import { courseDvAccounting } from "./budget.js";
 
 // Shared porkchop resolution so a single-leg course is IDENTICAL to the part-2
@@ -21,30 +22,102 @@ const PLAN_RESOLUTION = 48;
 // With the leg's actual heliocentric arrival v∞ this reproduces the research
 // Mars capture ≈ 0.9 km/s (windows-and-transfers.md §Δv budget) as PHYSICS, and
 // gives Earth's deep-well capture ≈ 0.4 (Oberth) — never invented.
-const CAPTURE_MU = { earth: MU_EARTH, mars: MU_MARS, moon: MU_MOON };
-const CAPTURE_PERIAPSIS = { earth: 6778, mars: 3790, moon: 2137 }; // km
+// Capture/flyby μ and periapsis DERIVE from the body catalog now (2026-07-24): μ =
+// BODIES[body].mu, periapsis = radius + a 400 km parking altitude. No magic
+// constants, and a new body (Venus) is covered automatically. `captureBody(k)`
+// returns null for bodies without both (e.g. the Sun) so callers guard cleanly.
+const PARKING_ALT_KM = 400;
+function captureBody(body) {
+  const b = BODIES[body];
+  if (!b || !b.mu || !b.radius) return null;
+  return { mu: b.mu, rp: b.radius + PARKING_ALT_KM };
+}
 
 function oberthCapture(vInf, body) {
-  const mu = CAPTURE_MU[body];
-  const rp = CAPTURE_PERIAPSIS[body];
-  if (!mu || !rp || !(vInf >= 0)) return 0;
-  const vEsc = Math.sqrt((2 * mu) / rp);
+  const cb = captureBody(body);
+  if (!cb || !(vInf >= 0)) return 0;
+  const vEsc = Math.sqrt((2 * cb.mu) / cb.rp);
   return Math.sqrt(vInf * vInf + vEsc * vEsc) - vEsc;
 }
 
 // Waypoint Δv by mode, using the leg's heliocentric arrival v∞:
-//   flyby → 0 (free pass-through; TRUE gravity-assist bending is roadmap, NOT here)
-//   orbit → Oberth capture into orbit (≈ research figure)
+//   flyby → 0 HERE (the per-waypoint capture primitive; a flyby doesn't capture).
+//           The REAL gravity-assist residual is priced at the COURSE level in
+//           planCourse, where the outgoing leg is known (see the flyby post-pass).
+//   orbit → Oberth capture into orbit (≈ research figure) at a PLANET; at a MOON,
+//           the moon-orbit rendezvous (no well to capture into).
 //   drop  → v1: capture then immediate re-departure (treated as orbit)
 export function waypointDv(body, mode, arrVInf) {
   if (mode === "flyby") return 0;
-  return oberthCapture(arrVInf, body); // orbit | drop
+  const b = BODIES[body];
+  if (b && b.primary && b.primary !== "sun") return moonRendezvousDv(arrVInf, body); // a MOON
+  return oberthCapture(arrVInf, body); // orbit | drop at a planet
 }
 
-// Synodic period between two bodies (from their real sidereal periods).
+// A MOON has negligible gravity — you can't capture INTO it, you MATCH its orbit
+// around its primary. Arriving at the Mars system with hyperbolic excess `vInf`
+// (relative to the PRIMARY), your speed at the moon's orbital radius r is
+// √(vInf² + 2μ_p/r); burn to the moon's circular velocity √(μ_p/r) there. THIS is
+// why reaching Phobos/Deimos really costs ~2 km/s ON TOP of getting to Mars — no
+// aerocapture, no gravity well to sink into. `vInf` is relative to the primary
+// because planCourse routes a moon leg's transfer via that primary (see below).
+function moonRendezvousDv(vInf, moonKey) {
+  const b = BODIES[moonKey];
+  const p = b && b.primary && BODIES[b.primary];
+  if (!p || !b.elem || !(vInf >= 0)) return 0;
+  const r = b.elem.a; // the moon's orbital radius around its primary
+  return Math.max(0, Math.sqrt(vInf * vInf + (2 * p.mu) / r) - Math.sqrt(p.mu / r));
+}
+
+// A body's HELIOCENTRIC root: itself if it orbits the Sun, else its primary (a moon
+// co-moves with its primary around the Sun).
+function heliocentricRoot(key) {
+  const b = BODIES[key];
+  return b && b.primary && b.primary !== "sun" ? b.primary : key;
+}
+
+// For interplanetary TRANSFER geometry, a moon reached from OUTSIDE its system
+// routes to its PRIMARY (Earth→Phobos ≡ Earth→Mars heliocentric-ally; the moon
+// rendezvous is the separate local Δv above). A moon reached from WITHIN its own
+// system (Earth→Moon) stays a local transfer — the sim's coarse approximation.
+export function transferBody(key, otherKey) {
+  const b = BODIES[key];
+  if (b && b.primary && b.primary !== "sun" && b.primary !== heliocentricRoot(otherKey)) return b.primary;
+  return key;
+}
+
+// The incoming (arrival) and outgoing (departure) hyperbolic-excess vectors for a
+// leg, RELATIVE TO the from/to bodies — recomputed from the leg's own Lambert
+// solution (the leg keeps only magnitudes). Used to price a real gravity assist at
+// a flyby, where the turn between two legs' v∞ vectors is what gravity bends.
+function legVInfVectors(leg, at) {
+  const w1 = at(leg.depTime);
+  const w2 = at(leg.arrTime);
+  const sol = lambert(w1[leg.from].pos, w2[leg.to].pos, leg.tof, MU_SUN);
+  if (!sol) return null;
+  return {
+    depVInf: sub(sol.v1, w1[leg.from].vel), // rel to `from` at departure
+    arrVInf: sub(sol.v2, w2[leg.to].vel), // rel to `to` at arrival
+  };
+}
+
+// The orbital period governing a transfer window. A moon reached from OUTSIDE its
+// system is timed by its PRIMARY's heliocentric period (it co-moves with the
+// primary around the Sun) — this is what lets Phobos/Deimos be real waypoints
+// (their 0.3-day local orbit would otherwise make the window search nonsense). A
+// moon reached from within its own system (Earth→Moon) keeps its own period.
+function orbitalPeriodForTransfer(key, otherKey) {
+  const b = BODIES[key];
+  if (b && b.primary && b.primary !== "sun" && b.primary !== heliocentricRoot(otherKey)) {
+    return BODIES[b.primary].elem.period;
+  }
+  return b && b.elem ? b.elem.period : Infinity;
+}
+
+// Synodic period between two bodies (from their real sidereal periods; moon-aware).
 export function synodicPeriod(fromKey, toKey) {
-  const Tf = BODIES[fromKey].elem.period;
-  const Tt = BODIES[toKey].elem.period;
+  const Tf = orbitalPeriodForTransfer(fromKey, toKey);
+  const Tt = orbitalPeriodForTransfer(toKey, fromKey);
   return 1 / Math.abs(1 / Tf - 1 / Tt);
 }
 
@@ -71,7 +144,10 @@ export function applyLaunchMethod(leg, methodId) {
   };
   if (out.budget && out.budget.rows && out.budget.rows.length) {
     const rows = out.budget.rows.map((r) =>
-      /surface\s*→\s*(leo|orbit)/i.test(r.label)
+      // Match the surface→orbit row by a STABLE field, not by parsing its label
+      // (the old `/surface → (leo|orbit)/i` regex was fragile — a relabel silently
+      // broke the rewrite). The row is tagged `kind:"surface-to-orbit"` in legBudget.
+      r.kind === "surface-to-orbit"
         ? {
             ...r,
             dv: s.result,
@@ -99,6 +175,7 @@ export function legBudget(fromKey, toKey) {
       rows: [
         {
           label: "Earth surface → LEO",
+          kind: "surface-to-orbit", // the row applyLaunchMethod rewrites (stable tag)
           dv: 9.4,
           range: [9.3, 10],
           note: "the gravity-well tax — incl. 1.5–2 km/s drag + gravity losses",
@@ -124,7 +201,17 @@ export function legBudget(fromKey, toKey) {
       infraCite: "launch-and-velocity-transfer.md §gravity-well depth",
     };
   }
-  return { target: `${toKey} orbit`, rows: [], infraNote: "", infraCite: "" };
+  // Non-Earth→Mars pairs: no cited per-leg breakout exists yet. Return an HONEST
+  // empty state (a flag + a note), never a fake authoritative "TOTAL 0.0" — the hud
+  // renders the note instead. Feasibility is unaffected (it reads leg.launch, not
+  // this card). Generalizing the breakout is deferred until a journey needs it.
+  return {
+    target: `${toKey} orbit`,
+    rows: [],
+    unavailable: true,
+    infraNote: `per-leg Δv-budget breakout not available for ${fromKey}→${toKey} yet — feasibility uses the mission model.`,
+    infraCite: "",
+  };
 }
 
 function phaseAngleDeg(world, fromKey, toKey) {
@@ -346,12 +433,19 @@ export function planCourse({ waypoints, startTime, assumptions = {} }) {
     const from = waypoints[i - 1].body;
     const to = waypoints[i].body;
     const mode = waypoints[i].mode || "orbit";
+    // A MOON routes its INTERPLANETARY transfer via its primary (Earth→Phobos is
+    // planned as Earth→Mars); the leg keeps the real waypoints as its identity and
+    // the moon rendezvous is priced by waypointDv. So `base` (window, transfer Δv,
+    // arrival v∞) is the Earth↔Mars leg, and arrival v∞ is RELATIVE TO THE PRIMARY —
+    // exactly what moonRendezvousDv needs.
+    const tFrom = transferBody(from, to);
+    const tTo = transferBody(to, from);
     // notBefore is the arrival at `from`; a fixed return stay overrides the window.
     const isReturnLeg = i >= 2 && to === originBody;
     const base =
       isReturnLeg && A.returnStayDays != null
-        ? legAtEpoch(from, to, notBefore + A.returnStayDays * DAY_S, at, A.objective)
-        : selectLeg(from, to, notBefore, at, A.returnTiming, A.objective);
+        ? legAtEpoch(tFrom, tTo, notBefore + A.returnStayDays * DAY_S, at, A.objective)
+        : selectLeg(tFrom, tTo, notBefore, at, A.returnTiming, A.objective);
     // Surface→orbit is paid ONCE, on the FIRST departure (the craft leaves the
     // origin body). Every LATER leg departs the ORBIT the craft captured into at the
     // previous waypoint, so it launches from orbit (0 surface→orbit) regardless of
@@ -360,16 +454,31 @@ export function planCourse({ waypoints, startTime, assumptions = {} }) {
     const leg = applyLaunchMethod(
       {
         from,
-        to,
+        to, // IDENTITY: the real waypoints (a moon stays a moon)
         mode,
-        ...base,
-        waypointDv: waypointDv(to, mode, base.heliocentricArrDv),
-        phaseAngleDeg: phaseAngleDeg(at(base.depTime), from, to),
+        ...base, // interplanetary geometry (via the primary for a moon)
+        waypointDv: waypointDv(to, mode, base.heliocentricArrDv), // moon → rendezvous
+        phaseAngleDeg: phaseAngleDeg(at(base.depTime), tFrom, tTo),
       },
       launchMethod,
     );
     legs.push(leg);
     notBefore = base.arrTime; // the next leg departs at its window after arrival
+  }
+  // GRAVITY-ASSIST post-pass: a flyby waypoint (waypoints[k+1], the arrival of
+  // legs[k] and the departure of legs[k+1]) now costs the REAL patched-conic
+  // residual — what a burn must supply beyond the free turn gravity provides — not
+  // the v1 flat 0. Needs both legs, so it runs here, after the chain is built.
+  for (let k = 0; k < legs.length - 1; k++) {
+    if ((waypoints[k + 1].mode || "orbit") !== "flyby") continue;
+    const body = legs[k].to; // = legs[k+1].from = the flyby body
+    const cb = captureBody(body); // μ + a conservative min flyby periapsis (under-credits)
+    const vIn = legVInfVectors(legs[k], at);
+    const vOut = legVInfVectors(legs[k + 1], at);
+    if (!cb || !vIn || !vOut) continue;
+    const assist = gravityAssist(vIn.arrVInf, vOut.depVInf, cb.mu, cb.rp);
+    legs[k].waypointDv = assist.residualDv; // 0 ⇒ gravity did it all (a real slingshot)
+    legs[k].assist = assist; // diagnostics for the HUD (free vs required turn)
   }
   // stay at each intermediate waypoint = gap between arrival and next departure
   const stays = [];

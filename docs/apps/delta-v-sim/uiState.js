@@ -11,30 +11,23 @@
 // The bug this closes is a CLASS: reachable states nobody named. The headline case
 // is "Sun stranded in a zoomed-out compare view" — a missing transition, now defined
 // (ZOOM in a pinned frame past threshold cascades to heliocentric, where the Sun is a
-// disc). We REUSE frames.frameForZoom / CASCADE_EFFSCALE for the cascade decision —
-// the frame descriptor here only adds the render facts (center / sunAs / pinned) that
-// used to live as scattered `isCompare` branches in render.js.
+// disc). We REUSE frames.frameForZoom / CASCADE_EFFSCALE for the cascade decision.
 
 import { DAY_S } from "./sim.js";
-import { frameForZoom, FRAMES } from "./frames.js";
+import { frameForZoom, FRAMES, FRAME_ORDER } from "./frames.js";
 
-// ---- frame descriptors: render + zoom facts AS DATA -------------------------
-// sunAs: 'disc' (the Sun is a drawn body) | 'arrow' (off-screen; a bearing arrow).
-// pinned: the pair is anchored/normalized (compare) → compare extras, no scale bar.
-export const FRAME_DESC = {
-  helio: { id: "helio", center: "sun", sunAs: "disc", pinned: false },
-  geo: { id: "geo", center: "earth", sunAs: "disc", pinned: false },
-  areo: { id: "areo", center: "mars", sunAs: "disc", pinned: false },
-  "em-syn": { id: "em-syn", center: "earth", sunAs: "disc", pinned: false },
-  "se-syn": { id: "se-syn", center: "sun", sunAs: "disc", pinned: false },
-  "earth-mars": { id: "earth-mars", center: "earth", sunAs: "arrow", pinned: true },
-};
+// ---- frame descriptor: render facts, read from the ONE frame catalog --------
+// The render facts (center / sunAs / pinned) live in frames.FRAMES now — there is
+// no second table to drift from it (design R1, 2026-07-24). `frameDesc` reads them
+// straight from FRAMES; an unknown id still falls back to helio, but a frame that
+// EXISTS in FRAMES can never miss its facts, which is the silent-misrender bug the
+// merge closed (asserted in selftest "ui-model: every frame has render facts").
 export function frameDesc(frameId) {
-  return FRAME_DESC[frameId] || FRAME_DESC.helio;
+  return FRAMES[frameId] || FRAMES.helio;
 }
 
 // The reachability enums the selftest sweeps against.
-export const FRAME_IDS = Object.keys(FRAME_DESC);
+export const FRAME_IDS = FRAME_ORDER;
 export const CAMERA_KINDS = ["fit", "body", "follow", "manual"];
 export const WORKSPACES = ["none", "define", "fleet", "sandbox"];
 
@@ -53,6 +46,19 @@ export const INITIAL = {
   // playback axis — the MODE (playing/rate); the clock VALUE `t` is domain data.
   playback: { playing: true, rate: 20 * DAY_S }, // effective default comes from the rate slider (index.html value=680)
 };
+
+// A FRESH initial UI state, deep-cloned so no two sessions (or a reset) share a
+// nested object with INITIAL. Boot calls this instead of hand-spreading each axis
+// — so adding a new object-valued axis (e.g. a director) can't silently alias the
+// INITIAL reference (design R5, 2026-07-24).
+export function initialUi() {
+  return {
+    frame: INITIAL.frame,
+    camera: { ...INITIAL.camera },
+    workspace: INITIAL.workspace,
+    playback: { ...INITIAL.playback },
+  };
+}
 
 const cam = (kind, target = null) => ({ kind, target });
 
@@ -119,13 +125,4 @@ export function reduce(ui, action) {
 // ---- derived selectors (pure) — read by app.js + render.js ------------------
 export function analysisVisible(ui) {
   return ui.workspace === "define"; // porkchop/plan/chart are derived from this
-}
-export function sunModeFor(ui) {
-  return frameDesc(ui.frame).sunAs; // 'disc' | 'arrow'
-}
-export function isPinned(ui) {
-  return frameDesc(ui.frame).pinned;
-}
-export function frameCenter(ui) {
-  return frameDesc(ui.frame).center;
 }

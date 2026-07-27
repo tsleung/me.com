@@ -12,7 +12,7 @@
 //     the fleet, the sandbox craft, the elevator, the analysis DATA) — untouched by
 //     the reducer, mutated imperatively as before.
 
-import { worldAt, MU_SUN, MU_EARTH, DAY_S, YEAR_S } from "./sim.js";
+import { worldAt, MU_SUN, MU_EARTH, DAY_S, YEAR_S, BODY_KEYS } from "./sim.js";
 import { sub, mag } from "./vec.js";
 import { frameMap, frameUnmap } from "./frames.js";
 import { frameScaleFactor } from "./visibility.js";
@@ -33,6 +33,8 @@ import {
   firstLegKeys,
 } from "./mission.js";
 import { elevatorPayloadCraft } from "./elevator.js";
+import { historicalDefinitions } from "./historical.js";
+import { buildScene } from "./scene.js";
 import { Camera, desiredCamera, desiredCameraAt } from "./camera.js";
 import { render, pickMark, COURSE_PALETTE } from "./render.js";
 import { formatHud, formatPlan, formatMission } from "./hud.js";
@@ -40,7 +42,7 @@ import { drawDvChart } from "./chart.js";
 import { drawPorkchop } from "./porkchop.js";
 import { describe, uiBlurb } from "./descriptions.js";
 import { runSelftest } from "./selftest.js";
-import { INITIAL, reduce, frameDesc, analysisVisible } from "./uiState.js";
+import { initialUi, reduce, frameDesc, analysisVisible } from "./uiState.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -78,6 +80,8 @@ const state = {
   fleetCounters: {},
   fleetSeq: 0,
   elevator: null, // { dRelease, craft }
+  // ambient history queue — one historical mission flying at a time (see queue fns)
+  history: { defs: null, index: 0, currentId: null },
 };
 
 let ctx = null;
@@ -110,8 +114,13 @@ function applyUi(prev, next) {
     syncFrameButtons();
     state.selected = frameDesc(next.frame).center; // a fresh frame reads its centre body
   }
-  if (next.camera.kind === "body" && next.camera.target !== state.selected) {
-    state.selected = next.camera.target; // focusing a body selects it for the HUD
+  // Focusing a body selects it for the HUD — but ONLY when the camera axis actually
+  // changed this dispatch (reduce returns a NEW camera object on camera transitions,
+  // the same ref otherwise). Without this guard the branch re-ran on EVERY dispatch
+  // and clobbered a just-placed sandbox craft's selection back to the focused body
+  // (place-craft bug: click Earth → "+ place" → click canvas showed Earth in the HUD).
+  if (next.camera !== prev.camera && next.camera.kind === "body" && next.camera.target !== state.selected) {
+    state.selected = next.camera.target;
   }
   if (next.workspace !== prev.workspace) applyWorkspace(prev.workspace, next.workspace);
   if (next.playback.playing !== prev.playback.playing) {
@@ -220,11 +229,14 @@ function makeDef(spec) {
 
 function initDefinitions() {
   state.defSeq = 0;
-  state.definitions = MISSION_PRESETS.map((p) => makeDef(p)); // deep-copied clones
+  // the two generic presets first (the default stays Earth→Mars→Earth), then the
+  // real historical missions — all selectable from the same def dropdown.
+  const specs = [...MISSION_PRESETS, ...historicalDefinitions()];
+  state.definitions = specs.map((p) => makeDef(p)); // deep-copied clones
   state.selectedDefId = state.definitions[0].id;
 }
 
-const COURSE_BODIES = ["earth", "mars", "moon"];
+const COURSE_BODIES = ["earth", "venus", "mars", "moon", "phobos", "deimos"];
 const COURSE_MODES = ["orbit", "flyby", "drop"];
 
 // Trajectory-affecting edit → recompute the preview + all analysis views.
@@ -600,6 +612,51 @@ function launchMission() {
   updateHud();
 }
 
+// The ambient HISTORY QUEUE: exactly ONE historical mission flies at a time — with
+// its launch-window countdown — then the next queues when it arrives. This keeps
+// the orbital view readable (17 concurrent missions turned it into a tangle of arcs
+// + overlapping labels). The same missions stay in the library as launch-anytime
+// templates; the queue is a separate ambient layer (recall-able). Cycles endlessly.
+function queueNextHistorical() {
+  const h = state.history;
+  const def = h.defs[h.index % h.defs.length];
+  h.index += 1;
+  const mission = resolveDefinition(def, state.t, worldAt); // efficient → next window
+  state.fleetSeq += 1;
+  const id = `h${state.fleetSeq}`;
+  state.missions.push({
+    id,
+    name: def.name, // e.g. "Mariner 4 (1965)"
+    mission,
+    color: COURSE_PALETTE[state.fleetSeq % COURSE_PALETTE.length],
+    launchT: state.t,
+    legs: missionLegs(mission),
+    defName: def.name,
+    ambient: true, // marks it as the queued history craft (not a user launch)
+  });
+  h.currentId = id;
+}
+
+// Advance the queue: when the current ambient mission has ARRIVED (completed its
+// journey), drop it and queue the next. Called once per RAF frame.
+function manageHistoryQueue() {
+  const h = state.history;
+  if (!h || !h.defs) return;
+  if (h.currentId == null) {
+    queueNextHistorical();
+    return;
+  }
+  const fm = state.missions.find((m) => m.id === h.currentId);
+  if (!fm) {
+    h.currentId = null; // recalled / cleared → queue the next next frame
+    return;
+  }
+  if (missionStateAt(fm.mission, state.t).phase === "arrived") {
+    state.missions = state.missions.filter((m) => m.id !== fm.id); // clear the finished one
+    h.currentId = null;
+  }
+}
+
 // ============================================================================
 //  Analysis VIEWS of the selected definition's first transfer leg (under 'define').
 // ============================================================================
@@ -890,6 +947,9 @@ function frame(now) {
 
   const world = worldAt(state.t);
 
+  // ambient history: keep exactly one queued mission flying (advance on arrival)
+  manageHistoryQueue();
+
   // analysis views of the selected definition (throttled recompute)
   refreshChart(now);
   refreshPorkchop(now, false);
@@ -905,27 +965,6 @@ function frame(now) {
     dispatch({ type: "UNFOLLOW" });
   }
 
-  // Each committed mission's active leg (the one its craft is currently flying).
-  const fleetScene = state.missions.map((fm) => {
-    const st = missionStateAt(fm.mission, state.t);
-    // days to the next departure while parked — the on-canvas launch countdown
-    let countdown = null;
-    if (st.phase === "prelaunch" && fm.mission.legs[0]) {
-      countdown = (fm.mission.legs[0].tDepart - state.t) / DAY_S;
-    } else if (st.phase === "waiting" && fm.mission.legs[st.legIndex]) {
-      countdown = (fm.mission.legs[st.legIndex].tDepart - state.t) / DAY_S;
-    }
-    return {
-      mission: fm.mission,
-      legs: fm.legs,
-      color: fm.color,
-      name: fm.name,
-      activeLeg: st.legIndex,
-      countdown,
-      selected: isFollowing(fm.id),
-    };
-  });
-
   // Camera convergence on the LIVE target — recomputed every frame (never a
   // snapshot), so it can't ease toward a stale point or need a terminal jump. The
   // mode (fit / body / follow / manual) is the single owner.
@@ -935,18 +974,20 @@ function frame(now) {
     else state.camera.easeToward(desired, dtReal, 7);
   }
 
-  const scene = {
+  // The Scene (flat, render-ready) is assembled by the pure scene.js seam — it
+  // resolves each fleet craft's live state so render draws only, never re-derives.
+  const scene = buildScene({
     world,
     camera: state.camera,
     t: state.t,
-    toId: state.ui.frame,
+    frameId: state.ui.frame,
     selected: state.selected,
-    craft: state.craft ? state.craft.obj : null,
+    craftObj: state.craft ? state.craft.obj : null,
     preview: analysisVisible(state.ui) ? state.previewRender : null, // uncommitted "launch now" arcs
-    fleet: fleetScene, // every committed mission: course + flying craft
+    missions: state.missions,
     elevator: state.elevator,
-    showLagrange: true,
-  };
+    followId: state.ui.camera.kind === "follow" ? state.ui.camera.target : null,
+  });
   try {
     render(ctx, scene);
   } catch (err) {
@@ -1080,7 +1121,7 @@ function pickBodyAt(sx, sy) {
   const map = frameMap(state.ui.frame, world);
   let best = null;
   let bestD = 22; // px pick radius
-  for (const key of ["sun", "earth", "moon", "mars", "phobos", "deimos"]) {
+  for (const key of BODY_KEYS) {
     if (!world[key]) continue;
     const s = state.camera.worldToScreen(map(world[key].pos));
     const d = Math.hypot(s[0] - sx, s[1] - sy);
@@ -1258,12 +1299,14 @@ function boot() {
     pcCtx = pcCanvas.getContext("2d");
     resizePorkchop();
   }
-  state.ui = { ...INITIAL, camera: { ...INITIAL.camera }, playback: { ...INITIAL.playback } };
+  state.ui = initialUi();
   state.camera = new Camera(canvas.clientWidth || 800, canvas.clientHeight || 600);
   state.reducedMotion = !!(
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
   initDefinitions();
+  state.history = { defs: historicalDefinitions(), index: 0, currentId: null };
+  queueNextHistorical(); // ambient: one historical mission flies at a time, on open
   resize();
   window.addEventListener("resize", resize);
   // Snap to the initial frame so the first paint is framed; then live tracking (fit).

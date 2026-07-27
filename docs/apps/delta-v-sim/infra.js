@@ -7,6 +7,8 @@
 // capture infrastructure (mass-driver catcher, skyhook catch) is the symmetric
 // roadmap extension (see architecture.md).
 
+import { dvRemovedByStructure } from "./structures.js";
+
 const CITE = "launch-and-velocity-transfer.md";
 
 // Practical surface→orbit budget per body, from the gravity-well table: Earth
@@ -40,8 +42,9 @@ export const LAUNCH_METHODS = {
     id: "mass-driver",
     label: "mass driver (EM launch)",
     maturity: "PROVEN-PHYSICS; prototype TESTED 1977",
-    // O'Neill lunar mass driver: up to 2.4 km/s (> lunar escape 2.38). Airless-ideal.
-    dvRemoved: (b) => Math.min(2.4, SURFACE_TO_ORBIT[b] || 0),
+    // dvRemoved DERIVES from structures['mass-driver'].exitVel (2.4 km/s, > lunar
+    // escape 2.38) — the SAME number the simulated object throws with. No drift.
+    dvRemoved: (b) => dvRemovedByStructure("mass-driver", SURFACE_TO_ORBIT[b] || 0),
     residual: 0.2,
     cite: `${CITE} §A2 mass driver`,
     available: (b) => {
@@ -56,17 +59,22 @@ export const LAUNCH_METHODS = {
     id: "skyhook",
     label: "skyhook / rotovator",
     maturity: "PROVEN-PHYSICS; tethers TESTED",
-    // HASTOL / MXER: ~2.4–4 km/s off the launcher; works at every body.
-    dvRemoved: (b) => Math.min(3.2, SURFACE_TO_ORBIT[b] || 0),
+    // dvRemoved DERIVES from structures.skyhook.exitVel — MXER's cited 2.4 km/s (the
+    // conservative end of the research's 2.4–4 range; the old 3.2 was untraceable).
+    dvRemoved: (b) => dvRemovedByStructure("skyhook", SURFACE_TO_ORBIT[b] || 0),
     residual: 0.3,
     cite: `${CITE} §B1 skyhook`,
-    available: () => ({ ok: true }),
+    // Honest boundary (refuse-to-fake): the tip Δv is credited, but each throw drops
+    // the tether and reboost is NOT modeled — flagged so it never reads as free.
+    available: () => ({ ok: true, caveat: "◐ each throw drops the tether; reboost not modeled" }),
   },
   "space-elevator": {
     id: "space-elevator",
     label: "space elevator",
     maturity: "Moon/Mars PROVEN-PHYSICS; Earth SPECULATIVE",
-    dvRemoved: (b) => SURFACE_TO_ORBIT[b] || 0, // ride to the balance point — ~all
+    // dvRemoved DERIVES from structures['space-elevator'] (exitVel null ⇒ rides to
+    // the balance point, removes ALL of surface→orbit).
+    dvRemoved: (b) => dvRemovedByStructure("space-elevator", SURFACE_TO_ORBIT[b] || 0),
     residual: 0.2,
     cite: `${CITE} §A1 space elevator`,
     available: (b) => {

@@ -13,10 +13,19 @@ import { add, sub, rot, scale, mag, cross, wrapPi } from "./vec.js";
 import { BODIES, DAY_S, EARTH_MOON_MU, SUN_EARTH_MU } from "./sim.js";
 
 // ---- frame catalog ----------------------------------------------------------
+// This is the SINGLE source of frame truth. Every field a frame needs lives here:
+// the map inputs (kind / center / primary / secondary / mu) AND the render facts
+// (`sunAs`, `pinned`) that uiState.frameDesc used to duplicate in a parallel
+// FRAME_DESC table. Merged 2026-07-24 (design R1): a second table meant a frame
+// added here but not there rendered silently as heliocentric. Now adding a frame
+// is one row and it carries its own render facts.
+//   center: the body at the display origin (a BODIES key).
+//   sunAs : 'disc' (the Sun is a drawn body) | 'arrow' (off-screen; a bearing arrow).
+//   pinned: the pair is anchored/normalized (compare) → compare extras, no scale bar.
 export const FRAMES = {
-  helio: { id: "helio", label: "heliocentric", kind: "inertial", center: "sun" },
-  geo: { id: "geo", label: "geocentric", kind: "inertial", center: "earth" },
-  areo: { id: "areo", label: "areocentric", kind: "inertial", center: "mars" },
+  helio: { id: "helio", label: "heliocentric", kind: "inertial", center: "sun", sunAs: "disc", pinned: false },
+  geo: { id: "geo", label: "geocentric", kind: "inertial", center: "earth", sunAs: "disc", pinned: false },
+  areo: { id: "areo", label: "areocentric", kind: "inertial", center: "mars", sunAs: "disc", pinned: false },
   "em-syn": {
     id: "em-syn",
     label: "Earth–Moon synodic",
@@ -25,6 +34,8 @@ export const FRAMES = {
     secondary: "moon",
     mu: EARTH_MOON_MU,
     center: "earth",
+    sunAs: "disc",
+    pinned: false,
   },
   "se-syn": {
     id: "se-syn",
@@ -34,6 +45,8 @@ export const FRAMES = {
     secondary: "earth",
     mu: SUN_EARTH_MU,
     center: "sun",
+    sunAs: "disc",
+    pinned: false,
   },
   "earth-mars": {
     id: "earth-mars",
@@ -42,6 +55,8 @@ export const FRAMES = {
     a: "earth",
     b: "mars",
     center: "earth",
+    sunAs: "arrow",
+    pinned: true,
   },
 };
 

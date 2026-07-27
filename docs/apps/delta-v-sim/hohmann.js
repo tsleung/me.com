@@ -2,10 +2,9 @@
 // Verified against notes/delta-v/research/windows-and-transfers.md: Earth→Mars
 // departure Δv = 2.945 km/s. Pure.
 //
-// SEAM: the coming 2D porkchop / telemetry feature adds a `transfer` module (a
-// Lambert solver over a departure×arrival grid) alongside this one. It reuses
-// kepler.js + vec.js, consumes worldAt() body states, and feeds a HUD chart.
-// Hohmann is the single-point degenerate case of that grid.
+// ROLE: this module is now a TEST ORACLE. `transfer.js`'s Lambert solver is the
+// production path; Hohmann is the closed-form 180° degenerate case the selftest
+// cross-checks `transfer.js` against (imported only by selftest.js / core.test.js).
 
 import { BODIES, MU_SUN, DAY_S } from "./sim.js";
 
@@ -37,21 +36,5 @@ export function hohmann(r1, r2, mu) {
     dvTotal: Math.abs(dv1) + Math.abs(dv2),
     tof,
     tofDays: tof / DAY_S,
-  };
-}
-
-// The Hohmann transfer ellipse as a heliocentric orbit, with periapsis anchored
-// at Earth's current heliocentric position (so it can be drawn leaving Earth).
-export function hohmannTransferOrbit(earthState) {
-  const h = hohmannEarthMars();
-  const argp = Math.atan2(earthState.pos[1], earthState.pos[0]);
-  return {
-    a: h.at,
-    e: h.eT,
-    argp,
-    prograde: 1,
-    type: "ellipse",
-    mu: MU_SUN,
-    hohmann: h,
   };
 }

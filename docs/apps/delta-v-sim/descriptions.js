@@ -12,6 +12,10 @@ export const DESCRIPTIONS = {
     label: "Moon",
     blurb: "Earth's moon. a = 384,400 km, T = 27.32 d. Space-elevator anchor via Earth–Moon L1.",
   },
+  venus: {
+    label: "Venus",
+    blurb: "Inner planet. a = 0.723 AU, e = 0.007 — the classic gravity-assist swingby toward Mars or the outer system.",
+  },
   mars: {
     label: "Mars",
     blurb: "The destination. a = 1.524 AU, e = 0.093 — its eccentricity drives cheap-vs-expensive windows.",
@@ -65,7 +69,7 @@ export const UI_BLURBS = {
   feasibility:
     "feasible if the craft's Δv budget ≥ the mission's required Δv (with refuel, the worst single leg).",
   elevator:
-    "standalone demo — let a payload go from the lunar elevator; the Moon's orbital motion + the elevator's rotation give it velocity with NO propellant, and the sim draws the resulting orbit. It illustrates 'elevator as a launch system' — it does NOT feed the mission planner (the space-elevator LAUNCH METHOD in a mission is separate).",
+    "let a payload go from the lunar elevator; the Moon's orbital motion + the elevator's rotation give it velocity with NO propellant, and the sim draws the resulting orbit. The demo and the mission's space-elevator launch method now share ONE physical model (structures.js) — the same structure, two views of it.",
 };
 
 export function uiBlurb(id) {

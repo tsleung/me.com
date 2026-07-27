@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>spread / terranleung.com</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <a href="/" class="home" aria-label="back to home">←</a>
+      <h1>spread</h1>
+      <span class="subtitle">why splitting a bet beats making it</span>
+    </header>
+    <main>
+      <p class="lede">
+        one deck, one wager: is the next card red? bet even money and it's a
+        coin flip. but you don't have to put the whole stake on one card. you
+        can split it across many cards at once, and you can play round after
+        round. those two moves — spreading a bet <em>across</em> hands and
+        <em>over</em> time — are the whole of diversification, and a deck of
+        cards shows exactly what they buy you. deal a few rounds by hand first;
+        the charts further down are just what that looks like a thousand times
+        over.
+      </p>
+
+      <section aria-labelledby="table-title">
+        <p class="microlabel">00 · the table</p>
+        <h2 id="table-title">deal it yourself</h2>
+        <p>
+          this is blackjack stripped to its skeleton. no hitting, no dealer,
+          no strategy chart — just one shared deck and a single feature to bet:
+          is the card red or black? losing all of that complexity is the point,
+          because it leaves the two things this app is about in plain view —
+          how you split a bet across hands, and how the deck drifts as it
+          empties.
+        </p>
+        <p>
+          each round you stake a slice of your bankroll and deal it across your
+          hands — one card each — then the matching color pays, the rest don't,
+          and the spent cards go to the discard. the next round deals from
+          what's left, so the deck draws down as you play; when it can't cover a
+          round, you reshuffle. deal a single hand and it's a coin flip you can
+          feel; push the hands up and watch a whole row come out at once.
+        </p>
+        <div id="table-app" class="demo"></div>
+        <p>
+          nothing here is a simulation — it's the actual game, one deal at a
+          time. keep an eye on the deck's red/black split as it empties: that
+          drift away from an even shoe is a real, exploitable signal, and in
+          real blackjack it's exactly what a card-counter trades on. that
+          betting strategy is coming; for now, just build the intuition — then
+          the two chapters below zoom out to what happens over thousands of
+          rounds.
+        </p>
+      </section>
+
+      <section aria-labelledby="within-title">
+        <p class="microlabel">01 · across hands</p>
+        <h2 id="within-title">one hand, then two, then half the deck</h2>
+        <p>
+          you're staking everything this round. on one hand, you bet it all on
+          a single card: you either win the payoff or you don't — a jagged,
+          two-outcome gamble. split the same stake across two cards and there
+          are now three outcomes; across twenty-six cards — half the deck in one
+          pull — the count of reds barely strays from thirteen. the average
+          payoff never moved. the <em>swing</em> around it collapsed.
+        </p>
+        <div id="within-app" class="demo"></div>
+        <p>
+          drag the payoff up to its extreme — win doubles your money, a loss
+          halves it — and deal: the single-hand distribution is two far-apart
+          spikes, and every hand you add pulls the mass toward the middle. the
+          second curve says why one deck beats betting on independent flips: the
+          cards are dealt <em>without replacement</em>, so a red now makes a red
+          later slightly less likely. that negative correlation is free
+          variance reduction — and at fifty-two hands the whole deck is exactly
+          half red, so the round is riskless.
+        </p>
+      </section>
+
+      <section aria-labelledby="overtime-title">
+        <p class="microlabel">02 · over time</p>
+        <h2 id="overtime-title">the same bet, a hundred times over</h2>
+        <p>
+          now reinvest. each round you stake a slice of your balance, the deck
+          reshuffles, and — as if paychecks kept arriving — fresh capital is
+          injected on top. run a thousand parallel lives and two very different
+          numbers emerge. the <b>mean</b> is what a whole room of players earns
+          on average. the <b>median</b> is what the typical single player
+          actually lives through. they are not the same number, and the gap is
+          the point.
+        </p>
+        <div id="overtime-app" class="demo"></div>
+        <p>
+          set the payoff to win-double / lose-half and bet it all on one hand:
+          the average line climbs 25% a round while the median goes nowhere. a
+          multiplicative bet that is a <em>gain</em> on average is a slow
+          <em>loss</em> as you live it, because a doubling and a halving cancel
+          to nothing — that's volatility drag. now raise the hands per round.
+          each round's swing shrinks, the drag lifts, and the median rises to
+          meet the mean. diversifying across hands is what lets you actually
+          keep the ensemble's edge over time.
+        </p>
+        <p class="aside">
+          this split between the room's average and one player's fate is
+          ergodicity: a multiplicative wealth process is <em>non-ergodic</em>,
+          so the time-average a person experiences diverges from the ensemble
+          average across people (peters 2019, <em>nature physics</em>; the
+          ×2 / ÷2 coin is his canonical example). the optimal slice to stake is
+          a kelly question — which the optimizer below works out for itself,
+          along with a card-counter who turns the depleting deck into a real
+          edge.
+        </p>
+      </section>
+
+      <section aria-labelledby="policy-title">
+        <p class="microlabel">03 · the optimizer</p>
+        <h2 id="policy-title">let it learn what to bet</h2>
+        <p>
+          how much <em>should</em> you stake at each count? because the reward
+          is log-growth, the answer is scale-free — it depends only on the deck,
+          not your bankroll — so the whole policy fits in one table: for every
+          composition of reds and blacks remaining, a single bet fraction. we
+          don't hand it that table. an agent fills it in by playing, updating
+          each cell online toward what it just earned, starting
+          <em>optimistically</em> so every bet size gets tried before the
+          estimates settle.
+        </p>
+        <div id="policy-app" class="demo"></div>
+        <p>
+          up top you watch it happen. the whole shoe is dealt out as columns of
+          rounds — left played first, one card per hand — and the policy bets
+          each round as the deck depletes and the count drifts. a bankroll runs
+          underneath (take income every round, or pay to play — human capital
+          cuts both ways), and every round's win-count drops into a histogram
+          that bells into a normal as you add hands: the central limit theorem,
+          the same diversification lesson, live. below it is the policy itself,
+          learned online and sharpening toward the exact optimum beside it —
+          and the <b>counter</b>'s growth pulling away from the
+          <b>non-counter</b>'s, which is the cash value of information. change
+          the payoff or the hands mid-run and the table re-adapts rather than
+          restarting.
+        </p>
+        <p class="aside">
+          this is the reinforcement-learning skeleton of blackjack card
+          counting, on the red/black toy: an action-value table over the count,
+          populated by monte-carlo returns from an optimistic prior, read out
+          greedily as a betting policy. the exact solver is here only to grade
+          it — the agent never sees it.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <a href="/" class="home-link">← terranleung.com</a>
+      <span>a deck, a wager, and the two axes of diversification</span>
+    </footer>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
