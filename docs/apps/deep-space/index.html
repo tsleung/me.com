@@ -546,9 +546,91 @@
             worse.
           </p>
           <p>
-            The <strong>Knowledge</strong> tab shows everything remembered. If
-            two entries disagree, it says so at the top and asks you to pick.
-            You can withdraw any entry at any time.
+            The whole point of the app is that this compounds. Level 30 is
+            easier than level 3 not because the model got smarter, but because
+            by then it is being told the thirty things you already worked out.
+          </p>
+
+          <h3>How the knowledge base works</h3>
+          <p>
+            The <strong>Knowledge</strong> tab shows everything remembered. Each
+            entry is one small claim &mdash; what a glyph means, how a number is
+            written, what a machine does &mdash; with a
+            <strong>kind</strong> (numeral, glyph, operator, grammar, mechanic,
+            concept, recipe), a <strong>subject</strong> naming the thing it is
+            about, a <strong>confidence</strong> of high, medium or low, and the
+            level it came from.
+          </p>
+          <p>
+            Nothing is ever edited in place. The app keeps an append-only
+            history of three kinds of change &mdash; <em>add</em> a new entry,
+            <em>revise</em> an existing one, <em>withdraw</em> one &mdash; and
+            the list you see is that history replayed from the beginning. That
+            is why <strong>Rebuild from history</strong> and
+            <strong>Undo the last change</strong> both work reliably: undo
+            removes one recorded change and replays the rest, so everything that
+            followed from it is rebuilt without it. It also means a revision
+            keeps its ancestry &mdash; you can see that an entry replaced an
+            earlier one rather than appearing from nowhere.
+          </p>
+          <p>
+            Not everything proposed gets through. An entry that repeats
+            something already known, word for word once punctuation and casing
+            are ignored, is dropped rather than added twice &mdash; otherwise
+            the list would grow every level with the model restating what it
+            already told you. A change pointing at an entry that no longer
+            exists is kept but marked as having done nothing, under
+            <strong>Recorded changes that could not be applied</strong>, rather
+            than vanishing quietly. Overlong fields are trimmed: a single entry
+            rides along in every future question, so one runaway paragraph would
+            cost you tokens forever.
+          </p>
+
+          <h3>When two entries disagree</h3>
+          <p>
+            Two active entries with the same kind and the same subject, saying
+            different things, are a <strong>disagreement</strong>. These are
+            listed at the top of the Knowledge tab and are worth settling
+            promptly &mdash; left alone, both go into every future question, and
+            the model has to guess which one you meant. Pick the one to keep and
+            the other is withdrawn.
+          </p>
+          <p>
+            This is the failure that actually bites, and it is why the subject
+            of an entry names a <em>concept</em> rather than a value. Four
+            different claims about the hydrogen line, each filed under its own
+            number, never collide and so never get caught; four claims all filed
+            under &ldquo;hydrogen line&rdquo; are flagged the moment the second
+            one arrives.
+          </p>
+          <p>
+            Withdrawn entries are not deleted. They move to
+            <strong>Withdrawn entries</strong> at the bottom, out of the prompt
+            but still in the history.
+          </p>
+
+          <h3>What actually gets sent</h3>
+          <p>
+            Everything learned is kept, but not all of it travels with every
+            question. <strong>How much of the knowledge base to send</strong> in
+            Settings caps the number of entries per question; when there are
+            more than that, the highest-confidence ones go first, and recent
+            ones win ties. The answer tells you how many rode along. Raise the
+            cap if answers seem to have forgotten things; lower it if the model
+            starts complaining about length.
+          </p>
+          <p>
+            Withdrawn entries are never sent. Neither is the reading of any
+            other level &mdash; only these entries carry across levels, which is
+            what keeps a thirty-level game affordable.
+          </p>
+          <p>
+            <strong>Run without the knowledge base</strong> answers the current
+            screen with nothing remembered at all, using the same picture and
+            the same description. It is there so you can check that any of this
+            is earning its keep: if the answers are no worse without it, the
+            entries you have been curating are not helping, and the honest thing
+            is to know that.
           </p>
 
           <h3>If something goes wrong</h3>

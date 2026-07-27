@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lorenz — the butterfly effect, drawn and measured</title>
+    <link rel="stylesheet" href="./style.css" />
+    <!-- Without JS every .reveal element stays at opacity 0 forever, leaving a
+         black page with one dead button and no way to know why. -->
+    <noscript>
+      <style>
+        .reveal {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+        .panel-toggle {
+          display: none;
+        }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <!--
+      On load this page is black except for one button. The masthead,
+      readouts, legend, chart and notes all carry `reveal`: they hold their
+      space from the first paint, so the page never reflows mid-opening, but
+      stay invisible until it finishes. See intro.js.
+    -->
+    <button
+      id="c-panel"
+      class="panel-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="panel"
+    >
+      controls
+    </button>
+
+    <header class="masthead reveal">
+      <h1>lorenz</h1>
+      <p class="tagline">
+        Three equations from a 1963 convection model. Two trajectories a
+        rounding error apart. The distance between them is the whole story.
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="stage-wrap" aria-label="Attractor">
+        <canvas id="stage" class="stage"></canvas>
+
+        <div class="overlay reveal">
+          <div class="stat">
+            <span class="k">t</span><span class="v" id="r-t">—</span>
+          </div>
+          <div class="stat">
+            <span class="k">since fork</span
+            ><span class="v" id="r-fork">—</span>
+          </div>
+          <div class="stat">
+            <span class="k">‖Δ‖</span><span class="v" id="r-delta">—</span>
+          </div>
+          <div class="stat">
+            <span class="k">separation, log</span
+            ><span class="v" id="r-dnorm">—</span>
+          </div>
+          <div class="stat" id="stat-expired">
+            <span class="k">horizon, measured</span
+            ><span class="v" id="r-expired">—</span>
+          </div>
+        </div>
+
+        <div class="legend reveal">
+          <span class="legend-name" id="legend-label">wing</span>
+          <span class="legend-bar" id="legend-bar"></span>
+          <span class="legend-ends">low → high</span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel" id="panel">
+      <div class="transport">
+        <button id="c-play" type="button" aria-pressed="false">pause</button>
+        <button id="c-refork-now" type="button">re-fork</button>
+        <button id="c-reseed" type="button">new seed</button>
+        <button id="c-clear" type="button">clear</button>
+      </div>
+
+      <h2>controls</h2>
+      <div id="manual-rows">
+        <div class="row">
+          <label for="c-speed">speed</label>
+          <input id="c-speed" type="range" min="0" max="1000" step="1" />
+          <output class="num" id="v-speed">—</output>
+        </div>
+        <div class="row">
+          <label for="c-trail">trail</label>
+          <input id="c-trail" type="range" min="0" max="1000" step="1" />
+          <output class="num" id="v-trail">—</output>
+        </div>
+      </div>
+
+      <h2>meta — director</h2>
+      <div class="row">
+        <label for="c-mode">mode</label>
+        <select id="c-mode">
+          <option value="calligraphy" selected>calligraphy</option>
+          <option value="off">off</option>
+          <option value="tour">tour</option>
+          <option value="coupled">coupled</option>
+        </select>
+        <!-- A span, not an <output>: <output> carries an implicit
+             role="status" (aria-live=polite), and this one is rewritten
+             every frame — a 60Hz announcement flood for screen readers. -->
+        <span class="num" id="r-u">—</span>
+      </div>
+      <p class="blurb" id="m-blurb"></p>
+      <div class="row" id="tour-row" hidden>
+        <label for="c-period">period</label>
+        <input
+          id="c-period"
+          type="range"
+          min="6"
+          max="120"
+          step="1"
+          value="30"
+        />
+        <output class="num" id="v-period">—</output>
+      </div>
+
+      <h2>meta — color</h2>
+      <div class="row">
+        <label for="c-field">field</label>
+        <select id="c-field">
+          <option value="lobe" selected>wing</option>
+          <option value="speed">speed</option>
+          <option value="divergence">divergence</option>
+          <option value="dwell">dwell</option>
+        </select>
+      </div>
+      <p class="blurb" id="f-blurb"></p>
+      <div class="row">
+        <label for="c-palette">palette</label>
+        <select id="c-palette">
+          <option value="ember" selected>ember</option>
+          <option value="ice">ice</option>
+          <option value="moss">moss</option>
+          <option value="spectrum">spectrum</option>
+        </select>
+      </div>
+      <p class="blurb warn" id="p-warn" hidden>
+        Wide hue arc — watch for banding that looks like structure and isn't.
+        That's the point of keeping it.
+      </p>
+      <div class="row">
+        <label for="c-blend">blend</label>
+        <select id="c-blend">
+          <option value="filament" selected>filament</option>
+          <option value="density">density</option>
+        </select>
+      </div>
+      <p class="blurb" id="b-blurb"></p>
+
+      <h2>the fork</h2>
+      <div class="row">
+        <label for="c-eps">ε</label>
+        <input id="c-eps" type="range" min="0" max="1000" step="1" />
+        <output class="num" id="r-eps">—</output>
+      </div>
+      <div class="row">
+        <button id="c-eps-lorenz" type="button">
+          use the rounding Lorenz typed (1.27e-4)
+        </button>
+      </div>
+      <div class="row checks">
+        <label><input id="c-twin" type="checkbox" checked /> draw twin</label>
+        <label
+          ><input id="c-refork" type="checkbox" checked /> re-fork on
+          saturation</label
+        >
+      </div>
+
+      <h2>view</h2>
+      <div class="row">
+        <label for="c-yaw">yaw</label>
+        <input id="c-yaw" type="range" min="0" max="180" step="1" value="0" />
+        <output class="num" id="v-yaw">—</output>
+      </div>
+
+      <h2>system</h2>
+      <div class="row">
+        <label for="c-sigma">σ</label>
+        <input id="c-sigma" type="range" min="1" max="20" step="0.1" />
+        <output class="num" id="v-sigma">—</output>
+      </div>
+      <div class="row">
+        <label for="c-rho">ρ</label>
+        <input id="c-rho" type="range" min="1" max="60" step="0.1" />
+        <output class="num" id="v-rho">—</output>
+      </div>
+      <div class="row">
+        <label for="c-beta">β</label>
+        <input id="c-beta" type="range" min="0.5" max="6" step="0.001" />
+        <output class="num" id="v-beta">—</output>
+      </div>
+      <div class="row">
+        <button id="c-classic" type="button">back to 10, 28, 8/3</button>
+      </div>
+    </aside>
+
+    <section class="chart-wrap reveal" aria-label="Divergence">
+      <div class="chart-head">
+        <h2>‖Δ‖ between the twins, log scale</h2>
+        <div class="chart-stats">
+          <span><em>λ</em> measured <span id="r-lambda">—</span></span>
+          <span><em>λ</em> this fork <span id="r-lambda-live">—</span></span>
+          <span>horizon, predicted <span id="r-horizon">—</span></span>
+          <span>per 10× better ε <span id="r-decade">—</span></span>
+          <span>|v| <span id="r-v">—</span></span>
+          <span>speed <span id="r-speed">—</span></span>
+          <span>trail <span id="r-trail">—</span></span>
+          <span>contraction <span id="r-contract">—</span></span>
+        </div>
+      </div>
+      <canvas id="chart" class="chart"></canvas>
+    </section>
+
+    <!--
+      The notes below are deliberately in the app rather than in a README.
+      None of the mathematics here is ours; the app is a rendering of someone
+      else's beautiful idea, and hiding the provenance would make it look like
+      more of an invention than it is.
+    -->
+    <section class="notes reveal" aria-label="Notes">
+      <h2 class="notes-title">notes — open anything</h2>
+      <p class="notes-intro">
+        None of the mathematics is ours. What follows is about this drawing of
+        it: what each control changes, the color formula, and the choices that
+        cost something.
+      </p>
+
+      <details>
+        <summary>Source</summary>
+        <div class="prose">
+          <p class="cite">
+            Edward N. Lorenz, “Deterministic Nonperiodic Flow.”
+            <em>Journal of the Atmospheric Sciences</em> <strong>20</strong>
+            (1963), 130–141.
+          </p>
+          <p class="cite">
+            James Gleick, <em>Chaos: Making a New Science</em>. Viking, 1987 —
+            opening chapter.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>The equations, exactly as implemented</summary>
+        <div class="prose">
+          <pre><code>dx/dt = σ (y − x)
+dy/dt = x (ρ − z) − y
+dz/dt = x y − β z
+
+σ = 10      ρ = 28      β = 8/3</code></pre>
+          <p>
+            Integration is fixed-step Runge–Kutta 4 at <code>dt = 0.004</code>,
+            and that step is a constant. The speed control changes how many
+            steps are consumed per frame — never the step size. That is what
+            lets a meta-parameter sweep speed automatically without any risk of
+            quietly changing the shape of the attractor.
+          </p>
+          <p>
+            The divergence of the field is constant and negative,
+            <code>−(σ + 1 + β) = −13.667</code>: every volume of initial
+            conditions shrinks, forever. Yet nearby points separate
+            exponentially. Volume collapsing while distance explodes is only
+            possible if the set being collapsed onto is stretched and folded
+            without bound — and the butterfly effect is the second half of that
+            sentence.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What each control does</summary>
+        <div class="prose">
+          <dl>
+            <dt>the opening</dt>
+            <dd>
+              The page loads black with one button; the pen starts almost still
+              and accelerates over about twenty-six seconds. A line that begins
+              mid-flight at full speed reads as something already in progress.
+              Touch any control and the opening ends.
+            </dd>
+            <dt>speed</dt>
+            <dd>
+              Simulated time units per real second, 0.08 to 36, geometric.
+              Implemented as steps-per-frame; the integrator never sees it.
+            </dd>
+            <dt>trail</dt>
+            <dd>
+              How much history stays on screen, 0.4 to 40 simulated time units.
+              A real cutoff, not a decay constant: ink fades exponentially and
+              then is gone, rather than thinning forever into a haze. Measured
+              in simulated time, so the trail means the same length of history
+              at any playback speed.
+            </dd>
+            <dt>director: calligraphy</dt>
+            <dd>
+              A brush, not a plotter. Curvature is the master signal — you do
+              not take a corner at speed — so a turn presses the brush: slower,
+              thicker, wetter. The moment after a wing change is pressed too,
+              because a stroke does not begin at full speed. Fast lifted runs
+              draw translucent, after a dry brush breaking up. Speed and weight
+              come from one scalar rather than two controls, and that scalar
+              follows its target through a lag, because a loaded brush has
+              inertia and cannot change thickness in one step. The speed slider
+              becomes the tempo. What this does not model is anticipation: a
+              calligrapher slows <em>before</em> the corner because they know
+              the character, and we only know where the trajectory is.
+            </dd>
+            <dt>director: tour</dt>
+            <dd>
+              One scalar sweeps speed and trail in opposite directions:
+              slow-and-long (the attractor as an object) ↔ fast-and-short (as a
+              process). Both interpolate geometrically, because both are ratio
+              quantities.
+            </dd>
+            <dt>director: coupled</dt>
+            <dd>
+              Speed is <code>26/|dX/dt|</code>, so the pen advances at constant
+              arc length and the geometry stops being confounded by the system's
+              own uneven pace. Trail shortens as ‖Δ‖ grows, so memory decays as
+              the forecast does.
+            </dd>
+            <dt>ε</dt>
+            <dd>
+              How far apart the twin and the reference start. The button sets it
+              to 1.27 × 10⁻⁴, the size of the rounding Lorenz typed in 1961 —
+              though that was a larger twelve-variable model, not these three
+              equations from two years later. The number is the right order of
+              magnitude for an error nobody would think twice about, which is
+              the point of it.
+            </dd>
+            <dt>yaw</dt>
+            <dd>
+              Rotates x–y before projecting. A setting rather than an animation,
+              because a camera turning under a still attractor competes with the
+              color channel for attention.
+            </dd>
+            <dt>σ, ρ, β</dt>
+            <dd>
+              Live. Below about ρ = 24.06 the system settles onto a fixed point
+              and stops being interesting, which is worth seeing once.
+            </dd>
+          </dl>
+        </div>
+      </details>
+
+      <details>
+        <summary>The color formula</summary>
+        <div class="prose">
+          <p>
+            A drawn trajectory has five channels: position, hue, lightness,
+            stroke width, opacity. Every channel coupled to the same variable
+            costs an independent reading — five channels singing the same note
+            is a gorgeous image that says exactly one thing. So each is assigned
+            once:
+          </p>
+          <pre><code>position → the state, projected 3D → 2D
+hue + L  → ONE selectable scalar field F
+width    → the brush, or |dX/dt|
+opacity  → age, via the trail fade
+
+f = F(sample) ∈ [0,1]
+H = H₀ + arc · f          hue, inside a NARROW arc
+C = C₀                    chroma, constant per palette
+L = L₀ + (L₁ − L₀) · f    lightness carries the magnitude
+α = exp(−age / τ)</code></pre>
+          <p>
+            The color space is OKLCH, not HSL. Rotating raw HSL hue across a
+            wheel invents structure: yellow is far lighter than blue at the same
+            nominal lightness, so a smooth scalar picks up bright bands that
+            look like features of the attractor and are artifacts of the color
+            space. OKLCH is designed to be perceptually uniform, so equal steps
+            in L look roughly equal. Narrow hue arc, magnitude on L — hue for
+            identity, lightness for amount. The <code>spectrum</code> palette
+            breaks that rule on purpose, and seeing its banding next to a
+            well-behaved ramp teaches the rule better than the rule does.
+          </p>
+          <dl>
+            <dt>wing</dt>
+            <dd>Which lobe, smoothly across the crossing.</dd>
+            <dt>speed</dt>
+            <dd>
+              |dX/dt|. The system crawls spiralling out from a wing's centre and
+              screams through the flip between wings.
+            </dd>
+            <dt>divergence</dt>
+            <dd>
+              log‖Δ‖ between the twins. The butterfly channel: both start the
+              same color, and the color tells you when the forecast died.
+            </dd>
+            <dt>dwell</dt>
+            <dd>
+              Time since the last wing change — the L/R sequence that never
+              repeats.
+            </dd>
+          </dl>
+          <p>
+            <strong>Blend.</strong> <em>filament</em> is one readable line, best
+            with a short trail. <em>density</em> draws additively, so overlaps
+            accumulate and a long trail renders where the system actually spends
+            its time as glow. Two modes rather than one slider, because additive
+            blows out to white unless per-segment alpha stays very low — which
+            then makes short trails invisible.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What the numbers mean</summary>
+        <div class="prose">
+          <dl>
+            <dt>λ measured</dt>
+            <dd>
+              The largest Lyapunov exponent, computed live: walk a reference and
+              a shadow, record how much the gap grows, then pull the shadow back
+              to its original distance and keep going. The renormalization is
+              the trick — without it the gap saturates at attractor diameter and
+              the slope collapses toward zero. For 10, 28, 8/3 it lands near
+              0.905. The app measures this rather than quoting it.
+            </dd>
+            <dt>λ this fork</dt>
+            <dd>
+              The same quantity fitted to the run on screen. Noisier, and it
+              should agree; when it badly disagrees you are looking at a fork
+              that got unlucky about where on the attractor it started.
+            </dd>
+            <dt>horizon, predicted / measured</dt>
+            <dd>
+              Predicted is <code>(1/λ)·ln(tol/ε)</code>. Measured is when ‖Δ‖
+              actually passed the tolerance on this run. Both are how long the
+              twin stays a usable prediction of the reference.
+            </dd>
+            <dt>per 10× better ε</dt>
+            <dd>
+              <code>ln(10)/λ ≈ 2.54</code> time units — the number worth
+              carrying out of here. Improving your initial measurement tenfold
+              does not double your forecast; it adds a fixed constant. Another
+              tenfold adds the same constant again. The return on precision is
+              logarithmic, and the exponent sets the exchange rate.
+            </dd>
+          </dl>
+        </div>
+      </details>
+
+      <details>
+        <summary>Choices that cost something</summary>
+        <div class="prose">
+          <dl>
+            <dt>The trail is kept and redrawn every frame.</dt>
+            <dd>
+              The cheap way is to never clear the canvas and age the ink by
+              pulling alpha out of the whole surface once a frame. But that can
+              produce exactly one curve — every pixel gets the same treatment
+              every frame, so old ink can never fade faster than new ink, and
+              the tail thins forever instead of ending. Keeping the vertices
+              buys an arbitrary fade curve and a real cutoff.
+              <em>Cost:</em> draw calls, paid down by quantizing pen state into
+              runs, which works because color and weight vary smoothly along a
+              trajectory.
+            </dd>
+            <dt>Both trajectories wear the same colors.</dt>
+            <dd>
+              Tinting the twin would make it easy to follow and would undercut
+              the whole demonstration — the point is that for a while you cannot
+              tell which is which. Once they separate the twin draws thinner and
+              fainter, so it reads as the reference's shadow rather than as a
+              second equal line, and the heads differ throughout: filled dot for
+              the reference, ring for the twin.
+            </dd>
+            <dt>ε defaults to the rounding, not to machine epsilon.</dt>
+            <dd>
+              A tinier ε makes a longer, more dramatic run. The honest default
+              is the size of error a person actually makes.
+            </dd>
+            <dt>Re-fork on saturation is on.</dt>
+            <dd>
+              Once ‖Δ‖ passes 25 the twin is simply elsewhere and there is
+              nothing left to watch. Turn it off to run a single pair forever.
+            </dd>
+          </dl>
+        </div>
+      </details>
+    </section>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
