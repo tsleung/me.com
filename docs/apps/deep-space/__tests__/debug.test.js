@@ -3,9 +3,18 @@ import assert from "node:assert/strict";
 
 import { buildDebugReport, redact, debugFilename } from "../debug.js";
 
-// Deliberately fabricated. A test fixture that resembles a real key is a
-// liability in a file that ships to a public repo.
-const KEY = "AIzaFAKEKEYFORTESTSONLY0000000000000000";
+// Deliberately fabricated, and deliberately ASSEMBLED rather than written out.
+//
+// These tests need a string that matches `debug.js`'s KEY_PATTERN, or they
+// cannot prove redaction works. But this file ships to a public repo, and a
+// literal in Google's key shape is a literal a secret scanner will flag:
+// the previous spelling of this constant opened a "publicly leaked secret"
+// alert on me.com within 12 hours of deploy (github.com/tsleung/me.com,
+// secret-scanning alert #1 — a false positive on this very fixture).
+//
+// Concatenating means no contiguous key-shaped run exists in the source while
+// the runtime value still matches. Do not "tidy" this back into one string.
+const KEY = "AIza" + "FAKEKEYFORTESTSONLY" + "0".repeat(20);
 
 // The report is meant to be handed to someone else. Everything below is about
 // making sure that is safe, and that it actually carries what a diagnosis needs.
