@@ -29,12 +29,11 @@
         <p class="microlabel">00 · the table</p>
         <h2 id="table-title">deal it yourself</h2>
         <p>
-          this is blackjack stripped to its skeleton. no hitting, no dealer,
-          no strategy chart — just one shared deck and a single feature to bet:
-          is the card red or black? losing all of that complexity is the point,
-          because it leaves the two things this app is about in plain view —
-          how you split a bet across hands, and how the deck drifts as it
-          empties.
+          this is blackjack stripped to its skeleton. no hitting, no dealer, no
+          strategy chart — just one shared deck and a single feature to bet: is
+          the card red or black? losing all of that complexity is the point,
+          because it leaves the two things this app is about in plain view — how
+          you split a bet across hands, and how the deck drifts as it empties.
         </p>
         <p>
           each round you stake a slice of your bankroll and deal it across your
@@ -60,8 +59,8 @@
         <p class="microlabel">01 · across hands</p>
         <h2 id="within-title">one hand, then two, then half the deck</h2>
         <p>
-          you're staking everything this round. on one hand, you bet it all on
-          a single card: you either win the payoff or you don't — a jagged,
+          you're staking everything this round. on one hand, you bet it all on a
+          single card: you either win the payoff or you don't — a jagged,
           two-outcome gamble. split the same stake across two cards and there
           are now three outcomes; across twenty-six cards — half the deck in one
           pull — the count of reds barely strays from thirteen. the average
@@ -74,9 +73,9 @@
           spikes, and every hand you add pulls the mass toward the middle. the
           second curve says why one deck beats betting on independent flips: the
           cards are dealt <em>without replacement</em>, so a red now makes a red
-          later slightly less likely. that negative correlation is free
-          variance reduction — and at fifty-two hands the whole deck is exactly
-          half red, so the round is riskless.
+          later slightly less likely. that negative correlation is free variance
+          reduction — and at fifty-two hands the whole deck is exactly half red,
+          so the round is riskless.
         </p>
       </section>
 
@@ -107,11 +106,10 @@
           this split between the room's average and one player's fate is
           ergodicity: a multiplicative wealth process is <em>non-ergodic</em>,
           so the time-average a person experiences diverges from the ensemble
-          average across people (peters 2019, <em>nature physics</em>; the
-          ×2 / ÷2 coin is his canonical example). the optimal slice to stake is
-          a kelly question — which the optimizer below works out for itself,
-          along with a card-counter who turns the depleting deck into a real
-          edge.
+          average across people (peters 2019, <em>nature physics</em>; the ×2 /
+          ÷2 coin is his canonical example). the optimal slice to stake is a
+          kelly question — which the optimizer below works out for itself, along
+          with a card-counter who turns the depleting deck into a real edge.
         </p>
       </section>
 
@@ -137,8 +135,8 @@
           cuts both ways), and every round's win-count drops into a histogram
           that bells into a normal as you add hands: the central limit theorem,
           the same diversification lesson, live. below it is the policy itself,
-          learned online and sharpening toward the exact optimum beside it —
-          and the <b>counter</b>'s growth pulling away from the
+          learned online and sharpening toward the exact optimum beside it — and
+          the <b>counter</b>'s growth pulling away from the
           <b>non-counter</b>'s, which is the cash value of information. change
           the payoff or the hands mid-run and the table re-adapts rather than
           restarting.
