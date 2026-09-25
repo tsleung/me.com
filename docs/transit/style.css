@@ -160,6 +160,11 @@ main {
   stroke: var(--ink);
   stroke-width: 2;
 }
+#map .station.origin {
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-dasharray: 2 2;
+}
 #map .cluster-halo {
   fill: none;
   stroke: rgba(255, 255, 255, 0.1);
@@ -255,7 +260,8 @@ main {
   font-style: italic;
 }
 
-#search {
+#search,
+#origin-search {
   width: 100%;
   background: #0a0a0c;
   color: var(--ink);
@@ -265,7 +271,8 @@ main {
   font: inherit;
   margin-top: 8px;
 }
-#search:focus {
+#search:focus,
+#origin-search:focus {
   outline: none;
   border-color: var(--accent);
 }

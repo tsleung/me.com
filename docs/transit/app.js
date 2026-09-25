@@ -25,6 +25,11 @@ const scaleBar = document.getElementById('scale-bar');
 const scaleLabel = document.getElementById('scale-label');
 const scaleTrack = scaleBar?.querySelector('.scale-track');
 const clearBtn = document.getElementById('clear-dest');
+const originBox = document.getElementById('origin');
+const originLabel = document.getElementById('origin-label');
+const originSearch = document.getElementById('origin-search');
+const originResults = document.getElementById('origin-results');
+const clearOriginBtn = document.getElementById('clear-origin');
 const hoverLines = document.getElementById('hover-lines');
 const historyBox = document.getElementById('history');
 const historyList = document.getElementById('history-list');
@@ -47,6 +52,15 @@ let destId = null;
 let destMeta = null; // { clickLatLng, walkSecs } — null if dest is an exact station
 let distances = null;
 let parents = null; // Map<stationId, Array<{from, edge, prevLine}|null>> (indexed by tsf)
+// Optional origin. When set (only possible with a destination), the map
+// narrows to the corridor: every station and segment that lies on SOME
+// origin→destination route within the threshold + transfer cap.
+let originId = null;
+let destStates = null;   // Map<stationId, Array<{line, k, t}>> — full router labels from destination
+let originStates = null; // same, from origin
+let corridor = null;     // { stations: Map<sid,{t,k}>, edges: Set<edge>, best: {t,k}|null }
+let destSearch = null;      // station-search controllers (see attachStationSearch)
+let originSearchCtl = null;
 let layout = null;
 let hoveredId = null;
 let stationPositions = null; // Map<id, [x, y]> in pre-zoom SVG coords
@@ -147,13 +161,10 @@ function setupControls() {
     repaint();
   });
   transfersSel.addEventListener('change', repaint);
-  search.addEventListener('input', onSearchInput);
-  search.addEventListener('keydown', onSearchKey);
-  search.addEventListener('focus', () => { if (search.value.trim()) onSearchInput(); });
-  document.addEventListener('click', (e) => {
-    if (!searchResults.contains(e.target) && e.target !== search) closeSearch();
-  });
+  destSearch = attachStationSearch(search, searchResults, (id) => selectDest(id));
+  originSearchCtl = attachStationSearch(originSearch, originResults, (id) => setOrigin(id));
   clearBtn?.addEventListener('click', clearDest);
+  clearOriginBtn?.addEventListener('click', clearOrigin);
   historyToggle?.addEventListener('click', () => {
     historyList.classList.toggle('expanded');
     historyToggle.textContent = historyList.classList.contains('expanded') ? 'less' : 'more';
@@ -261,6 +272,8 @@ function clearDest() {
   destId = null;
   destMeta = null;
   distances = null;
+  destStates = null;
+  resetOrigin();
   destLabel.textContent = 'click a station';
   destLabel.classList.add('muted');
   clearBtn.hidden = true;
@@ -290,8 +303,10 @@ async function loadCity(city) {
   renderGraph();
   renderAssumptions();
   distances = null;
+  destStates = null;
   destId = null;
   destMeta = null;
+  resetOrigin();
   destLabel.textContent = 'click a station';
   destLabel.classList.add('muted');
   if (clearBtn) clearBtn.hidden = true;
@@ -370,6 +385,7 @@ function applyParams() {
   }
   if (destId != null) {
     runDijkstra(destId);
+    if (originId != null) originStates = route(originId).states;
     repaint();
     writeStats();
   }
@@ -679,6 +695,7 @@ function renderGraph() {
     const idx = delaunay.find(sx, sy);
     if (idx < 0) return;
     const s = graph.stations[idx];
+    if (event.shiftKey && destId != null) { setOrigin(s.id); return; }
     const clickLatLng = unproject(sx, sy);
     const walkMeters = haversineM(clickLatLng, s);
     const walkSecs = walkMeters / WALK_SPEED_MPS;
@@ -718,20 +735,66 @@ function selectDest(id, meta = null) {
     const sel = svg.node().__sel;
     if (sel?.clickGroup) sel.clickGroup.attr('visibility', 'hidden');
   }
-  closeSearch();
+  destSearch.close();
   search.value = '';
+  if (originId === id) resetOrigin();
+  originBox.hidden = false;
   runDijkstra(id);
+  repaint();
+  writeStats();
+}
+
+// Origin is optional and only meaningful with a destination set. The router
+// already ran from the destination; one more run from the origin lets us
+// join the two label sets (see computeCorridor).
+function setOrigin(id) {
+  if (destId == null || id === destId) return;
+  originId = id;
+  originStates = route(id).states;
+  originLabel.innerHTML = `<strong>${escapeHtml(stationById.get(id).name)}</strong>`;
+  originLabel.classList.remove('muted');
+  clearOriginBtn.hidden = false;
+  originSearchCtl.close();
+  originSearch.value = '';
+  repaint();
+  writeStats();
+}
+
+function resetOrigin() {
+  originId = null;
+  originStates = null;
+  corridor = null;
+  originLabel.textContent = 'any — or shift-click a station';
+  originLabel.classList.add('muted');
+  clearOriginBtn.hidden = true;
+  originBox.hidden = destId == null;
+}
+
+function clearOrigin() {
+  resetOrigin();
   repaint();
   writeStats();
 }
 
 // -------- Dijkstra with per-transfer-count bests --------
 function runDijkstra(sourceId) {
+  const r = route(sourceId);
+  distances = r.distances;
+  parents = r.parents;
+  destStates = r.states;
+}
+
+// Returns { distances, parents, states }. `states` keeps the full label —
+// (station, line in use, transfers) → best time — which the corridor join
+// needs: collapsing to (station, transfers) loses the line, and without the
+// line we can't tell whether joining two half-routes at a station costs a
+// transfer.
+function route(sourceId) {
   // Min-heap keyed on time.
   const heap = new BinaryHeap((a, b) => a.t - b.t);
   // best[stationId][transferCount] = min time
-  distances = new Map();
-  parents = new Map();
+  const distances = new Map();
+  const parents = new Map();
   for (const s of graph.stations) {
     distances.set(s.id, new Array(MAX_TRANSFERS_TRACKED + 1).fill(Infinity));
     parents.set(s.id, new Array(MAX_TRANSFERS_TRACKED + 1).fill(null));
@@ -742,11 +805,11 @@ function runDijkstra(sourceId) {
   const stateKey = (sid, line, tsf) => sid + '|' + (line || '') + '|' + tsf;
   const seen = new Map();
   heap.push({ t: 0, sid: sourceId, line: null, tsf: 0 });
-  seen.set(stateKey(sourceId, null, 0), 0);
+  seen.set(stateKey(sourceId, null, 0), { sid: sourceId, line: null, k: 0, t: 0 });
 
   while (heap.size) {
     const cur = heap.pop();
-    if (cur.t > (seen.get(stateKey(cur.sid, cur.line, cur.tsf)) ?? Infinity)) continue;
+    if (cur.t > (seen.get(stateKey(cur.sid, cur.line, cur.tsf))?.t ?? Infinity)) continue;
     for (const a of adjacency.get(cur.sid) || []) {
       const e = a.edge;
       let newLine, added;
@@ -762,8 +825,8 @@ function runDijkstra(sourceId) {
       if (newTsf > MAX_TRANSFERS_TRACKED) continue;
       const nextKey = stateKey(a.to, newLine, newTsf);
       const prev = seen.get(nextKey);
-      if (prev != null && prev <= newT) continue;
-      seen.set(nextKey, newT);
+      if (prev != null && prev.t <= newT) continue;
+      seen.set(nextKey, { sid: a.to, line: newLine, k: newTsf, t: newT });
       const arr = distances.get(a.to);
       if (newT < arr[newTsf]) {
         arr[newTsf] = newT;
@@ -778,6 +841,85 @@ function runDijkstra(sourceId) {
       heap.push({ t: newT, sid: a.to, line: newLine, tsf: newTsf });
     }
   }
+  const states = new Map();
+  for (const st of seen.values()) {
+    let list = states.get(st.sid);
+    if (!list) states.set(st.sid, list = []);
+    list.push(st);
+  }
+  return { distances, parents, states };
+}
+
+// -------- Corridor (origin → destination, every route that fits) --------
+// A station is on the corridor if some route origin→…→v→…→dest fits the
+// threshold and transfer cap. An edge is on it if some route uses it. Both
+// are a join of the two router runs: origin-side label (line A, k1, t1)
+// meets destination-side label (line B, k2, t2). The destination run walked
+// the graph backwards, so its label's line is the line the forward trip
+// DEPARTS on. Transfer counting is symmetric along a path, so k2 is also
+// the forward count; the only extra is the junction itself — one more
+// transfer when both sides are on a line and the lines differ. Transfer
+// edges null the line, and their own +1 is already inside k1 or k2.
+const junction = (a, b) => (a != null && b != null && a !== b) ? 1 : 0;
+
+function computeCorridor() {
+  if (originId == null || !originStates || !destStates) return null;
+  const T = +threshold.value * 60;
+  const cap = +transfersSel.value;
+  const O = originStates, D = destStates;
+  const minD = new Map();
+  for (const [sid, list] of D) minD.set(sid, Math.min(...list.map(d => d.t)));
+
+  let best = null;
+  for (const o of O.get(destId) || []) {
+    if (o.k <= cap && (!best || o.t < best.t || (o.t === best.t && o.k < best.k))) best = { t: o.t, k: o.k };
+  }
+
+  const stations = new Map();
+  if (best && best.t <= T) {
+    for (const [sid, os] of O) {
+      const ds = D.get(sid);
+      if (!ds) continue;
+      let hit = null;
+      for (const o of os) {
+        if (o.t + minD.get(sid) > T) continue;
+        for (const d of ds) {
+          const t = o.t + d.t;
+          const k = o.k + d.k + junction(o.line, d.line);
+          if (t <= T && k <= cap && (!hit || t < hit.t || (t === hit.t && k < hit.k))) hit = { t, k };
+        }
+      }
+      if (hit) stations.set(sid, hit);
+    }
+  }
+
+  const edges = new Set();
+  if (stations.size) {
+    for (const e of graph.edges) {
+      if (!stations.has(e.from) || !stations.has(e.to)) continue;
+      if (edgeFits(e, e.from, e.to, O, D, minD, T, cap) || edgeFits(e, e.to, e.from, O, D, minD, T, cap)) edges.add(e);
+    }
+  }
+  return { stations, edges, best };
+}
+
+// Can a route arrive at u (origin side), ride e to v, and finish (dest side)?
+// Mirrors the router's own transfer rule for stepping across e.
+function edgeFits(e, u, v, O, D, minD, T, cap) {
+  const ds = D.get(v);
+  if (!ds) return false;
+  for (const o of O.get(u) || []) {
+    const t1 = o.t + e.seconds;
+    if (t1 + minD.get(v) > T) continue;
+    let line, added;
+    if (e.kind === 'transfer') { line = null; added = 1; }
+    else { line = e.lineId; added = (o.line != null && o.line !== e.lineId) ? 1 : 0; }
+    const k1 = o.k + added;
+    for (const d of ds) {
+      if (t1 + d.t <= T && k1 + d.k + junction(line, d.line) <= cap) return true;
+    }
+  }
+  return false;
 }
 
 // Walk parents back from destSid to source; return ordered list of edges
@@ -913,6 +1055,14 @@ function repaint() {
   if (!sel) return;
   const thresholdSec = +threshold.value * 60;
   const hasDest = destId != null && distances;
+  corridor = hasDest ? computeCorridor() : null;
+  // With an origin, "reachable" means "on some route from the origin that
+  // fits"; stations keep their minutes-to-destination color along the way.
+  const lit = (sid) => {
+    if (corridor) return corridor.stations.has(sid);
+    const t = effectiveTime(sid);
+    return isFinite(t) && t <= thresholdSec;
+  };
 
   // Stations
   const k = d3.zoomTransform(svg.node()).k;
@@ -920,18 +1070,16 @@ function repaint() {
   sel.stationSel
     .attr('fill', s => {
       if (!hasDest) return getComputedStyle(document.documentElement).getPropertyValue('--ink-muted').trim();
-      const t = effectiveTime(s.id);
-      if (!isFinite(t) || t > thresholdSec) return bandColor('band-out');
-      return bandColor(timeBand(t / 60));
+      if (!lit(s.id)) return bandColor('band-out');
+      return bandColor(timeBand(effectiveTime(s.id) / 60));
     })
     .attr('r', s => {
-      if (s.id === destId) return baseR * 3;
+      if (s.id === destId || s.id === originId) return baseR * 3;
       if (!hasDest) return baseR;
-      const t = effectiveTime(s.id);
-      if (!isFinite(t) || t > thresholdSec) return baseR * 0.6;
-      return baseR * 1.4;
+      return lit(s.id) ? baseR * 1.4 : baseR * 0.6;
     })
-    .classed('dest', s => s.id === destId);
+    .classed('dest', s => s.id === destId)
+    .classed('origin', s => s.id === originId);
 
   // Edges: dim if either endpoint is outside threshold.
   // Long edges: default hidden; reveal as dotted only when BOTH endpoints reach.
@@ -939,6 +1087,11 @@ function repaint() {
     const long = isLongEdge(e) ? ' long' : '';
     let cls = `edge ${e.kind}${long}`;
     if (!hasDest) return cls;
+    if (corridor) {
+      if (!corridor.edges.has(e)) cls += ' dim';
+      else if (long) cls += ' reveal';
+      return cls;
+    }
     const ta = effectiveTime(e.from);
     const tb = effectiveTime(e.to);
     const bothReach = isFinite(ta) && isFinite(tb) && ta <= thresholdSec && tb <= thresholdSec;
@@ -1147,10 +1300,19 @@ function showTooltip(event, s) {
     // renderBreakdown rows cover physical transfer edges only, so we rely on
     // the router's bookkeeping for the top-line number.
     const tsf = path?.transfers ?? 0;
-    html += `<div class="tt-time">${totalMins.toFixed(1)} min · ${tsf} transfer${tsf === 1 ? '' : 's'}</div>`;
+    const role = s.id === originId ? 'from here · ' : '';
+    html += `<div class="tt-time">${role}${totalMins.toFixed(1)} min · ${tsf} transfer${tsf === 1 ? '' : 's'}</div>`;
+    if (corridor && s.id !== originId) {
+      const via = corridor.stations.get(s.id);
+      html += via
+        ? `<div class="tt-hint">on a route from origin · ${(via.t / 60).toFixed(1)} min · ${via.k} transfer${via.k === 1 ? '' : 's'}</div>`
+        : `<div class="tt-hint">off every route from origin within limits</div>`;
+    }
     html += renderBreakdown(rows, walkMins, totalMins);
   } else if (!destId) {
     html += `<div class="tt-hint">click to set destination</div>`;
+  } else if (destId && !originId) {
+    html += `<div class="tt-hint">shift-click to set as origin</div>`;
   }
   const lines = linesAt(s.id);
   if (lines.length) html += `<div class="tt-lines">${lines.map(l => escapeHtml(l.ref || l.name)).join(' · ')}</div>`;
@@ -1229,57 +1391,65 @@ function escapeHtml(s) {
 }
 
 // -------- Search --------
-let searchFocusIdx = -1;
-function onSearchInput() {
-  const q = search.value.trim().toLowerCase();
-  searchResults.innerHTML = '';
-  searchFocusIdx = -1;
-  if (!q) { closeSearch(); return; }
-  const matches = graph.stations
-    .filter(s => s.name.toLowerCase().includes(q))
-    .slice(0, 20);
-  // Dedupe by cluster for cleanliness
-  const seenCluster = new Set();
-  const unique = [];
-  for (const s of matches) {
-    if (seenCluster.has(s.clusterId)) continue;
-    seenCluster.add(s.clusterId);
-    unique.push(s);
-    if (unique.length >= 8) break;
-  }
-  if (!unique.length) { closeSearch(); return; }
-  for (const s of unique) {
-    const li = document.createElement('li');
-    li.textContent = s.name;
-    li.dataset.id = s.id;
-    li.addEventListener('click', () => selectDest(s.id));
-    searchResults.appendChild(li);
-  }
-  searchResults.classList.add('open');
+// One station-search behavior, used by the destination field and the
+// optional "from" field.
+function attachStationSearch(input, list, onPick) {
+  let focusIdx = -1;
+  const close = () => { list.classList.remove('open'); focusIdx = -1; };
+  const updateFocus = (items) => items.forEach((el, i) => el.classList.toggle('focus', i === focusIdx));
+  const onInput = () => {
+    const q = input.value.trim().toLowerCase();
+    list.innerHTML = '';
+    focusIdx = -1;
+    if (!q || !graph) { close(); return; }
+    const matches = graph.stations
+      .filter(s => s.name.toLowerCase().includes(q))
+      .slice(0, 20);
+    // Dedupe by cluster for cleanliness
+    const seenCluster = new Set();
+    const unique = [];
+    for (const s of matches) {
+      if (seenCluster.has(s.clusterId)) continue;
+      seenCluster.add(s.clusterId);
+      unique.push(s);
+      if (unique.length >= 8) break;
+    }
+    if (!unique.length) { close(); return; }
+    for (const s of unique) {
+      const li = document.createElement('li');
+      li.textContent = s.name;
+      li.dataset.id = s.id;
+      li.addEventListener('click', () => onPick(s.id));
+      list.appendChild(li);
+    }
+    list.classList.add('open');
+  };
+  input.addEventListener('input', onInput);
+  input.addEventListener('focus', () => { if (input.value.trim()) onInput(); });
+  input.addEventListener('keydown', (e) => {
+    const items = [...list.children];
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(items.length - 1, focusIdx + 1);
+      updateFocus(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(0, focusIdx - 1);
+      updateFocus(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = focusIdx >= 0 ? items[focusIdx] : items[0];
+      if (pick) onPick(pick.dataset.id);
+    } else if (e.key === 'Escape') {
+      close();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!list.contains(e.target) && e.target !== input) close();
+  });
+  return { close };
 }
-function onSearchKey(e) {
-  const items = [...searchResults.children];
-  if (!items.length) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    searchFocusIdx = Math.min(items.length - 1, searchFocusIdx + 1);
-    updateSearchFocus(items);
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    searchFocusIdx = Math.max(0, searchFocusIdx - 1);
-    updateSearchFocus(items);
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    const pick = searchFocusIdx >= 0 ? items[searchFocusIdx] : items[0];
-    if (pick) selectDest(pick.dataset.id);
-  } else if (e.key === 'Escape') {
-    closeSearch();
-  }
-}
-function updateSearchFocus(items) {
-  items.forEach((el, i) => el.classList.toggle('focus', i === searchFocusIdx));
-}
-function closeSearch() { searchResults.classList.remove('open'); searchFocusIdx = -1; }
 
 // -------- Stats panel --------
 function writeStats() {
@@ -1297,9 +1467,22 @@ function writeStats() {
       const t = effectiveTime(s.id);
       if (isFinite(t) && t <= thresholdSec) reachable++;
     }
+    const capStr = cap === 99 ? '∞' : cap;
     lines.push('');
-    lines.push(`reachable within ${threshold.value} min @ ≤${cap === 99 ? '∞' : cap} xfers:`);
-    lines.push(`  ${reachable} / ${graph.stations.length} stations`);
+    if (originId != null && corridor) {
+      const b = corridor.best;
+      lines.push(`from ${stationById.get(originId).name}:`);
+      if (!b) {
+        lines.push(`  no route @ ≤${capStr} xfers`);
+      } else {
+        lines.push(`  fastest ${(b.t / 60).toFixed(1)} min · ${b.k} xfer${b.k === 1 ? '' : 's'}`);
+        if (b.t > thresholdSec) lines.push(`  over ${threshold.value} min — raise threshold`);
+        else lines.push(`  ${corridor.stations.size} stations on routes within ${threshold.value} min @ ≤${capStr} xfers`);
+      }
+    } else {
+      lines.push(`reachable within ${threshold.value} min @ ≤${capStr} xfers:`);
+      lines.push(`  ${reachable} / ${graph.stations.length} stations`);
+    }
   } else {
     lines.push('');
     lines.push('click a station or search to set destination');

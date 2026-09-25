@@ -66,6 +66,31 @@
           <ul id="search-results" class="search-results"></ul>
         </div>
 
+        <div class="destination origin" id="origin" hidden>
+          <label>
+            from (optional)
+            <button
+              id="clear-origin"
+              class="clear-btn"
+              type="button"
+              title="clear origin"
+              hidden
+            >
+              clear
+            </button>
+          </label>
+          <div id="origin-label" class="dest-label muted">
+            any — or shift-click a station
+          </div>
+          <input
+            id="origin-search"
+            type="search"
+            placeholder="from station..."
+            autocomplete="off"
+          />
+          <ul id="origin-results" class="search-results"></ul>
+        </div>
+
         <div class="history" id="history" hidden>
           <label>
             recent
