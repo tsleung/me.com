@@ -33,6 +33,57 @@ body {
   mix-blend-mode: normal;
 }
 
+/* ---- the cast: one portrait per member, the one shown lit ---- */
+
+.cast-switch {
+  position: fixed;
+  top: 6px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 26px;
+  background: rgb(14 14 16 / 0.8);
+}
+
+html:not(.live) .cast-switch {
+  display: none;
+}
+
+.cast-switch button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--well);
+  cursor: pointer;
+  opacity: 0.4;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition:
+    opacity 0.2s ease,
+    outline-color 0.2s ease;
+}
+
+.cast-switch button:hover,
+.cast-switch button:focus-visible {
+  opacity: 0.85;
+}
+
+.cast-switch button[aria-pressed="true"] {
+  opacity: 1;
+  outline-color: var(--accent);
+}
+
+.cast-switch img {
+  width: 100%;
+  height: 100%;
+  cursor: inherit;
+}
+
 main {
   box-sizing: border-box;
   max-width: 1320px;
@@ -89,18 +140,20 @@ img {
 
 /* ---- the motion studies, a wall ---- */
 
-/* Fifteen squares: five across, or three, so no row is left ragged. */
+/* One row per study, its densities side by side. Narrower than the
+   keyframes: the study GIFs are 320 px. */
 .wall {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--gap);
-  margin-top: clamp(96px, 16vw, 200px);
+  gap: clamp(24px, 4vw, 48px);
+  max-width: 1000px;
+  margin: clamp(96px, 16vw, 200px) auto 0;
 }
 
-@media (max-width: 900px) {
-  .wall {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.study {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--gap);
 }
 
 /* ---- arrival: each image rises in as it scrolls into view ---- */

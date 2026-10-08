@@ -1,5 +1,8 @@
-// Three behaviours: images load when they come within a screen of the
-// viewport, rise in once they are in view and drawn, and enlarge on click.
+// Four behaviours: images load when they come within a screen of the
+// viewport, rise in once they are in view and drawn, enlarge on click, and
+// the portraits swap which cast member the page shows. A hidden member's
+// images are not rendered, so the observers fetch nothing of them until
+// they are shown.
 // The head script sets "live" (script runs) and "reveal" (the observer
 // exists); without script the <noscript> copies show the same images, static.
 
@@ -60,3 +63,13 @@ document.querySelector("main").addEventListener("click", (e) => {
 
 box.addEventListener("click", () => box.close());
 box.addEventListener("close", () => big.removeAttribute("src"));
+
+const casts = [...document.querySelectorAll("main .cast")];
+const faces = [...document.querySelectorAll(".cast-switch button")];
+
+function show(member) {
+  for (const c of casts) c.hidden = c.dataset.member !== member;
+  for (const b of faces) b.setAttribute("aria-pressed", String(b.dataset.member === member));
+}
+
+for (const b of faces) b.addEventListener("click", () => show(b.dataset.member));

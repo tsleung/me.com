@@ -1,331 +1,1353 @@
 {
   "source": {
-    "commit": "8dc7670947c6cd401df2d733f34e5d05fe14a0ce"
+    "commit": "2301b20573a6c9cd17af4b391e9023835ae73df5"
   },
-  "keyframes": [
+  "members": [
     {
-      "id": "drop-onto-the-tiles",
-      "stills": [
+      "id": "robot",
+      "portrait": {
+        "file": "media/robot/portrait.svg",
+        "width": 160,
+        "height": 160,
+        "blob": "1f624f57ca2eb7287c3a26e12fcdf9bac0341e60"
+      },
+      "keyframes": [
         {
-          "file": "media/drop-onto-the-tiles/key.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "47683858783273bcb747d1a44e7277045882f6d1"
+          "id": "drop-onto-the-tiles",
+          "stills": [
+            {
+              "file": "media/robot/drop-onto-the-tiles/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "fcc7235346f24d248f063e94ef713940b84e1812"
+            },
+            {
+              "file": "media/robot/drop-onto-the-tiles/key-b.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "87ade82a78f0e874d66d17c13e1bf097e844737c"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/drop-onto-the-tiles/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "da589a1ba615139cb1f00b6b61fbc3e78135adcc"
+            },
+            {
+              "tier": "full",
+              "file": "media/robot/drop-onto-the-tiles/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "274c844a735bca9e90090f7ce73c487fd4b10058"
+            }
+          ]
         },
         {
-          "file": "media/drop-onto-the-tiles/key-b.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "86029eae462d4d33712b5ea095a3ebbe9099533c"
+          "id": "vortex-wind-up-from-below",
+          "stills": [
+            {
+              "file": "media/robot/vortex-wind-up-from-below/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "be3ea15418b6f11541e99a9a114b241537305f7d"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/vortex-wind-up-from-below/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "36777f3e0f8b6cc7669d24d79e46574f9cb32f60"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/vortex-wind-up-from-below/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "73507203257e37f47235fddf5bd7656ab9bcea3e"
+            },
+            {
+              "tier": "full",
+              "file": "media/robot/vortex-wind-up-from-below/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "846a931687ff64e61a2793989d3fe93877f234b6"
+            }
+          ]
+        },
+        {
+          "id": "fist-at-the-lens",
+          "stills": [
+            {
+              "file": "media/robot/fist-at-the-lens/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "452b721afe2f0c9ab8315490c2722d13a88f7100"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/fist-at-the-lens/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "53bbf8602be4edf4c5465656b7669de1b7102fbc"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/fist-at-the-lens/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "35c91ac87c4912e5cfdd7d062edf853d56803442"
+            },
+            {
+              "tier": "full",
+              "file": "media/robot/fist-at-the-lens/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "0cb2ab600a4c637745765157233e742f7c1230a9"
+            }
+          ]
+        },
+        {
+          "id": "small-against-the-blast",
+          "stills": [
+            {
+              "file": "media/robot/small-against-the-blast/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "f01e2fdfe70136558b46b4524cefde8fc0a639ba"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/small-against-the-blast/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "e9a2f1d2dbd3cf5308d27773a0b733a131dfd6ba"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/small-against-the-blast/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "7c7aecc2646f8ed4c75257339ec2e7f8a8517c21"
+            }
+          ]
+        },
+        {
+          "id": "spin-kick-swipe",
+          "stills": [
+            {
+              "file": "media/robot/spin-kick-swipe/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "36d3ff619e3777e8b06e6020cc91f52f2530fa48"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/spin-kick-swipe/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "20f1e068fd7442eb04ec443cc76155d11e144bd3"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/spin-kick-swipe/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "bcf779b6c554ec7f63c282ab3ef00e321e05e9a8"
+            }
+          ]
+        },
+        {
+          "id": "reach-into-the-close-up",
+          "stills": [
+            {
+              "file": "media/robot/reach-into-the-close-up/key.svg",
+              "width": 960,
+              "height": 1080,
+              "blob": "2294c5b250a1128cd4b92d012c957b90ecb5fb9a"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/reach-into-the-close-up/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "c9c7100b84056d26df784cdfb1cd004f592e9276"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/reach-into-the-close-up/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "dad69f79d2996a74ebab034f6481b51c67427e9f"
+            },
+            {
+              "tier": "full",
+              "file": "media/robot/reach-into-the-close-up/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "414f21e3f65ebbab8074386924f411cf9fefa073"
+            }
+          ]
         }
       ],
-      "animations": [
+      "studies": [
         {
-          "tier": "mid",
-          "file": "media/drop-onto-the-tiles/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "d0cf8ec015ad414502e0b57a661fc0e78dc69d16"
+          "id": "tether-pendulum-swing",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/tether-pendulum-swing/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "c2c8fc76402b9e4563e2c477d15d0b1de1f5025c"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/tether-pendulum-swing/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "77c1cc5bdff8a8cf6c758c3b0fdec76a00f488d8"
+            }
+          ]
         },
         {
-          "tier": "full",
-          "file": "media/drop-onto-the-tiles/full.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "c1cd83bc2f44e88b260a46a69d58234093a7d176"
+          "id": "spin-on-the-axis",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/spin-on-the-axis/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "db37a0cb2e3def245538e2c22a1eebdbe61184b4"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/spin-on-the-axis/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "77f38fc9d4bb3c140b311dc61b0d53ec554610f9"
+            }
+          ]
+        },
+        {
+          "id": "treadmill-orbit-dash",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/robot/treadmill-orbit-dash/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "b8eb877f87f58decac3ba11b3560e758f81300c8"
+            },
+            {
+              "tier": "mid",
+              "file": "media/robot/treadmill-orbit-dash/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "b09f30a6fd5b6334e8248d31fbc9e59ecbf849f3"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/treadmill-orbit-dash/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "7bda61da154f93f7cccc9b1e5b81257c5b938ab6"
+            }
+          ]
+        },
+        {
+          "id": "held-centre-world-transforms",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/robot/held-centre-world-transforms/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "b0aa1c9d5b7f040ed56fdcd37d2da5301603bded"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/held-centre-world-transforms/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "a83897b910f50ed1cbe429c7c3a25f1a2ab5b9cc"
+            }
+          ]
+        },
+        {
+          "id": "slam-and-the-ground-answers",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/robot/slam-and-the-ground-answers/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "92d051cf6708b8e7c4890867915899f5eae5e55d"
+            },
+            {
+              "tier": "mid",
+              "file": "media/robot/slam-and-the-ground-answers/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "706bd4b38a1c3e7b347c625a9885f093c365829c"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/slam-and-the-ground-answers/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "86a0aac302c27cdf967308157df97bf556ac9cee"
+            }
+          ]
+        },
+        {
+          "id": "flinch-and-step-back",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/robot/flinch-and-step-back/sparse.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "9242b3f17b2dfe4862c421e27e29fd81a2b6d158"
+            },
+            {
+              "tier": "mid",
+              "file": "media/robot/flinch-and-step-back/mid.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "3af74aac0f1598a7666c7b50ba7f2870ca1168c7"
+            },
+            {
+              "tier": "dense",
+              "file": "media/robot/flinch-and-step-back/dense.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "83bb95eadbb93a78630d249fe823c7ab04b8081f"
+            }
+          ]
         }
       ]
     },
     {
-      "id": "vortex-wind-up-from-below",
-      "stills": [
+      "id": "hero",
+      "portrait": {
+        "file": "media/hero/portrait.svg",
+        "width": 160,
+        "height": 160,
+        "blob": "4d2ede3490d45df3c9cde7f99d383f365fc84e6c"
+      },
+      "keyframes": [
         {
-          "file": "media/vortex-wind-up-from-below/key.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "95341ce4dabe40faac7f3b4721322404dcb92e0f"
+          "id": "drop-onto-the-tiles",
+          "stills": [
+            {
+              "file": "media/hero/drop-onto-the-tiles/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "a55c872b47ad55c859aa72f0d85d5113b2566daf"
+            },
+            {
+              "file": "media/hero/drop-onto-the-tiles/key-b.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "fe7792d9b1e52318c004fd1d8d696a62a246266c"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/drop-onto-the-tiles/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "6b350d6193075be6fdcc4e8b0ca5d760f1a633d7"
+            },
+            {
+              "tier": "full",
+              "file": "media/hero/drop-onto-the-tiles/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "e4fcb44feaff2f76edb96f87a4c8b585360ffa9a"
+            }
+          ]
+        },
+        {
+          "id": "vortex-wind-up-from-below",
+          "stills": [
+            {
+              "file": "media/hero/vortex-wind-up-from-below/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "77b9bf96c718ed95940bd8cc2aa00e8e9b0c0fe3"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/vortex-wind-up-from-below/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "52e974c5fca72053d942ce5d4cec448cacb044b2"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/vortex-wind-up-from-below/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "1283bf53dac8d3d19e833f0b51874543cc3b267c"
+            },
+            {
+              "tier": "full",
+              "file": "media/hero/vortex-wind-up-from-below/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "3917b2f7324158236c571da16dddbceeefe0580d"
+            }
+          ]
+        },
+        {
+          "id": "fist-at-the-lens",
+          "stills": [
+            {
+              "file": "media/hero/fist-at-the-lens/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "3bdc96b16a98dc168cbc468e257114557d0044a5"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/fist-at-the-lens/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "54c0cbc2382072244ae7f37f4e09602aa0d89819"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/fist-at-the-lens/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "58b171c786bb9de41c01cc0f8bc18f4309b56cc5"
+            },
+            {
+              "tier": "full",
+              "file": "media/hero/fist-at-the-lens/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "7e3489679dc82bf47acf5d0c9757d0ecf002b447"
+            }
+          ]
+        },
+        {
+          "id": "small-against-the-blast",
+          "stills": [
+            {
+              "file": "media/hero/small-against-the-blast/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "f345da632e17eb878d285ce793e4efe67b0602f4"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/small-against-the-blast/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "0cbed5b4d6758a8081a028f75594a40d61ff4823"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/small-against-the-blast/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "98f6d464ccc145d4f2e3b0c8e5370adee341c05e"
+            }
+          ]
+        },
+        {
+          "id": "spin-kick-swipe",
+          "stills": [
+            {
+              "file": "media/hero/spin-kick-swipe/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "86a58064bd6f8265b3524f35554ef9ff6aff975c"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/spin-kick-swipe/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "24f943324ba66a58d4391ab13eb66fe6f8dce9e4"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/spin-kick-swipe/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "5a32cfc5885adc872fd0b0ffcd65c9f1c3c686c2"
+            }
+          ]
+        },
+        {
+          "id": "reach-into-the-close-up",
+          "stills": [
+            {
+              "file": "media/hero/reach-into-the-close-up/key.svg",
+              "width": 960,
+              "height": 1080,
+              "blob": "fcaf417b34ff6bc59ddc16213b0dbf6fa90fff04"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/reach-into-the-close-up/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "437effb4e200754223a91ffa782e748f34a3c1a8"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/reach-into-the-close-up/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "7ac2d2f582ec1e34e87c5ffcb78c28ca0ecac62f"
+            },
+            {
+              "tier": "full",
+              "file": "media/hero/reach-into-the-close-up/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "db4781c31a08c93f99137a3fac4528b55714df27"
+            }
+          ]
         }
       ],
-      "animations": [
+      "studies": [
         {
-          "tier": "mid",
-          "file": "media/vortex-wind-up-from-below/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "90d080aca912d364403b0aa99db2d0f9729c96fd"
+          "id": "tether-pendulum-swing",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/tether-pendulum-swing/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "602aabb01912227abc948462532264f997d0dcfa"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/tether-pendulum-swing/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "32f2ae067e7f6bbab2ffd89d5004133493e7ad62"
+            }
+          ]
         },
         {
-          "tier": "dense",
-          "file": "media/vortex-wind-up-from-below/dense.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "67d65211914ddd72df2af4057d4b33e7d24cfb11"
+          "id": "spin-on-the-axis",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/spin-on-the-axis/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "d2e0ee86113a1b53265b2676b6c805e6d5dfeb22"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/spin-on-the-axis/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "fdbb37a3d067c0103dba4ba73b02727e7ffd4cb4"
+            }
+          ]
         },
         {
-          "tier": "full",
-          "file": "media/vortex-wind-up-from-below/full.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "a1dcdd7a473495dee24e65d4934604655161c700"
+          "id": "treadmill-orbit-dash",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/hero/treadmill-orbit-dash/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "d930305621ea6d86b4c4bf52fc3167982947491f"
+            },
+            {
+              "tier": "mid",
+              "file": "media/hero/treadmill-orbit-dash/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "1062515d314531b7c0eaa40c0ddd52b6f9483bdd"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/treadmill-orbit-dash/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "e24f6b6fb9e04392c47a3495c04eb561d9fc39b1"
+            }
+          ]
+        },
+        {
+          "id": "held-centre-world-transforms",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/hero/held-centre-world-transforms/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "31eddd650828c0c352d1d9f4b051bf8154eff48f"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/held-centre-world-transforms/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "faedace357c9f9496809eacf95504171c92e8d83"
+            }
+          ]
+        },
+        {
+          "id": "slam-and-the-ground-answers",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/hero/slam-and-the-ground-answers/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "970ded2092d05b3e8327554ee13d8d175b2fc7f0"
+            },
+            {
+              "tier": "mid",
+              "file": "media/hero/slam-and-the-ground-answers/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "44fae887771e865d5898bbd82f6e386ef1b8a38d"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/slam-and-the-ground-answers/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "62dfc302777c1bc839a0137568ad97e777aa38b7"
+            }
+          ]
+        },
+        {
+          "id": "flinch-and-step-back",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/hero/flinch-and-step-back/sparse.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "07c382f1fad1e814b5842e07f49cf99b81f012ca"
+            },
+            {
+              "tier": "mid",
+              "file": "media/hero/flinch-and-step-back/mid.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "d084025d964e6fa9b96ad7aa441c012ec623f6f7"
+            },
+            {
+              "tier": "dense",
+              "file": "media/hero/flinch-and-step-back/dense.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "2106dfed6c2e9c6f533586615a785a04307574ee"
+            }
+          ]
         }
       ]
     },
     {
-      "id": "fist-at-the-lens",
-      "stills": [
+      "id": "woman",
+      "portrait": {
+        "file": "media/woman/portrait.svg",
+        "width": 160,
+        "height": 160,
+        "blob": "bb88197961ecf49b79d4514be65a1fdb94fdbe28"
+      },
+      "keyframes": [
         {
-          "file": "media/fist-at-the-lens/key.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "3bdc96b16a98dc168cbc468e257114557d0044a5"
+          "id": "drop-onto-the-tiles",
+          "stills": [
+            {
+              "file": "media/woman/drop-onto-the-tiles/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "cb3e5ff1524649ee18072334f713a150e9645bc9"
+            },
+            {
+              "file": "media/woman/drop-onto-the-tiles/key-b.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "fbe3959ee88e5d7bbd5de5bc79e54e42aa0cfa08"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/drop-onto-the-tiles/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "3c46bc30fe3a4f96bc9165a6a7f734350e9fbb44"
+            },
+            {
+              "tier": "full",
+              "file": "media/woman/drop-onto-the-tiles/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "88c7009c8bfbf22bffad41e919797bd25a6b1f4f"
+            }
+          ]
+        },
+        {
+          "id": "vortex-wind-up-from-below",
+          "stills": [
+            {
+              "file": "media/woman/vortex-wind-up-from-below/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "cd6399797998682d691572362544d49f0bd7feb0"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/vortex-wind-up-from-below/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "3e4a163ec2741ad5e1fb6b1d114e2d4a2497ee51"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/vortex-wind-up-from-below/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "dfc9531224e6df20c1e3c8ccaba4e4ed64c20179"
+            },
+            {
+              "tier": "full",
+              "file": "media/woman/vortex-wind-up-from-below/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "85f8c705a8badca260b744b192659d8743cb8ca8"
+            }
+          ]
+        },
+        {
+          "id": "fist-at-the-lens",
+          "stills": [
+            {
+              "file": "media/woman/fist-at-the-lens/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "95c2fce98f2354213f0ab5a81c2b8b9f6ca26031"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/fist-at-the-lens/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "64facdd7ae7582a7f6cbb94ad364026f1da8b0e7"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/fist-at-the-lens/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "cf533467eb14fe7f422daa07661e6b585b07d26d"
+            },
+            {
+              "tier": "full",
+              "file": "media/woman/fist-at-the-lens/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "7887bc080f4e9eedde457130691700bb0fa6ffd9"
+            }
+          ]
+        },
+        {
+          "id": "small-against-the-blast",
+          "stills": [
+            {
+              "file": "media/woman/small-against-the-blast/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "43902470515d814fac5821c80eb3b8ce974ba917"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/small-against-the-blast/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "b75d828077230076d6ee65a2c2e8988321c3d04b"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/small-against-the-blast/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "94bc6db3fb70e8dddf51f3a1946281b9e173497a"
+            }
+          ]
+        },
+        {
+          "id": "spin-kick-swipe",
+          "stills": [
+            {
+              "file": "media/woman/spin-kick-swipe/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "33624b4f5787ba3f82c3340ebc9b28f8470a8dff"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/spin-kick-swipe/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "2e6fba799a2486518bfe32f857ccc802e5b9591e"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/spin-kick-swipe/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "37fd65c33bd3046adbd62f2d3071da33cc62a2cf"
+            }
+          ]
+        },
+        {
+          "id": "reach-into-the-close-up",
+          "stills": [
+            {
+              "file": "media/woman/reach-into-the-close-up/key.svg",
+              "width": 960,
+              "height": 1080,
+              "blob": "325596e0515e168d0992b35e5445699da29e6200"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/reach-into-the-close-up/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "9dbf42f5131cabfeb2fa27c7b6bbad159ed67388"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/reach-into-the-close-up/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "d53744da3486669b6c5d1b5ee815e0cf48fbeb6d"
+            },
+            {
+              "tier": "full",
+              "file": "media/woman/reach-into-the-close-up/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "07244fcf2a51e8a510a892fa1d0a4fea4ba36830"
+            }
+          ]
         }
       ],
-      "animations": [
+      "studies": [
         {
-          "tier": "mid",
-          "file": "media/fist-at-the-lens/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "54c0cbc2382072244ae7f37f4e09602aa0d89819"
+          "id": "tether-pendulum-swing",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/tether-pendulum-swing/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "959c0d5056d953e469052b37d35d63b4c7d5495f"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/tether-pendulum-swing/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "84b26bcd1e3cf504aa7aeffcc810cf60e0c88ff9"
+            }
+          ]
         },
         {
-          "tier": "dense",
-          "file": "media/fist-at-the-lens/dense.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "b01b3e66a52747b94629625fb8f6d782e793ffd7"
+          "id": "spin-on-the-axis",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/spin-on-the-axis/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "49b4c85830560f9cc95993c8a3218e4a2c7f8ae6"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/spin-on-the-axis/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "fb49e8d65c9f71d2cd0b74420a59cce46630ae27"
+            }
+          ]
         },
         {
-          "tier": "full",
-          "file": "media/fist-at-the-lens/full.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "c4c08106b5c60afa2c85709b441b98491d34df14"
+          "id": "treadmill-orbit-dash",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/woman/treadmill-orbit-dash/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "a4ebdb4b1bfb5474718b7b834284754568196676"
+            },
+            {
+              "tier": "mid",
+              "file": "media/woman/treadmill-orbit-dash/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "e5afa1c45e7d51506bd4a3feaf827528650470f6"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/treadmill-orbit-dash/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "fb4487132a518b9dbff8cd16e166ab4310938876"
+            }
+          ]
+        },
+        {
+          "id": "held-centre-world-transforms",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/woman/held-centre-world-transforms/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "6158a9901f02e803ef86076a68a00a655c74f0c2"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/held-centre-world-transforms/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "f00c769e06e295cd9a59d5bf56e6c9d99191ed25"
+            }
+          ]
+        },
+        {
+          "id": "slam-and-the-ground-answers",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/woman/slam-and-the-ground-answers/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "e8ca94b337f1613ad510f77427ab2c05314be4ca"
+            },
+            {
+              "tier": "mid",
+              "file": "media/woman/slam-and-the-ground-answers/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "a74cb470bf5c20c5e327476f8341e8a202e3542a"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/slam-and-the-ground-answers/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "7e3015e896de6c7176c5d6fb94bc90528dcd98a9"
+            }
+          ]
+        },
+        {
+          "id": "flinch-and-step-back",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/woman/flinch-and-step-back/sparse.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "d73715d0a022d5a839606c0d4d6fd5077362e229"
+            },
+            {
+              "tier": "mid",
+              "file": "media/woman/flinch-and-step-back/mid.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "df9e3d78d996eaf83c9e4dfa35ee29d25110da6a"
+            },
+            {
+              "tier": "dense",
+              "file": "media/woman/flinch-and-step-back/dense.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "b4be2e05304209645b6473151c08f38ee849839c"
+            }
+          ]
         }
       ]
     },
     {
-      "id": "small-against-the-blast",
-      "stills": [
+      "id": "man",
+      "portrait": {
+        "file": "media/man/portrait.svg",
+        "width": 160,
+        "height": 160,
+        "blob": "af6b06486415135754f7be0c2d51d3b45f040a23"
+      },
+      "keyframes": [
         {
-          "file": "media/small-against-the-blast/key.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "d873a2795deff82b8849bb161d38aabc205aea00"
+          "id": "drop-onto-the-tiles",
+          "stills": [
+            {
+              "file": "media/man/drop-onto-the-tiles/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "e8d961906ff081e47f956b57442d96598f1c0b76"
+            },
+            {
+              "file": "media/man/drop-onto-the-tiles/key-b.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "2a2649e67d21dfcad34edd97e86915f0b6ed6969"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/drop-onto-the-tiles/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "bd2b9c6b668879cc12fc9b9daba4e1d2090f1efa"
+            },
+            {
+              "tier": "full",
+              "file": "media/man/drop-onto-the-tiles/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "f9265cc4a90ac5fd1fccefb0cc91e2c32c4cf091"
+            }
+          ]
+        },
+        {
+          "id": "vortex-wind-up-from-below",
+          "stills": [
+            {
+              "file": "media/man/vortex-wind-up-from-below/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "d5f9068953cf7432482257b6c771eeeb1eea87c2"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/vortex-wind-up-from-below/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "368aee631b925025d30d0afb1dfb6bc043fbaf8b"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/vortex-wind-up-from-below/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "d4d440a94b81f731175db9c85a105046cf1a34d4"
+            },
+            {
+              "tier": "full",
+              "file": "media/man/vortex-wind-up-from-below/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "ea46d700a91fb2132117abdb5a044d4f5662d482"
+            }
+          ]
+        },
+        {
+          "id": "fist-at-the-lens",
+          "stills": [
+            {
+              "file": "media/man/fist-at-the-lens/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "3d35ae14b8c2fae771e34b0f01311469aa0fb6d3"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/fist-at-the-lens/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "e71d8515acdb9538e7161db60555c7bc38529dd9"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/fist-at-the-lens/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "acadd11508e616ab279178a3296de1b931df73a4"
+            },
+            {
+              "tier": "full",
+              "file": "media/man/fist-at-the-lens/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "ca9f9dd3b4238b01838e02f8827dd4ae65f5d15a"
+            }
+          ]
+        },
+        {
+          "id": "small-against-the-blast",
+          "stills": [
+            {
+              "file": "media/man/small-against-the-blast/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "c61e3879ecbfcaf95557c543e67fff88381b09ca"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/small-against-the-blast/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "6a758f7085832a0e23e2790127fcb12a658edb25"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/small-against-the-blast/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "b327018f09991fc4d91963e2505c7a9bd23c4ba8"
+            }
+          ]
+        },
+        {
+          "id": "spin-kick-swipe",
+          "stills": [
+            {
+              "file": "media/man/spin-kick-swipe/key.svg",
+              "width": 960,
+              "height": 540,
+              "blob": "667e0c1842488850ab39089cc02bf5a24706b9ad"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/spin-kick-swipe/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "7f022ce47a3062a99d5194d2eafdcab3ea228dd5"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/spin-kick-swipe/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "15a3151d67ed16a83e79d50608c0e0cae40917db"
+            }
+          ]
+        },
+        {
+          "id": "reach-into-the-close-up",
+          "stills": [
+            {
+              "file": "media/man/reach-into-the-close-up/key.svg",
+              "width": 960,
+              "height": 1080,
+              "blob": "4d278905ca739582d2eb30384419b630ee117dfe"
+            }
+          ],
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/reach-into-the-close-up/mid.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "a68ce5c4030ec7836a097744773957edfca90a8b"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/reach-into-the-close-up/dense.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "f25f7f5cfa4b36a00c5a1eba10034892aef68c3b"
+            },
+            {
+              "tier": "full",
+              "file": "media/man/reach-into-the-close-up/full.gif",
+              "width": 480,
+              "height": 270,
+              "blob": "79a4d42ea361cb4acb94d2303bb271d4b90e71e7"
+            }
+          ]
         }
       ],
-      "animations": [
+      "studies": [
         {
-          "tier": "mid",
-          "file": "media/small-against-the-blast/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "2ba98691df56771943f38a14123b32790df9eca7"
+          "id": "tether-pendulum-swing",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/tether-pendulum-swing/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "6ef4ca4cc1972a42f37d282459f76872580355bc"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/tether-pendulum-swing/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "b5191cee651edc915c0bc93db11831c1b0fceccf"
+            }
+          ]
         },
         {
-          "tier": "dense",
-          "file": "media/small-against-the-blast/dense.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "7c9d01c372235548cacb8fb4c4499275c5f254c9"
-        }
-      ]
-    },
-    {
-      "id": "spin-kick-swipe",
-      "stills": [
-        {
-          "file": "media/spin-kick-swipe/key.svg",
-          "width": 960,
-          "height": 540,
-          "blob": "5edc18fc87e1a1cd682c5dc5ecd54b8893f6458d"
-        }
-      ],
-      "animations": [
-        {
-          "tier": "mid",
-          "file": "media/spin-kick-swipe/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "cbc7f47b9f2c090ecfea5ebba9c0bc260a2dd586"
+          "id": "spin-on-the-axis",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/spin-on-the-axis/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "2a8d4f081975f3cd0436bcc06ee406021210ad8c"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/spin-on-the-axis/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "fb676b6f14fd3518d924799c4fc4e7bd3cb309fb"
+            }
+          ]
         },
         {
-          "tier": "dense",
-          "file": "media/spin-kick-swipe/dense.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "1c00e005196ac254260dbcf115948d3387f406fc"
-        }
-      ]
-    },
-    {
-      "id": "reach-into-the-close-up",
-      "stills": [
-        {
-          "file": "media/reach-into-the-close-up/key.svg",
-          "width": 960,
-          "height": 1080,
-          "blob": "d11fcd960fdcf9025952201a298f98425a14f7a1"
-        }
-      ],
-      "animations": [
-        {
-          "tier": "mid",
-          "file": "media/reach-into-the-close-up/mid.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "437effb4e200754223a91ffa782e748f34a3c1a8"
+          "id": "treadmill-orbit-dash",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/man/treadmill-orbit-dash/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "e116eb4fa13c0876507c49339810fb783f22d799"
+            },
+            {
+              "tier": "mid",
+              "file": "media/man/treadmill-orbit-dash/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "d4cf8456f23125bca234024f0dbd3b2f02b8e04a"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/treadmill-orbit-dash/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "553869a6163319768eb08c1b87b159e9fa2f95b7"
+            }
+          ]
         },
         {
-          "tier": "dense",
-          "file": "media/reach-into-the-close-up/dense.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "c5cdc4667425087f772c8209bc01d66c73b84aab"
+          "id": "held-centre-world-transforms",
+          "animations": [
+            {
+              "tier": "mid",
+              "file": "media/man/held-centre-world-transforms/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "65b499c34fb486fc3e9b666ee3366e3f3f50133f"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/held-centre-world-transforms/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "25da58dbec50221a0d06ee784002a90229243a7d"
+            }
+          ]
         },
         {
-          "tier": "full",
-          "file": "media/reach-into-the-close-up/full.gif",
-          "width": 480,
-          "height": 270,
-          "blob": "803afa8f982f2105e1ec7dc28da8ffb7b9db9f04"
-        }
-      ]
-    }
-  ],
-  "studies": [
-    {
-      "id": "glance-then-blink-on-the-cut",
-      "animations": [
-        {
-          "tier": "sparse",
-          "file": "media/glance-then-blink-on-the-cut/sparse.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "a6cad6b73092ef4c2a739ad99a6b679f26bac102"
+          "id": "slam-and-the-ground-answers",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/man/slam-and-the-ground-answers/sparse.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "4e49f787eedf68c8659eb09e9cd07d0f63dfb536"
+            },
+            {
+              "tier": "mid",
+              "file": "media/man/slam-and-the-ground-answers/mid.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "d853a713dc5a0c0e7f73ceb7a8c9c186ea50ce10"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/slam-and-the-ground-answers/dense.gif",
+              "width": 320,
+              "height": 180,
+              "blob": "43cac9dfac4cbf4a03c8c31a223ed8830f23c4aa"
+            }
+          ]
         },
         {
-          "tier": "mid",
-          "file": "media/glance-then-blink-on-the-cut/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "ccb845c8ebd695120a218c8f9f02fadcf0bba9ec"
-        },
-        {
-          "tier": "dense",
-          "file": "media/glance-then-blink-on-the-cut/dense.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "d0475a3dddd7c1a3593de2e62e87f8b6da06999f"
-        }
-      ]
-    },
-    {
-      "id": "realization-pupil-shock",
-      "animations": [
-        {
-          "tier": "sparse",
-          "file": "media/realization-pupil-shock/sparse.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "1b0c928e59353d246702dda50d1b6ef80452e608"
-        },
-        {
-          "tier": "mid",
-          "file": "media/realization-pupil-shock/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "d37a233f3fd50edcf7639806fb395043c9255f7c"
-        },
-        {
-          "tier": "dense",
-          "file": "media/realization-pupil-shock/dense.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "478289cf445e189f0f48c1bc65b384fe78f720ab"
-        }
-      ]
-    },
-    {
-      "id": "head-stop-hair-settle",
-      "animations": [
-        {
-          "tier": "mid",
-          "file": "media/head-stop-hair-settle/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "0ac488198b7cd891b3a1e8c77742fbecfb9a3ec3"
-        },
-        {
-          "tier": "dense",
-          "file": "media/head-stop-hair-settle/dense.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "66cee682d910728bfbc6ccc238346d55e9b0df31"
-        }
-      ]
-    },
-    {
-      "id": "flinch-and-step-back",
-      "animations": [
-        {
-          "tier": "sparse",
-          "file": "media/flinch-and-step-back/sparse.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "5b8d447f0db75fcaed758584e5d3ebb73ed11e41"
-        },
-        {
-          "tier": "mid",
-          "file": "media/flinch-and-step-back/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "5b6990b42e7ce1281fe8d888fb1d975f11b145d2"
-        },
-        {
-          "tier": "dense",
-          "file": "media/flinch-and-step-back/dense.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "3aa70e9f2869cebb2ded4c5b906dfb1e706cdf41"
-        }
-      ]
-    },
-    {
-      "id": "tatami-walk-and-talk",
-      "animations": [
-        {
-          "tier": "sparse",
-          "file": "media/tatami-walk-and-talk/sparse.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "bfa9dc856340b41c5965e918e96a703dd17248eb"
-        },
-        {
-          "tier": "mid",
-          "file": "media/tatami-walk-and-talk/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "af07adfacc1ec5266579b2e07f77a75a1d93f514"
-        }
-      ]
-    },
-    {
-      "id": "fist-close-with-tremor",
-      "animations": [
-        {
-          "tier": "mid",
-          "file": "media/fist-close-with-tremor/mid.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "0ab88f1d818cd2664cd8f4e5f923d3be8f4d27e4"
-        },
-        {
-          "tier": "dense",
-          "file": "media/fist-close-with-tremor/dense.gif",
-          "width": 320,
-          "height": 320,
-          "blob": "71185865f6a16f8aa40c4db05c48f80f649bc62e"
+          "id": "flinch-and-step-back",
+          "animations": [
+            {
+              "tier": "sparse",
+              "file": "media/man/flinch-and-step-back/sparse.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "8b43a2d7248600bb88eebadf43934c25acc31ac5"
+            },
+            {
+              "tier": "mid",
+              "file": "media/man/flinch-and-step-back/mid.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "2e98c7af8c84235c662a4414f9af7d42bc690ca0"
+            },
+            {
+              "tier": "dense",
+              "file": "media/man/flinch-and-step-back/dense.gif",
+              "width": 320,
+              "height": 320,
+              "blob": "a059fe79495d721979710b57126b186ec4889869"
+            }
+          ]
         }
       ]
     }
