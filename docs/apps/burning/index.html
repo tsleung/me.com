@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>the burning — a street fight that plays itself</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body data-mode="burning">
+    <main class="phone">
+      <header>
+        <div id="title"></div>
+        <div id="clock"></div>
+      </header>
+      <div class="stage">
+        <canvas
+          id="view"
+          aria-label="The fight, drawn from above at street level"
+        ></canvas>
+        <div id="banner" class="banner">
+          <div id="banText"></div>
+          <div id="banSub"></div>
+        </div>
+      </div>
+      <section class="panel">
+        <div class="kv">
+          <span id="tideTxt"></span><span id="windowTxt"></span>
+        </div>
+        <div class="tide">
+          <svg width="366" height="30" viewBox="0 0 366 30" aria-hidden="true">
+            <polyline
+              id="tideLine"
+              points=""
+              fill="none"
+              stroke="#7fe3ff"
+              stroke-width="1.5"
+              opacity=".8"
+            ></polyline>
+            <line
+              x1="365"
+              y1="0"
+              x2="365"
+              y2="30"
+              stroke="#ff6b6b"
+              stroke-width="2"
+            ></line>
+          </svg>
+          <div id="tideNow" class="now"></div>
+          <div id="tideCommit" class="commit"></div>
+        </div>
+        <div class="kv">
+          <span class="gold">THE STRIKE</span><span id="initTxt"></span
+          ><span class="red">THE MIND</span>
+        </div>
+        <div class="init">
+          <div id="initBar"></div>
+          <div class="mid"></div>
+        </div>
+        <div id="rows"></div>
+        <div id="decision" class="decision">
+          <div class="kv">
+            <span id="decKicker"></span
+            ><span id="closeTxt" class="close"></span>
+          </div>
+          <div id="decOpts"></div>
+        </div>
+        <div id="log" class="log"></div>
+        <div class="controls">
+          <div id="calls"></div>
+          <div id="speeds"></div>
+        </div>
+      </section>
+      <section id="end" class="end" hidden>
+        <div id="endTitle"></div>
+        <div id="endStats"></div>
+        <div class="sub">THIS RUN, AGAINST THE FUN MEASURES</div>
+        <div id="funRows" class="fun"></div>
+        <div class="sub">THE RUN, IN MOMENTS</div>
+        <div id="moments" class="moments"></div>
+        <div class="endbtns">
+          <button type="button" id="newRun">NEW SEED</button
+          ><button type="button" id="replay">REPLAY</button>
+        </div>
+      </section>
+    </main>
+    <p class="other"><a href="mind.html">play the other side: the mind</a></p>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
